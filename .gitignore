@@ -1,0 +1,5 @@
+.env
+secrets.h
+.venv/
+__pycache__/
+ai/data/
