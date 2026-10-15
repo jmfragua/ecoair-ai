@@ -33,6 +33,13 @@ y un dashboard las muestra. No sustituye equipos certificados de calidad del air
 - Todo modelo entrenado con datos simulados lleva el prefijo sim_ y se describe como prueba de
   software, no como evidencia de precisión.
 
+## Normas de calidad del aire (docs/normas/)
+- No leer los PDF de docs/normas/ (son pesados).
+- Para cifras de normas: usar docs/normas/normas_aire.md.
+- Para citar texto o construir el RAG: usar los .txt de docs/normas/texto/, que tienen marcas
+  "=== PAGINA N ===" para citar la página.
+- No abrir docs/normas/texto/who_aqg_2021.txt completo: buscar con grep lo que se necesite.
+
 ## Reglas
 - Responder en español, simple y por pasos.
 - Distinguir regla por umbral (no es IA) de detección de anomalías con Isolation Forest.

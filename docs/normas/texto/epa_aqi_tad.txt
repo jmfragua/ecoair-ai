@@ -1,0 +1,1142 @@
+# EPA - Technical Assistance Document for the Reporting of Daily Air Quality (AirNow, mayo 2026)
+Texto extraido del PDF epa_aqi_tad.pdf. Citar como: EPA TAD, pagina N.
+
+=== PAGINA 1 ===
+Technical Assistance Document for the
+Reporting of Daily Air Quality – the Air Quality
+Index (AQI)
+
+=== PAGINA 2 ===
+
+=== PAGINA 3 ===
+                                                                                   EPA-403/B-26-003
+                                                                                          May 2026
+
+
+
+
+Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI)
+
+
+
+
+                             U.S. Environmental Protection Agency
+                          Office of Air Quality Planning and Standards
+                                Air Quality Assessment Division
+                                   Research Triangle Park, NC
+
+=== PAGINA 4 ===
+CONTENTS
+
+I. INTRODUCTION TO THE AQI                                                                                     1
+
+II. REPORTING THE AQI                                                                                          1
+
+Who has to Report                                                                                              1
+
+When to Report                                                                                                 1
+
+What to Report                                                                                                 2
+
+Format for Reporting                                                                                           3
+
+Definition of the AQI Colors                                                                                   3
+
+
+III. HEALTH INFORMATION FOR AQI POLLUTANTS                                                                     5
+
+Health Effects                                                                                                 5
+
+Sensitive Groups                                                                                               7
+
+Cautionary Statements                                                                                          7
+
+
+IV. CALCULATING THE AQI                                                                                       13
+
+Calculating the AQI from pollutant concentration data                                                         13
+
+Using the table and the equation and concentration data to calculate the AQI                                  15
+
+How to handle values from multiple pollutants                                                                 15
+
+Using both O3 1-hour and 8-hour values                                                                        15
+
+Calculating AQI values for SO2                                                                                15
+
+How to handle concentrations for pollutants that have blank places in the table for Breakpoints for the AQI   16
+
+How the NowCast is calculated                                                                                 16
+
+
+V. ACCESSING AQI DATA                                                                                         18
+
+AirNow Website                                                                                                18
+
+=== PAGINA 5 ===
+AirNow Fire and Smoke Map                                           18
+
+AirNow Mobile App (Android and iOS)                                 19
+
+AirNow EnviroFlash                                                  19
+
+AirNow Widget Website                                               20
+
+AirNow Department of State                                          20
+
+AirData Website                                                     21
+
+AirCompare Website                                                  21
+
+
+VI. FREQUENTLY ASKED QUESTIONS                                      22
+
+VII. ADDITIONAL RESOURCES                                           26
+
+
+LIST OF TABLES
+TABLE 1. NAMES AND COLORS FOR THE SIX AQI CATEGORIES                 3
+TABLE 2. STANDARD AQI COLOR FORMULAS                                 4
+TABLE 3. COLORVISION ASSIST AQI COLOR FORMULAS                       4
+TABLE 4. POLLUTANT-SPECIFIC SENSITIVE GROUPS                         7
+TABLE 5. POLLUTANT-SPECIFIC SUB-INDICES AND CAUTIONARY STATEMENTS    8
+TABLE 6. BREAKPOINTS FOR THE AQI                                    14
+
+=== PAGINA 6 ===
+This guidance is designed to aid local agencies in reporting air quality using the U.S. Air Quality Index as
+required in 40 CFR Part 58.50 and according to 40 CFR Appendix G to Part 58.
+
+I. INTRODUCTION TO THE AQI
+The AQI is EPA’s tool for communicating air quality. The AQI is divided into six categories that
+correspond to different levels of health concern. For ease of use, the categories are color-coded and
+provide statements about local air quality, which groups of people may be affected, and steps people
+can take to reduce their exposure to air pollution. The AQI is also used as the basis for air quality
+forecasts and current air quality reporting.
+
+EPA establishes an AQI for five major air pollutants regulated by the Clean Air Act. Each of these
+pollutants has a national ambient air quality standard (NAAQS) set by EPA to protect public health:
+
+    •   ozone
+    •   particle pollution (also called particulate matter)
+    •   carbon monoxide
+    •   nitrogen dioxide
+    •   sulfur dioxide
+
+The AQI for each pollutant draws on the scientific information that supports the health-based NAAQS for
+that pollutant. The AQI value of 100 generally corresponds to an ambient air concentration that equals
+the level of the short-term NAAQS for protection of public health. AQI values at or below 100 are
+generally thought of as satisfactory. When AQI values are above 100, air quality is unhealthy: at first for
+certain sensitive groups of people, then for everyone as AQI values get higher. The AQI does not apply to
+hazardous air pollutants, extreme heat, and other aspects of outdoor air.
+
+
+
+II. REPORTING THE AQI
+Who has to Report
+Metropolitan Statistical Areas (MSAs) with a population of more than 350,000 are required to report the
+AQI daily to the public. The population of an MSA for purposes of index reporting is based on the latest
+available U.S. census population.
+
+When to Report
+MSAs must report the AQI daily, which is defined as seven days each week on days for which you have
+measured air quality data (e.g., from continuous PM2.5 monitors). This definition allows for equipment
+failures and accommodates agencies using manual monitoring methods on a 1-in-6-day schedule.
+
+Low AQI values
+If the AQI values for all of the pollutants remain below 50 for a year, then you may report the AQI at
+your discretion. In subsequent years, if any pollutant level rises to where the AQI would be above 50,
+then you must report the AQI.
+1
+
+=== PAGINA 7 ===
+If a specific pollutant remains below 50 for an extended period of time (a season or a year), you may
+exclude that pollutant from your AQI calculation.
+
+What to Report
+Required Reporting
+It takes a full 24 hours to obtain an AQI value (that’s 24 hourly values for PM or the max 1-hour or 8-
+hour value in a 24-hour period for other pollutants), so you are in effect required to report yesterday’s
+AQI, including the:
+
+            •   reporting area
+            •   reporting period
+            •   main pollutant (the pollutant with the highest AQI value)
+            •   AQI value
+            •   category descriptor and color (if your report uses color) shown in Table 2
+            •   sensitive groups for all pollutants with an AQI over 100, as shown in Table 4
+
+Voluntary Reporting
+To make AQI reporting more useful to the public, most agencies also choose to report some or all of the
+following:
+           • Forecasts of the daily and/or sub-daily AQI values
+           • Hourly concentrations used to compute the current AQI values based on the NowCast
+           • Health effects and cautionary statements
+           • Causes for unusual AQI values
+           • The AQI for sub-areas of the reporting area
+           • Pollutant concentrations
+           • The name and AQI for other pollutants, particularly those with an AQI greater than 100
+           • Statements that “blend” health effects and cautionary information for more than one
+               pollutant, if there is more than one pollutant with an AQI greater than 100
+
+Forecasting the AQI
+
+AQI Forecasts are a prediction of the day’s air quality using AQI colors and scale. Forecasts usually are
+issued by state, Tribal, and local air quality forecasters in the afternoon for the next day. An AQI forecast
+can help plan outdoor activities for the day. Much like a weather forecast lets people know whether to
+pack an umbrella, an air quality forecast lets people know when they may want to change their outdoor
+activities to reduce the amount of air pollution they breathe in. Many forecasters also provide a
+“forecast discussion,” which lets people know when pollution is expected to be highest during the day –
+and if there are times when air quality is expected to be better.
+
+Air quality action days program
+
+The use of air quality action days or community action programs, which are usually based on AQI
+forecasts, is voluntary. However, action days and similar programs can help alert the public and
+encourage them to take protective actions to reduce their exposure. Air quality action days may be
+called by state or local air agencies when the AQI is expected to get into unhealthy ranges. Different
+2
+
+=== PAGINA 8 ===
+agencies call them at different levels, such as Orange or Red or sometimes Yellow. To learn more about
+air quality action days, go to https://www.airnow.gov/aqi/action-days/.
+
+Real-time AQI reporting: the NowCast
+
+Submitting hourly data in real-time to the EPA's AirNow (or future analogous) system is recommended,
+but not required, and assists the EPA in providing timely air quality information to the public for making
+health-protective decisions. Submitting hourly data for appropriate monitors (referenced in section 3.2
+of 40 CFR Part 58 Appendix G) satisfies the daily AQI reporting requirement because the AirNow system
+makes daily and sub-daily AQI reports widely available through its website and other communication
+tools. AirNow uses the hourly concentrations to report current air quality based on the NowCast AQI.
+The NowCast uses an algorithm that relates hourly readings from air quality monitors to the AQI for
+ozone and particle pollution. The NowCast gives you the latest information on air quality where you are.
+Because air quality can change during the day, you can expect to see the NowCast AQI change. Even on
+days when the daily AQI forecast isn’t good, there may be times during the day when air quality is OK for
+outdoor activity. Providing current conditions gives people the power to take action when necessary to
+reduce outdoor activities and exposure and protect their health. The NowCast methods for ozone and
+PM (PM2.5 and PM10 use the same method) are described in section IV Calculating the AQI. Because the
+sub-indices for SO2 and NO2 are based on 1-hour averages, a NowCast is not needed for these
+pollutants.
+
+Format for Reporting
+AQI reports can take many forms – from television and radio news to apps, web pages, and social media.
+The purpose of the AQI is to inform people about their air quality so they can take steps to protect their
+health. This is especially important whenever the AQI exceeds 100. To reach the most people, try to
+deliver the AQI in as many ways as possible.
+
+Definition of the AQI Colors
+Table 1. Names and colors for the six AQI categories
+
+    For this AQI…             use this descriptor…                           and this color
+    0 to 50                   Good                                           Green
+    51 to 100                 Moderate                                       Yellow
+    101 to 150                Unhealthy for Sensitive Groups                 Orange
+    151 to 200                Unhealthy                                      Red
+    201 to 300                Very Unhealthy                                 Purple
+    301+                      Hazardous                                      Maroon
+
+
+
+
+3
+
+=== PAGINA 9 ===
+The standard AQI colors are defined by the formulas RGB (red, green, blue) and CMYK (cyan, magenta,
+yellow, black) as shown in Table 2. RGB is traditionally used for screen colors, while CMYK is traditionally
+used for printing. The color models are based on a 0 - 255 scale (e.g., 50% is 126).
+
+Table 2. Standard AQI color formulas
+
+    Standard AQI Color          R           G          B        C           M          Y           K
+
+    Green                       0           228        0        40          0          100         0
+
+    Yellow                      255         255        0        0           0          100         0
+
+    Orange                      255         126        0        0           52         100         0
+
+    Red                         255         0          0        0           100        100         0
+
+    Purple                      143         63         151      5           58         0           41
+
+    Maroon                      126         0          35       30          100        100         30
+
+
+While the standard AQI colors listed in Table 2 are required, reporting entities may also use ColorVision
+Assist colors that enhance contrast to assist individuals with color vision deficiencies. South Coast Air
+Quality Management District’s Air Quality Sensor Performance Evaluation Center and Air Quality
+Assessment Group led the development of these modified colors to provide better accessibility for those
+with color vision deficiencies. The changes were primarily made to the hues, keeping the essential colors
+associated with each AQI category and health impacts (green, yellow, orange, red, purple, maroon). The
+standard AQI color scale can be difficult to discern for those individuals who have challenges
+distinguishing certain colors, especially red and green colors.
+
+Table 3. ColorVision Assist AQI color formulas
+
+    ColorVision Assist Color    R           G          B        C           M          Y           K
+
+    Green                       158         255        145      38          0          43          0
+
+    Yellow                      255         201        5        0           21         98          0
+
+    Orange                      255         130        5        0           49         98          0
+
+    Red                         240         34         0        0           86         100         6
+
+    Purple                      137         9          151      9           94         0           41
+
+    Maroon                      100         0          21       0           100        79          61
+
+
+
+
+4
+
+=== PAGINA 10 ===
+III. Health Information for AQI Pollutants
+Health Effects
+The information below describes the health effects that may be associated with each of the AQI
+pollutants. In general, the proportion of people affected and the likelihood of more severe effects
+increase as pollutant concentrations increase. More information can be found at
+https://www.epa.gov/criteria-air-pollutants.
+
+Ozone
+Depending on the level of exposure, ozone can:
+
+    •   Cause coughing and sore or scratchy throat
+    •   Make it more difficult to breathe deeply and vigorously and cause pain when taking a deep
+        breath
+    •   Inflame and damage the airways
+    •   Make the lungs more susceptible to infection
+    •   Aggravate lung diseases such as asthma, emphysema, and chronic bronchitis
+    •   Increase the frequency of asthma attacks
+
+Some of these effects have been found even in healthy people, but effects can be more serious in
+people with lung diseases such as asthma. They may lead to increased school absences, medication use,
+visits to doctors and emergency rooms, and hospital admissions. Some studies in locations with elevated
+concentrations also report associations of ozone with deaths from respiratory causes.
+
+In addition to the health effects that can be experienced in response to short-term (i.e., 1-8 hours)
+ozone exposure (which is the focus of the AQI), long-term exposure to ozone is linked to aggravation of
+asthma and is likely to be one of many causes of asthma development.
+
+Particle Pollution
+The size of particles is directly linked to their potential for causing health problems. Particles less than 10
+micrometers can be inhaled into the body, with smaller particles less than 2.5 micrometers posing the
+greatest problems because they can get deep into the lungs, and some may even get into the
+bloodstream.
+
+Exposure to such particles can affect both lungs and heart. Numerous scientific studies have linked
+particle pollution exposure to a variety of health problems, such as:
+
+    •   premature death in people with heart or lung disease
+    •   heart attacks
+    •   irregular heartbeat
+    •   aggravated asthma
+    •   decreased lung function
+    •   increased respiratory symptoms, such as irritation of the airways, coughing or difficulty
+        breathing.
+
+5
+
+=== PAGINA 11 ===
+In addition to the health effects that can be experienced in response to short-term (or daily) particle
+pollution exposure (which is the focus of the AQI), long-term exposure (exposures experienced over
+months and years) can lead to the development of cardiovascular and respiratory diseases, such as
+atherosclerosis and asthma, nervous system effects (e.g., cognitive effects), lung cancer, and premature
+death.
+
+Carbon Monoxide (CO)
+Breathing air with a high concentration of CO reduces the amount of oxygen that can be transported in
+the blood stream to critical organs like the heart and brain. At very high levels, which are possible
+indoors or in other enclosed environments, CO can cause dizziness, confusion, unconsciousness and
+death.
+
+Very high levels of CO are not likely to occur outdoors. However, when CO levels are elevated outdoors,
+they can be of particular concern for people with some types of heart disease. These people already
+have a reduced ability for getting oxygenated blood to their hearts in situations where the heart needs
+more oxygen than usual. They are especially vulnerable to the effects of CO when exercising or under
+increased stress. In these situations, short-term exposure to elevated CO may result in reduced oxygen
+to the heart accompanied by chest pain also known as angina.
+
+Nitrogen Dioxide (NO2)
+Breathing air with a high concentration of NO2 can irritate airways in the human respiratory system.
+Such exposures over short periods (i.e., 1-5 hours) can aggravate respiratory diseases, particularly
+asthma, leading to respiratory symptoms (such as coughing, wheezing or difficulty breathing), hospital
+admissions and visits to emergency rooms.
+
+In addition to the health effects that can be experienced in response to short-term NO2 exposures
+(which is the focus of the AQI), long-term (exposures experienced over months and years) exposure to
+elevated concentrations of NO2 may contribute to the development of asthma and potentially increase
+susceptibility to respiratory infections.
+
+Sulfur Dioxide (SO2)
+Short-term exposures (i.e., 1-6 hours) to SO2 are linked with respiratory effects including difficulty
+breathing and increased asthma symptoms. These effects are particularly problematic for people with
+asthma while breathing deeply such as when exercising or playing. Short-term exposures to SO2 have
+also been connected to increased emergency department visits and hospital admissions for respiratory
+illnesses, particularly for at-risk populations including children, older adults, and those with asthma.
+
+
+
+
+6
+
+=== PAGINA 12 ===
+Sensitive Groups
+The sensitive groups for each pollutant are listed in Table 4.
+
+Table 4. Pollutant-specific Sensitive Groups
+
+    When this pollutant has   Report these Sensitive Groups
+    an AQI above 100…1
+    Ozone                  People with lung disease, such as asthma; children, including teenagers;
+                           people who are active outdoors; and older adults.
+  Fine particle pollution2
+                           People with heart or lung disease; older adults; and children, including
+  (PM2.5) and particle     teenagers. In addition, some minority groups, people with lower incomes,
+  pollution (PM10)         and outdoor workers may experience higher exposure that can worsen
+                           underlying health conditions.
+  Carbon monoxide (CO)     People with heart disease.
+  Nitrogen dioxide (NO2)   People with lung disease, such as asthma; children, including teenagers;
+                           and older adults.
+  Sulfur dioxide (SO2)     People with asthma; children, including teenagers; and older adults.
+1
+  Cautionary statements may be combined, for all AQI pollutants above 100, so that each sensitive group
+is mentioned only once.
+2
+ During a smoke event, EPA recommends including pregnant people as an at-risk group as noted in the
+At-Risk Groups of People Wildfire Smoke Factsheet found here
+https://www.airnow.gov/publications/wildfire-guide-factsheets/at-risk-groups-of-people-fact-sheet/.
+
+Cautionary Statements
+Table 5 (see next page) lists cautionary statements for each pollutant by AQI category. Use these
+statements when showing current air quality or for the AQI forecast. Please note Table 5 spans several
+pages.
+
+
+
+
+7
+
+=== PAGINA 13 ===
+Table 5. Pollutant-Specific Sub-indices and Cautionary Statements
+
+    AQI Categories                                Ozone                Particulate Matter     Carbon Monoxide           Nitrogen        Sulfur
+    (Index Values)               (8-hr)                     (1-hr)      PM2.5        PM10          (8-hr)                Dioxide       Dioxide
+                                                                       (24-hr)      (24-hr)                               (1-hr)        (1-hr)
+    Good                         It’s a great day to be              It’s a great day to be   It’s a great day to   It’s a great   It’s a great
+    (0-50)                       active outside.                     active outside.          be active outside.    day to be      day to be
+                                                                                                                    active         active
+                                                                                                                    outside.       outside.
+    Moderate                     Unusually sensitive                 Unusually sensitive      It’s a great day to   Unusually      It’s a great
+    (51-100)                     people: Consider                    people: Consider         be active outside.    sensitive      day to be
+                                 making outdoor                      making outdoor                                 people:        active
+                                 activities shorter and              activities shorter and                         Consider       outside.
+                                 less intense. Watch for             less intense. Go                               limiting
+                                 symptoms such as                    inside if you have                             prolonged
+                                 coughing or shortness               symptoms such as                               exertion
+                                 of breath. These are                coughing or                                    especially
+                                 signs to take it easier.            shortness of breath.                           near busy
+                                                                                                                    roads.
+
+
+
+
+8
+
+=== PAGINA 14 ===
+    AQI Categories                                   Ozone                Particulate Matter     Carbon Monoxide        Nitrogen         Sulfur
+    (Index Values)                   (8-hr)                    (1-hr)      PM2.5        PM10          (8-hr)             Dioxide        Dioxide
+                                                                          (24-hr)     (24-hr)                             (1-hr)         (1-hr)
+    Unhealthy for Sensitive Groups   Sensitive groups: Make outdoor     Sensitive groups:        Sensitive group:    Sensitive       Sensitive
+    (101-150)                        activities shorter and less        Make outdoor             Limit heavy         groups: Limit   groups:
+                                     intense. Take more breaks.         activities shorter and   exertion outdoors   prolonged       Consider
+                                     Watch for symptoms such as         less intense. It’s OK    and avoid sources   exertion        limiting
+                                     coughing or shortness of breath.   to be active             of CO, such as      outdoors,       outdoor
+                                     Plan outdoor activities in the     outdoors but take        heavy traffic.      especially      exertion.
+                                     morning when ozone is lower.       more breaks. Watch                           near busy       People with
+                                     People with asthma: Follow         for symptoms such                            roads.          asthma:
+                                     your asthma action plan and        as coughing or                               People with     Follow your
+                                     keep quick-relief medicine         shortness of breath.                         asthma:         asthma
+                                     handy.                             People with asthma:                          Follow your     action plan
+                                                                        Follow your asthma                           asthma          and keep
+                                                                        action plan and keep                         action plan     quick relief
+                                                                        quick relief medicine                        and keep        medicine
+                                                                        handy.                                       quick relief    handy.
+                                                                        People with heart                            medicine
+                                                                        disease: Symptoms                            handy.
+                                                                        such as palpitations,
+                                                                        shortness of breath,
+                                                                        or unusual fatigue
+                                                                        may indicate a
+                                                                        serious problem. If
+                                                                        you have any of
+                                                                        these, contact your
+                                                                        health care provider.
+
+
+
+
+9
+
+=== PAGINA 15 ===
+ AQI Categories                  Ozone                Particulate Matter    Carbon Monoxide        Nitrogen         Sulfur
+ (Index Values)   (8-hr)                   (1-hr)      PM2.5       PM10          (8-hr)             Dioxide        Dioxide
+                                                      (24-hr)     (24-hr)                            (1-hr)         (1-hr)
+ Unhealthy        Sensitive groups: Do not do       Sensitive groups:       Sensitive group:    Sensitive       Sensitive
+ (151-200)        long or intense outdoor           Consider                Limit moderate      groups: Avoid   groups: Limit
+                  activities. Schedule outdoor      rescheduling or         outdoor exertion    prolonged       outdoor
+                  activities in the morning when    moving all activities   and avoid sources   outdoor         exertion.
+                  ozone is lower. Consider moving   inside. Go inside if    of CO, such as      exertion near   People with
+                  activities indoors.               you have symptoms.      heavy traffic.      roadways.       asthma:
+                  People with asthma: Follow        People with asthma:                         People with     Follow your
+                  your asthma action plan and       Follow your asthma                          asthma:         asthma
+                  keep quick-relief medicine        action plan and keep                        Follow your     action plan
+                  handy.                            quick-relief medicine                       asthma          and keep
+                  Everyone else: Reduce long or     handy.                                      action plan     quick relief
+                  intense outdoor activity. Take    People with heart                           and keep        medicine
+                  more breaks, do less intense      disease: Symptoms                           quick relief    handy.
+                  activities. Schedule outdoor      such as palpitations,                       medicine
+                  activities in the morning when    shortness of breath,                        handy.
+                  ozone is lower.                   or unusual fatigue                          Everyone
+                                                    may indicate a                              else: Limit
+                                                    serious problem. If                         prolonged
+                                                    you have any of                             outdoor
+                                                    these, contact your                         exertion
+                                                    health care provider.                       especially
+                                                    Everyone else: Keep                         near busy
+                                                    outdoor activities                          roads.
+                                                    shorter and less
+                                                    intense. Go inside if
+                                                    you have symptoms.
+
+
+
+
+10
+
+=== PAGINA 16 ===
+ AQI Categories                   Ozone                 Particulate Matter     Carbon Monoxide        Nitrogen        Sulfur
+ (Index Values)   (8-hr)                    (1-hr)       PM2.5        PM10          (8-hr)            Dioxide        Dioxide
+                                                        (24-hr)      (24-hr)                           (1-hr)         (1-hr)
+ Very Unhealthy   Sensitive groups: Avoid all         Sensitive groups:        Sensitive group:   Sensitive       Sensitive
+ (201-300)        physical activity outdoors. Move    Avoid all physical       Avoid outdoor      groups: Avoid   groups:
+                  activities indoors* or reschedule   activity outdoors.       exertion and       all outdoor     Avoid
+                  to when air quality will be         Reschedule to a time     sources of CO,     exertion.       outdoor
+                  better.                             when air quality is      such as heavy      Everyone        exertion.
+                  People with asthma: Follow          better or move           traffic.           else: Avoid     Everyone
+                  your asthma action plan and         activities indoors.*                        prolonged       else: Reduce
+                  keep quick-relief medicine          People with asthma:                         outdoor         outdoor
+                  handy.                              Follow your asthma                          exertion        exertion.
+                  Everyone else: Avoid long or        action plan and keep                        especially      People with
+                  intense outdoor exertion.           quick-relief medicine                       near busy       asthma:
+                  Schedule outdoor activities in      handy.                                      roads.          Follow your
+                  the morning when ozone is           People with heart                           People with     asthma
+                  lower. Consider moving              disease: Symptoms                           asthma:         action plan
+                  activities indoors.*                such as palpitations,                       Follow your     and keep
+                                                      shortness of breath,                        asthma          quick relief
+                                                      or unusual fatigue                          action plan     medicine
+                                                      may indicate a                              and keep        handy.
+                                                      serious problem. If                         quick relief
+                                                      you have any of                             medicine
+                                                      these, contact your                         handy.
+                                                      health care provider.
+                                                      Everyone else: Limit
+                                                      outdoor physical
+                                                      activity. Go indoors*
+                                                      if you have
+                                                      symptoms.
+
+
+
+11
+
+=== PAGINA 17 ===
+ AQI Categories                                   Ozone                  Particulate Matter    Carbon Monoxide          Nitrogen         Sulfur
+ (Index Values)                    (8-hr)                      (1-hr)     PM2.5        PM10            (8-hr)            Dioxide        Dioxide
+                                                                         (24-hr)     (24-hr)                              (1-hr)         (1-hr)
+ Hazardous                         Everyone: Avoid all physical        Sensitive groups:      Sensitive group:       Sensitive       Sensitive
+ (≥ 301)                           activity outdoors.*                 Stay indoors and       Avoid outdoor          groups:         groups:
+                                   People with asthma: Follow          keep activity levels   exertion and           Remain          Remain
+                                   your asthma action plan and         light. Follow tips for sources of CO,         indoors.*       indoors.*
+                                   keep quick-relief medicine          keeping particle       such as heavy          Everyone        Everyone
+                                   handy.                              levels low indoors.*   traffic.               else: Avoid all else: Avoid
+                                                                       People with asthma: Everyone else:            outdoor         outdoor
+                                                                       Follow your asthma     Limit heavy            exertion.       exertion.
+                                                                       action plan and keep outdoor exertion. People with            People with
+                                                                       quick-relief medicine                         asthma:         asthma:
+                                                                       handy.                                        Follow your     Follow your
+                                                                       People with heart                             asthma          asthma
+                                                                       disease: Symptoms                             action plan     action plan
+                                                                       such as palpitations,                         and keep        and keep
+                                                                       shortness of breath,                          quick relief    quick relief
+                                                                       or unusual fatigue                            medicine        medicine
+                                                                       may indicate a                                handy.          handy.
+                                                                       serious problem. If
+                                                                       you have any of
+                                                                       these, contact your
+                                                                       health care provider.
+                                                                       Everyone: Avoid all
+                                                                       physical activity
+                                                                       outdoors.*
+*Note: If you don't have an air conditioner, staying indoors with the windows closed may be dangerous in extremely hot weather. If you are hot, go
+someplace with air conditioning or check with your local government to find out if cooling centers are available in your community.
+
+
+
+
+12
+
+=== PAGINA 18 ===
+IV. CALCULATING THE AQI
+Calculating the AQI from pollutant concentration data
+The AQI is the highest value calculated for each pollutant as follows:
+
+1. Identify the highest concentration among all of the monitors within each reporting area and truncate
+as follows:
+
+     Ozone (ppm) – truncate to 3 decimal places
+
+     PM2.5 (µg/m3) – truncate to 1 decimal place
+
+     PM10 (µg/m3) – truncate to integer
+
+     CO (ppm) – truncate to 1 decimal place
+
+     SO2 (ppb) – truncate to integer
+
+     NO2 (ppb) – truncate to integer
+
+2. Using Table 6 (next page), find the two breakpoints that contain the concentration.
+
+3. Using Equation 1, calculate the index.
+
+4. Round the index to the nearest integer.
+
+                                              Equation 1:
+
+                            I Hi − I Lo
+                      Ip =              (C − BPLo ) + I Lo .
+                           BPHI − BPLo p
+Where Ip = the index for pollutant p
+
+Cp = the truncated concentration of pollutant p
+
+BPHi = the concentration breakpoint that is greater than or equal to Cp
+
+BPLo = the concentration breakpoint that is less than or equal to Cp
+
+IHi = the AQI value corresponding to BPHi
+
+ILo = the AQI value corresponding to BPLo
+
+
+
+
+13
+
+=== PAGINA 19 ===
+Table 6. Breakpoints for the AQI
+
+These Breakpoints...                                                               ...equal    …and this
+                                                                                  this AQI    category
+
+O3          O3         PM2.5       PM10      CO          SO2           NO2        AQI
+(ppm)       (ppm)      (μg/m3)     (μg/m3)   (ppm)       (ppb)         (ppb)
+8-hour      1-hour1    24-hour     24-hour   8-hour      1-hour        1-hour
+
+0.000 -     -          0.0 – 9.0   0 - 54    0.0 - 4.4   0 - 35        0 - 53     0 - 50      Good
+0.054
+
+0.055 -     -          9.1 – 35.4 55 - 154   4.5 - 9.4   36 - 75       54 - 100   51 - 100    Moderate
+0.070
+
+0.071 -     0.125 -    35.5 –      155 - 254 9.5 - 12.4 76 - 185       101 - 360 101 - 150    Unhealthy for
+0.085       0.164      55.4                                                                   Sensitive Groups
+
+0.086 -     0.165 -    (55.5 -     255 - 354 12.5 -      3
+                                                             186 - 304 361 - 649 151 - 200    Unhealthy
+0.105       0.204      125.4)3               15.4
+
+0.106 -     0.205 -    (125.5 -    355 - 424 15.5 -      3
+                                                          305 -        650 -      201 - 300   Very unhealthy
+0.200       0.404      (225.4)3              30.4        604)          1249
+
+0.201-(2)   0.405+     225.5+      425+      30.5+       3
+                                                             605+      1250+      301+        Hazardous 4
+1
+  Areas are generally required to report the AQI based on 8-hour O3 values. However, there are a small
+number of areas where an AQI based on 1-hour O3 values would be more precautionary. In these cases,
+in addition to calculating the 8-hour O3 index value, the 1-hour O3 value may be calculated, and the
+maximum of the two values reported.
+2
+ 8-hour O3 values do not define higher AQI values (≥ 301). AQI values of 301 or higher are calculated
+with 1-hour O3 concentrations.
+3
+ 1-hr SO2 concentrations do not define higher AQI values (≥200). AQI values of 200 or greater are
+calculated with 24-hour SO2 concentration.
+4
+ AQI values between breakpoints are calculated using equation 1 to this appendix. For AQI values in the
+hazardous category, AQI values greater than 500 should be calculated using equation 1 and the
+concentration specified for the AQI value of 500. The AQI value of 500 are as follows: O3 1-hour—0.604
+ppm; PM2.5 24-hour—325.4 μg/m3; PM10 24-hour—604 μg/m3; CO ppm—50.4 ppm; SO2 1-hour—1004
+ppb; and NO2 1-hour—2049 ppb.
+
+
+
+
+14
+
+=== PAGINA 20 ===
+Using the table and the equation and concentration data to calculate the AQI
+Suppose you have an 8-hour O3 value of 0.07853333. First, truncate the value to 0.078. Then refer to the
+8-hour O3 in table 5 for the values that fall above and below your value (0.071-0.085). In this case, the
+0.078 value falls within the index values of 101 to 150. Now you have all the numbers needed to use
+equation 1.
+              150 − 101                            49
+                          (0.078 − 0.071) + 101 =       (0.007) + 101 = 125.5 = 126
+            0.085 − 0.071                         0.014
+An 8-hour O3 value of 0.07853333 corresponds to an index value of 126.
+
+How to handle values from multiple pollutants
+Suppose you have an 8-hour O3 value of 0.078 ppm, a PM2.5 value of 35.9 μg/m3, and a CO value of 8.4
+ppm. You apply the equation 3-times:
+                        150 − 101
+              𝑂𝑂3 :                 (0.078 − 0.071) + 101 = 126
+                      0.085 − 0.071
+                          150 − 101
+              𝑃𝑃𝑃𝑃2.5 :               (35.9 − 35.5) + 101 = 102
+                          55.4 − 35.5
+                                                    100 − 51
+                                            𝐶𝐶𝐶𝐶:             (8.4 − 4.5) + 51 = 90
+                                                    9.4 − 4.5
+The AQI is 126, with O3 as the main pollutant.
+
+Using both O3 1-hour and 8-hour values
+You must calculate the 8-hour values, and you may also calculate the 1-hour values. If you calculate
+both, you must report the higher AQI value.
+
+Suppose you had a 1-hour value of 0.162 ppm and an 8-hour value of 0.078 ppm. Then you apply the
+equation twice:
+                               150 − 101
+              1 − ℎ𝑜𝑜𝑜𝑜𝑜𝑜:                 (0.162 − 0.125) + 101 = 148
+                             0.164 − 0.125
+                                                  150 − 101
+                                 8 − ℎ𝑜𝑜𝑜𝑜𝑜𝑜:                 (0.078 − 0.071) + 101 = 126
+                                                0.085 − 0.071
+In this case, the index is 148 (the maximum of 148 and 126) and the main pollutant is O3.
+
+Calculating AQI values for SO2
+EPA strengthened the primary standard for SO2 in 2010. Because there was not enough health
+information to inform changing the upper end of the AQI for SO2, the upper end continues to use the 24-
+hour average SO2 concentration. The lower end of the AQI uses the daily max 1-hour SO2 concentration.
+
+If you have a daily max 1-hour SO2 concentration below 305 ppb, then use the breakpoints in Table 6 to
+calculate the AQI value.
+15
+
+=== PAGINA 21 ===
+If you have a 24-hour average SO2 concentration greater than or equal to 305 ppb, then use the
+breakpoints in Table 6 to calculate the AQI value. If you have a 24-hour value in this range, it will always
+result in a higher AQI value than a 1-hour value would.
+
+On rare occasions, you could have a day where the daily max 1-hour concentration is at or above 305
+ppb but when you try to use the 24-hour average to calculate the AQI value, you find that the 24-hour
+concentration is not above 305 ppb. If this happens, use 200 for the lower and upper AQI breakpoints
+(ILo and IHi) in Equation 1 to calculate the AQI value based on the daily max 1-hour value. This effectively
+fixes the AQI value at 200 exactly, which ensures that you get the highest possible AQI value associated
+with your 1-hour concentration on such days.
+
+How to handle concentrations for pollutants that have blank places in the table
+for Breakpoints for the AQI
+Disregard numbers that have blank places in the table 6: Breakpoints for the AQI. Suppose you had a 1-
+hour O3 value of 0.104 ppm and an 8-hour O3 value of 0.078 ppm. First you disregard the 1-hour O3
+value because it is less than 0.125ppm. Then you calculate the index for the 8-hour O3 value as before:
+                                  150 − 101
+                                              (0.078 − 0.071) + 101 = 126
+                                0.085 − 0.071
+
+
+How the NowCast is calculated
+EPA updated the NowCast method for PM2.5 on August 1, 2013, and for PM10 on December 9, 2014. The
+same method is used for both PM2.5 and PM10. It was designed to be more responsive than the previous
+method in rapidly changing air quality conditions, such as those we see during fire events. The PM
+NowCast is an average of the previous 12 hours. When air quality is stable, the hours are weighted more
+evenly (approaching a 12-hour average). When air quality is variable, the most recent hours are
+weighted more (approaching a 3-hour average). To calculate the PM NowCast, use the past 12 hours of
+PM measurements in micrograms per cubic meter (μg/m³):
+
+     1. Select the minimum and maximum PM measurements.
+     2. Subtract the minimum measurement from the maximum measurement to get the range.
+     3. Divide the range by the maximum measurement in the 12-hour period to get the scaled rate of
+        change.
+     4. Subtract the scaled rate of change from 1 to get the weight factor. The weight factor must be
+        between 0.5 and 1. The minimum limit approximates a 3-hour average.
+     5. If the weight factor is less than 0.5, then set it equal to 0.5.
+     6. Multiply each hourly measurement by the weight factor raised to the power of the number of
+        hours ago the value was measured (for the current hour, the factor is raised to the zero power).
+     7. Compute the NowCast by summing the products from Step 6 and dividing by the sum of the
+        weight factor raised to the power of the number of hours ago each value was measured.
+
+16
+
+=== PAGINA 22 ===
+     8. Convert this value to an AQI. A “concentration to AQI” converter is available
+        at https://airnow.gov/aqi/aqi-calculator-concentration.
+Missing data: 2 of the last 3 hours of data must be valid for a NowCast calculation.
+
+EPA implemented the latest NowCast method for ozone on August 1, 2019. The ozone NowCast method
+is based on the relationship of 1-hour and 8-hour data over the most recent two-week rolling window. It
+is designed to rise and fall with the 1-hour concentration and still be representative of an 8-hour
+average. A paper describing the method and accompanying R code is available at
+https://github.com/USEPA/O3-NowCast/tree/master.
+
+
+
+
+17
+
+=== PAGINA 23 ===
+V. Accessing AQI Data
+AirNow Website
+AirNow.gov is the one-stop source for air
+quality data. The website highlights air
+quality at the local level first, while also
+providing air quality information at the
+state, national, and world level. The AirNow
+Dial allows users to quickly see what their
+current air quality profile is where they
+live—or anywhere they want to check. It is
+available immediately on the AirNow home
+page. There are also menu items to help find
+more information and resources about air
+quality, health, and much more.
+
+
+
+
+https://www.airnow.gov/
+
+
+
+AirNow Fire and Smoke Map
+The Fire and Smoke Map, a joint project
+between the U.S. Forest Service and the
+EPA, is AirNow’s mapping tool specifically
+for fires and the smoke they bring. The Fire
+and Smoke Map displays information on
+ground level air quality monitors recording
+fine particulates (PM2.5) from smoke and
+other sources using both federal monitors
+and thousands of sensors, giving most
+users the nearest readings possible and
+recommendations on how to protect their
+health. It also includes information on fire locations, smoke plumes, and special announcements related
+to fires from the USFS.
+
+
+
+https://fire.airnow.gov/
+
+
+
+18
+
+=== PAGINA 24 ===
+AirNow Mobile App (Android and iOS)
+EPA's AirNow mobile app provides a simple interface for quickly checking
+current and forecast air quality information for planning daily activities
+and learning how to protect health. The app automatically displays the
+current AQI for the local area and allows the ability to store multiple areas
+for quick reference. The app also includes the AirNow interactive map and
+the AirNow Fire and Smoke map.
+
+
+  iOS                               Android
+
+
+
+
+ https://apps.apple.com/us/ap      https://play.google.com/store/app
+ p/epa-airnow/id467653238          s/details?id=com.saic.airnow&hl=e
+                                   n_US&gl=US
+
+
+
+
+AirNow EnviroFlash
+AirNow's EnviroFlash sends air quality information for
+the selected location to any email or mobile phone.
+These forecasts and alerts allow people to take air quality
+into consideration when making outdoor plans.
+
+
+
+
+https://m.enviroflash.info/
+
+
+
+
+19
+
+=== PAGINA 25 ===
+AirNow Widget Website
+AirNow widgets allow organizations to show air quality
+information to the people they want to reach on their own
+website in various formats.
+
+
+
+
+https://www.airnow.gov/aqi-widgets/
+
+
+
+
+AirNow Department of
+State
+AirNow Department of State
+collects air quality monitoring data
+from U.S. embassies and consulates
+around the world to inform U.S.
+personnel and citizens overseas.
+
+
+
+
+https://www.airnow.gov/international/us-embassies-and-consulates/
+
+
+
+
+20
+
+=== PAGINA 26 ===
+AirData Website
+AirData provides air quality data
+collected at outdoor monitors
+across the United States, Puerto
+Rico, and the U.S. Virgin Islands.
+Users can download, output, view
+or visualize the data.
+
+
+
+
+https://www.epa.gov/outdoor-air-quality-data
+
+
+
+
+AirCompare Website
+AirCompare maps provide
+information for counties in the
+United States that monitored
+outdoor air quality in recent
+years, and tailor that
+information for groups more
+likely to be affected by different
+levels of pollution.
+
+
+
+
+https://www3.epa.gov/aircompare/
+
+
+
+
+21
+
+=== PAGINA 27 ===
+VI. Frequently Asked Questions
+Q. Can AirNow help me meet the reporting requirements for the AQI?
+A. Yes, AirNow is one way you can submit, store, and display your AQI values. This includes the required
+elements of AQI reporting and the voluntary elements. The information you submit to airnow.gov is
+reported in national and state/local pages on the website. It is available to anyone through the AirNow
+app, AirNow widgets, and Enviroflash emails. It is also available for distribution to media and weather
+service provider companies.
+
+Q. Why doesn’t my area report an Air Quality Index value?
+A. Towns and cities with 350,000 or fewer inhabitants are not required to report the AQI. Some may not
+have monitors. In addition, AirNow is a voluntary program and some state or local air quality monitoring
+agencies may not submit data to AirNow.
+
+Q. The other day, the air quality in my area was reported as green, or good air
+quality. However, it was pretty hazy outside. Why didn’t the AQI report this
+accurately?
+A. If this was an AQI forecast, there are still a few areas of the United States that only forecast for ozone
+and not particle pollution. It is possible that the ozone AQI forecast was “GOOD” while the hazy
+conditions experienced were due to particle pollution. In this instance, the reported AQI forecast may
+have only represented ozone.
+
+If this was a real-time air quality report, it may be because there are only ozone monitors nearby, which
+were reading that ozone was in the “GOOD” category while the hazy conditions experienced were due
+to particle pollution.
+
+There are also occasions where hazy conditions may be due primarily to high humidity and not pollution.
+On these days, it is still good to check the AQI maps and forecasts to make sure that pollution is not the
+primary cause of the haze.
+
+Q. It looks smoky outside, but the AirNow dial is reporting green or yellow air
+quality. How can that be right?
+A. During smoky condition, particle pollution levels can vary considerably, even over small distances and
+short periods of time. This is particularly true when smoke plumes move in and out of an area. As a
+result, monitors in the same area may show different NowCast AQI categories. The main AirNow
+website currently does not include sensor information and cannot always account for these rapidly
+changing conditions. The AirNow Fire and Smoke Map, which EPA operates in partnership with the U.S.
+Forest Service, does include sensor data, which updates more frequently. The Fire and Smoke Map also
+shows smoke plumes from National Oceanic and Atmospheric Administration satellites to give the public
+information on how far smoke has traveled. Note that smoke plume images on the map cannot tell you
+whether the smoke is high in the atmosphere or at ground level.
+
+
+22
+
+=== PAGINA 28 ===
+If it looks smoky where you are, check your air quality on the AirNow Fire and Smoke Map. You can click
+on a colored icon to get additional information, including steps you can take to reduce your pollution
+exposure. The map is available at https://fire.airnow.gov, or by clicking the "Smoke ”icon on the lower
+right of the free AirNow smartphone app.
+
+Q. What does it mean when the AQI values are above 500?
+A. All AQI values above 300 are part of the Hazardous category. This includes values above 500 and the
+hazardous category information should be used. The 500 breakpoint of the AQI is used to calculate the
+AQI values in the hazardous category (AQI values above 300), with AQI values above 500 based on the
+same linear slope as the AQI values between 301 and 500.
+
+Q. What is the U.S. AQI and how is it different than some AQIs I see reported?
+A. The U.S. AQI is the official Air Quality Index for the United States. The U.S. AQI was developed to
+provide a uniform scale for communicating air quality -- so no matter where you are in the country, you
+know what the AQI categories mean. The U.S. AQI is what you see on AirNow.gov, the AirNow app, and
+on the AirNow Fire and Smoke Map, on most state and local air quality websites, and in many private
+applications.
+
+EPA reassesses the U.S. AQI for specific pollutants as new science becomes available, always doing so
+through a transparent process that gives the public the opportunity to comment. The Agency does not
+assess private air quality indexes; please contact the provider if you have questions about what those
+indexes are based on.
+
+Q. If the AQI information reported in the local media is incorrect, what should I
+do?
+A. Common problems with AQI information reporting in the local media include reporting inaccurate
+cautionary statements and health information, reporting data values that are wrong or reporting
+pollutant concentrations instead of the AQI. Another frequent mistake is to report inconsistent AQI
+colors or terminology, as well as incorrect pollutant names. To minimize potential problems establish a
+good working relationship with your local media and educate them about how using the correct
+information can be helpful to their audiences, and how misleading or erroneous AQI information can be
+harmful. If you spot a significant error in a weathercast or news story, don’t wait until the next day to
+request a correction. Reach out quickly.
+
+Q. Why doesn't the U.S. AQI cover toxic air pollutants or air toxics?
+A. While the AQI is an excellent indicator of the air quality resulting from ozone, particulate matter,
+carbon monoxide, nitrogen dioxide and sulfur dioxide, it does not directly include health implications
+from all air pollutants such as air toxics. Levels of air toxics that would pose adverse health effects
+generally do not occur episodically on a regional scale, like ozone and particulate matter; therefore, air
+toxics are monitored and evaluated differently. For information on air toxics and risk, visit EPA’s Air
+Toxics Screening Assessment. For information on air toxics monitoring, visit:
+https://www.epa.gov/amtic/air-toxics-ambient-monitoring
+
+
+23
+
+=== PAGINA 29 ===
+Q. Why does AirNow provide AQI forecasts only for ozone and particle pollution?
+A. AQI reporting is required for all criteria pollutants when they have an index value of 50 or above, but
+forecasting the AQI is not required. Most cities forecast for ozone and particle pollution as these
+pollutants are the major sources of unhealthy air quality around 99% of the time. However, several cities
+forecast for all five pollutants: ground-level ozone, particle pollution, carbon monoxide, sulfur dioxide,
+and nitrogen dioxide.
+
+Q. What is the NowCast and what does it have to do with the AQI?
+A. The NowCast is EPA’s method for relating short-term (less than 24-hour) data to the AQI for the
+purposes of real-time reporting. The AQI is based on daily air quality summaries, specifically daily
+maximums or daily averages. It is not valid to use shorter-term (e.g., hourly) data to calculate an AQI
+value. However, the real-time reporting of the NowCast requires shorter-term data to caution people in
+time for them to reduce their 24-hour exposure. Learn more about the NowCast.
+
+Q. When calculating the AQI for ozone, which 8-hour periods should be used?
+A. When the ozone standard was revised in 2015, the data handling for the daily max 8-hour average
+was modified to use only the 8-hour averages starting at 7am. This was done to avoid double counting
+an exceedance from a single, short-term episode that spans the nighttime hours of the first day into the
+early hours of the second day. The daily maximum 8-hour average used for computing the AQI value is
+the same daily maximum 8-hour average described in the data handling for the revised ozone standard
+(i.e., it is based on the 17 consecutive moving 8-hour periods in each day, beginning with the 8-hour
+period from 7am to 3pm, and ending with the 8-hour period from 11pm to 7am).
+
+
+
+
+24
+
+=== PAGINA 30 ===
+Q. Should I use particulate matter or particle pollution when speaking with the
+public?
+A. Based on focus group testing by EPA, people better understand and prefer the term “particle
+pollution” than "particulate matter."
+
+Q. Why are some people using low-cost, compact sensors to measure air quality?
+A. Many citizens are interested in learning more about local air quality where they live, work, and play.
+Low-cost, compact, sometimes-portable sensors are becoming more popular for collecting real-time air
+quality data. EPA scientists created the Air Sensor Toolbox for Citizen Scientists to provide information
+about sensor performance and how to interpret the data from sensors.
+
+Learn more at http://www.epa.gov/air-research/air-sensor-toolbox-citizen-scientists.
+
+In addition, EPA and the U.S. Forest Service use data from sensors on the AirNow Fire and Smoke Map.
+Before sensor data appears on the map, an EPA scientific correction equation is applied so sensor data
+can be compared to data from permanent monitors.
+
+Q. Can I apply the AQI colors to realtime data from low-cost air quality sensors?
+A. As a general matter, EPA does not advise applying AQI values to realtime sensor data, especially 1-
+minute readings. Health studies do not tell us what a single minute of exposure to a pollutant may
+mean. The AQI is based on EPA’s national air quality standards, which come from health studies that
+show the effects of longer exposures.
+
+Q. What is the ozone monitoring season for each state?
+A. EPA requires ozone monitoring during the time of year when weather conditions are most favorable
+for ozone formation. This season varies by state. In some states with warmer climates, monitoring is
+required year-round. In states where the climate is colder, ozone monitoring is required for as little as
+five months during the summertime. You can find a list of ozone monitoring seasons by state in 40 CFR
+Part 58 Appendix D, Table D-3.
+
+
+
+
+25
+
+=== PAGINA 31 ===
+VII. ADDITIONAL RESOURCES
+AQI Final Rule 64 FR 42530, August 4 1999: https://www.airnow.gov/publications/air-quality-index/air-
+quality-index-reporting-final-rule/
+
+List of monitoring season by state in 40 CFR Part 58 Appendix D, Table D-3:
+https://www.ecfr.gov/current/title-40/chapter-I/subchapter-C/part-58/appendix-
+Appendix%20D%20to%20Part%2058
+
+AirNow’s Wildfires Page: https://www.airnow.gov/wildfires/
+
+Air quality outreach materials in Spanish: https://www.airnow.gov/spanish-resources/
+
+Basic information on the AQI in Spanish: https://www.airnow.gov/aqi/aqi-basics-in-spanish/
+
+EPA’s Air Quality Flag Program: https://www.airnow.gov/air-quality-flag-program/
+
+Air Sensor Toolbox for Citizen Scientists: http://www.epa.gov/air-research/air-sensor-toolbox-citizen-
+scientists
+
+EPA’s Air Toxics Screening Assessment: https://www.epa.gov/AirToxScreen
+
+
+
+
+26
+
+=== PAGINA 32 ===
+United States              Office of Air Quality Planning and   EPA-454/B-24-002
+Environmental Protection   Standards                            May 2024
+Agency                     Air Quality Assessment Division
+                           Research Triangle Park, NC
+

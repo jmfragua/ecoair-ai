@@ -1,0 +1,733 @@
+# Resolucion 2254 de 2017 (MinAmbiente, Colombia)
+Texto obtenido por OCR (reconocimiento optico) del PDF escaneado res_2254_2017.pdf. Puede tener errores de tildes y signos (por ejemplo 'Dafina' por 'Dañina' o 'Tabla No.' mal leida). Para cifras de las tablas, usar docs/normas/normas_aire.md, que se verifico contra la imagen de la pagina. Citar como: Res. 2254/2017, hoja N.
+
+=== PAGINA 1 ===
+REPUBLICA DE COLOMBIA
+
+Libertad y Orden
+
+MINISTERIO DE AMBIENTE Y DESARROLLO SOSTENIBLE
+
+RESOLUCION No._¢
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+EL MINISTRO DE AMBIENTE Y DESARROLLO SOSTENIBLE
+
+En ejercicio de sus funciones legales en especial las conferidas por los numerales 10, 11 y 14 del
+articulo 5 de la Ley 99 de 1993 y los articulos 2.2.5.1.2.4., 2.2.5.1.2.8, 2.2.5.1.2.10, 2.2.5.1.6.1
+literales b), j) y k) y en desarrollo del articulo 2.2.5.1.9.1 del Decreto 1076 de 2015 y,
+
+CONSIDERANDO:
+
+Que los articulos 79 y 80 de la Constitucién Politica consagran el derecho colectivo a gozar de un
+ambiente sano y el deber del Estado de proteger la diversidad e integridad del ambiente, planificar el
+manejo y aprovechamiento de los recursos naturales a fin de garantizar su desarrollo sostenible, su
+conservacion, restauracion o sustitucion y prevenir los factores de deterioro ambiental.
+
+Que conforme al literal a) del articulo 8 del Decreto- Ley 2811 de 1974, la contaminacién del aire es
+uno de los factores que deterioran el ambiente.
+
+Que los numerales 10, 11 y 14 del articulo 5 de la ley 99 de 1993 establecen como funciones del
+Ministerio de Ambiente y Desarrollo Sostenible determinar las normas ambientales minimas y las
+regulaciones de caracter general sobre medio ambiente a las que deberan sujetarse los centros
+urbanos y asentamientos humanos y en general todo servicio 0 actividad que pueda generar directa o
+indirectamente dafios ambientales; dictar regulaciones de caracter general tendientes a controlar y
+reducir la contaminacion geosférica en todo el territorio nacional; y, definir y regular los instrumentos
+administrativos y mecanismos necesarios para la prevencién y el control de los factores de deterioro
+ambiental.
+
+Que los articulos 2.2.5.1.2.4., 2.2.5.1.2.8. y 2.2.5.1.2.10. y literales b), j) y k) del articulo 2.2..5.1.6.1
+del Decreto 1076 de 2015, establecen la competencia del Ministerio de Ambiente y Desarrollo
+Sostenible para establecer la norma de calidad del aire o inmision, los niveles periddicos de inmision,
+establecer las normas de prevencidn y control de la contaminacién atmosférica proveniente de
+actividades mineras, industriales y de transporte, y, en general, de la ocasionada por toda actividad o
+servicio, publico o privado y ) regular los métodos de observacion y seguimiento constante, medici6n,
+evaluacion y control de los fendmenos de contaminacién del aire asi como los programas nacionales
+necesarios para la prevencidn y el control del deterioro de la calidad del aire respectivamente.
+
+Que en el afio 2010 el Ministerio de Ambiente y Desarrollo Sostenible adopto la Politica de Prevencion
+y Control de la Contaminacién del Aire - PPCCA la cual tiene como objetivo “Impulsar la gestion de la
+calidad del aire en el corto, mediano y largo plazo, con el fin de alcanzar los niveles de calidad del aire
+adecuados para proteger la salud y el bienestar humano, en el marco del desarrollo sostenible. El
+objetivo 1 de esta Politica trata acerca de “Regular los contaminantes de la atmésfera que pueden
+
+
+=== PAGINA 2 ===
+Resolucién No. del 0 1 017 Hoja No.2
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+afectar la salud humana y el bienestar de la poblacidn, fijando niveles adecuados para proteger la salud
+de la poblacién y el bienestar humano”,
+
+Que de acuerdo con la Organizacion Mundial de la Salud, se considera que el aire limpio es un requisito
+basico de la salud y el bienestar humano. Sin embargo, su contaminacion sigue representando una
+amenaza importante para la salud en todo el mundo.
+
+Que en este contexto, se requiere definir una nueva norma de calidad del aire que incorpore un ajuste
+progresivo de los niveles maximos permisibles de contaminantes, incluir nuevos contaminantes y definir
+elementos técnicos integrales para mejorar la gestion de la calidad del aire.
+
+En mérito de lo expuesto,
+
+RESUELVE:
+
+CAPITULO |
+
+OBJETO, AMBITO DE APLICACION Y NIVELES MAXIMOS PERMISIBLES
+DE CONTAMINANTES EN EL AIRE
+
+Articulo 1. Objeto y ambito de aplicacion. La presente resolucién establece la norma de calidad del
+aire 0 nivel de inmisién y adopta disposiciones para la gestion del recurso aire en el territorio nacional,
+con el objeto de garantizar un ambiente sano y minimizar el riesgo sobre la salud humana que pueda
+ser causado por la exposicion a los contaminantes en la atmésfera.
+
+Articulo 2. Niveles maximos permisibles de contaminantes criterio. En la Tabla No. 1 se establecen
+los niveles maximos permisibles a condiciones de referencia para contaminantes criterio que regiran a
+partir del primero de enero del afio 2018:
+
+Tabla No.1. Niveles maximos permisibles de contaminantes criterio en el aire
+
+Contaminante | Nivel maximo en Tiempo de Exposicién
+(g/m)
+50 Anual
+anti 100 24 horas
+25 Anual
+PM25 50 24 horas
+50 24 horas
+aa 100 1 hora
+60 Anual
+NOz 200 1 hora
+O3 100 8 horas
+5.000 8 horas
+a 35.000 1 hora
+
+Paragrafo 1: A partir del 1 de julio de 2018, los niveles maximos permisibles de PM1o y PMz5 para un
+tiempo de exposicion 24 horas seran de 75 jug/m3 y 37 g/m’ respectivamente.
+
+Paragrafo 2. Para verificar el cumplimiento de los niveles maximos permisibles establecidos en la Tabla
+\ 1, la concentracién de los contaminantes del aire debera evaluarse por cada punto de monitoreo. El
+
+
+=== PAGINA 3 ===
+Resolucion No. f) del { | Hoja No.3
+é
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+promedio de concentraciones de diferentes puntos de monitoreo no sera valido para evaluar el
+cumplimiento de dichos niveles.
+
+Paragrafo 3. Las autoridades ambientales competentes deben realizar las mediciones de los
+contaminantes criterio establecidos en el presente articulo, de acuerdo con los procedimientos,
+frecuencias y metodologias establecidas en el Protocolo para el Monitoreo y Seguimiento de la Calidad
+del Aire.
+
+Paragrafo 4. Con el objetivo de identificar fuentes de emisi6n, soportar investigaciones en salud
+ambiental y sus efectos sobre el clima, las autoridades ambientales competentes podran monitorear las
+concentraciones en la atmdsfera de carbono negro y otros contaminantes climaticos. Los resultados
+que se generen por parte de las autoridades ambientales deberan reportarse al Subsistema de
+Informacién sobre Calidad del Aire (SISAIRE).
+
+Articulo 3. Niveles Maximos Permisibles a 2030. En la Tabla No. 2 se establecen los niveles maximos
+permisibles a condiciones de referencia para contaminantes criterio que regiran a partir del 1 de enero
+del afio 2030:
+
+Tabla No.2. Niveles maximos permisibles de contaminantes en el aire para el afio 2030
+
+| Contaminante Hive oy remit Tiempo de Exposicion
+| PMi0 30 Anual
+[| PMs | 15 Anual
+
+SO2 20 24 horas
+
+NO2 40 Anual
+
+Lo dispuesto en los paragrafos 1 y 2 del articulo 2 sera aplicable al presente articulo.
+
+Paragrafo. Para los contaminantes y tiempos de exposicion que no se encuentren en la Tabla No. 2 se
+mantendran los establecidos en la Tabla No. 1 de la presente resolucién.
+
+Articulo 4. Niveles maximos permisibles de contaminantes t6xicos del aire. En la Tabla No. 3 se
+establecen los niveles maximos permisibles a condiciones de referencia para contaminantes toxicos
+del aire, teniendo en cuenta sus efectos adversos en la salud humana y el ambiente. Estos niveles
+regiran a partir del 1 de enero de 2018.
+
+Tabla No.3. Niveles maximos permisibles de contaminantes toxicos en el aire
+
+F Fi Nivel Maximo Tiempo de
+See aera Permisible (g/m?) | Exposicion
+Benceno 5 Anual
+
+Plomo y sus compuestos 0,5 Anual
+Cadmio | 0,005 Anual
+Mercurio Inorganico (vapores) 1 Anual
+¥eluens 260 1 semana
+1000 30 minutos
+Niquel y sus compuestos 0,180 Anual
+
+Hidrocarburos Aromaticos Policiclicos expresados como
+Benzo (a) pireno
+
+0,001 Anual
+
+ss
+i)
+
+
+=== PAGINA 4 ===
+Resolucion No. del Hoja No.4
+
+(— “Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+Paragrafo. Las Autoridades Ambientales competentes que de acuerdo con las actividades que se
+desarrollen en el area de su jurisdiccion, cuenten con evidencias de generacin de emisiones de alguno
+0 varios de los contaminantes toxicos de que trata este articulo en areas pobladas, deberan realizar
+una campafia de monitoreo preliminar de conformidad con lo establecido en el Protocolo para el
+Monitoreo y Seguimiento de la Calidad del Aire. Si realizada dicha campafia se detectan valores que
+superan los niveles maximos permisibles establecidos en la Tabla 3, se debera implementar su
+monitoreo permanente.
+
+Articulo 5. Disefio, re-disefio y operacién de Sistemas de Vigilancia de la Calidad del Aire -
+SVCA. Todo SVCA fijo que opere en el territorio nacional debera contar con un documento de disefio
+0 redisefio y de operacién de acuerdo con lo establecido en el Protocolo para el Monitoreo y
+Seguimiento de la Calidad del Aire.
+
+Articulo 6. Monitoreo de la calidad del aire realizado por las Autoridades Ambientales
+Competentes. Para el monitoreo y seguimiento de la calidad del aire, las autoridades ambientales
+competentes deberan cumplir con lo establecido en el Protocolo para el Monitoreo y Seguimiento de la
+Calidad del Aire.
+
+Paragrafo 1. Con base en la informacion generada por los SVCA, las autoridades ambientales deberan
+elaborar o modificar los Programas de Reduccidn de la Contaminacién del Aire.
+
+Paragrafo 2. Cuando las concentraciones de contaminantes del aire excedan los niveles maximos
+permisibles definidos en las Tablas 1, 2 0 3 seglin corresponda, las autoridades ambientales
+competentes informaran a las autoridades de salud y demas organismos responsables de la gestion de
+riesgo para que adopten las medidas a que haya lugar, entre ellas, la divulgacién de medidas para
+reducir la exposicion.
+
+Paragrafo 3. Las autoridades ambientales que usen modelos de dispersion de contaminantes deberan
+basarse en los modelos recomendados por la Agencia de Proteccién Ambiental de los Estados Unidos
+(US-EPA) mientras el Ministerio de Ambiente y Desarrollo Sostenible adopta la Guia Nacional de
+Modelizacion de Calidad del Aire.
+
+Articulo 7. Monitoreo en tiempo real de contaminantes del aire en puntos criticos. A partir del 4
+de enero del 2018, las autoridades ambientales competentes deberan incorporar gradualmente equipos
+automaticos que permitan el monitoreo en tiempo real de los contaminantes de interés en aquellas
+Zonas identificadas como puntos criticos o de alta concentracion, definiendo el 31 de diciembre de 2022
+como fecha limite para esta modernizacion de equipos. Lo anterior, sin perjuicio del uso de tecnologias
+manuales con fines de caracterizacion de material particulado.
+
+Articulo 8. Monitoreo y seguimiento de la calidad del aire por parte de proyectos, obras o
+actividades. El monitoreo y seguimiento de la calidad del aire por parte de los proyectos, obras o
+actividades, debera realizarse minimo en los siguientes casos:
+
+i. Como insumo para la elaboracién de estudios de impacto ambiental en el marco del
+licenciamiento ambiental.
+
+ii. | Como actividad periddica o fija de monitoreo establecida en el plan de manejo ambiental.
+
+iii. | Ordenada por las autoridades ambientales competentes mediante acto administrativo cuando
+estas adviertan que los proyectos, obras o actividades que no sean objeto de licenciamiento
+ambiental, generan impactos negativos en la calidad del aire.
+
+Paragrafo. El monitoreo debera realizarse de acuerdo con los métodos, frecuencias y demas
+\ lineamientos contenidos en el Protocolo para el Monitoreo y Seguimiento de la Calidad del Aire.
+
+/
+
+
+=== PAGINA 5 ===
+Hoja No.5
+
+Resolucion No. y del U
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+CAPITULO II
+
+NIVELES DE PREVENCION, ALERTA O EMERGENCIA
+
+Articulo 9, Declaratoria de los niveles de prevencion, alerta o emergencia. La declaratoria de los
+niveles de prevencion, alerta o emergencia que corresponde a las autoridades ambientales
+competentes con el fin de tomar medidas integrales de control de la contaminacion y de reduccion de
+la exposicion de los receptores de interés, debera hacerse de manera coordinada con los organismos
+responsables de la gestion de riesgo a nivel departamental, municipal y distrital.
+
+Articulo 10. Rangos de concentracion para la declaratoria de los niveles de Prevencion, Alerta o
+Emergencia. Los rangos de concentracion y el tiempo de exposicién bajo la cuales se deben declarar
+por parte de las autoridades ambientales competentes los niveles de prevencion, alerta o emergencia,
+se establecen en la Tabla No. 4 de la presente resolucion.
+
+Tabla No. 4. Concentraciones (|ug/m’) para los Niveles de Prevencién, Alerta o Emergencia
+
+Contaminante | Tiempo de exposicion [ Prevencion Alerta Emergencia*
+PMio 24 horas 155 - 254 255 - 354 2355
+PM25” 24 horas 38 - 55 56 - 150 2151
+03 8 horas 139 - 167 168 - 207 2208
+SO2 1 hora 198 - 486 487 - 797 2798
+NO2 1 hora 190 - 677 678 - 1221 21222
+co 8 horas 10820 - 14254 | 14255-17688 | 217689
+
+*Aplicable a concentraciones mayores 0 iguales a las establecidas en la columna de emergencia.
+“Las declaraciones de niveles de Prevencién, Alerta o Emergencia por PMzsseran aplicables a partir del 1 de julio de
+2018.
+
+Paragrafo. Cuando en un mismo punto y para el mismo periodo se realice la medicion de varios
+contaminantes, prevaleceran las concentraciones mas criticas para declarar alguno de los niveles
+establecidos en la Tabla 4.
+
+Articulo 11. Calculo de los niveles de prevencion, alerta o emergencia. El calculo para la
+declaratoria de alguno de los niveles se realizara usando los registros de la operacién de Sistemas de
+Vigilancia de la Calidad del Aire (constatacién) y/o modelos de prondstico de calidad del aire
+(prondstico) segun se indica a continuacion:
+
+e Por constatacion: A través del uso de medias moviles de 24 horas de concentracion del
+contaminante de interés para el respectivo periodo de exposicién (si los monitoreos son de tipo
+automatico) o el valor de 24 horas de la concentracion del contaminante (en casos de utilizar
+monitoreos manuales).
+
+En los casos en que mediante el analisis de medias moviles en equipos de monitoreo automatico,
+se reporte un valor dentro de alguno de los rangos definidos para los niveles de prevencidn, alerta
+0 emergencia, a dicho contaminante se le debera realizar un seguimiento horario. Si después de
+las 48 horas seguidas al dato reportado, se encuentran valores promedio (medias moviles) dentro
+del mismo rango en mas del 75% del tiempo, se debera realizar la declaratoria del nivel
+correspondiente.
+
+
+=== PAGINA 6 ===
+Resolucién No. del t Hoja No.6
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+En los casos en los que mediante el analisis de promedios en equipos de monitoreo manual, se
+reporte un valor dentro de alguno de los rangos definidos para los niveles de prevencion, alerta o
+emergencia, a dicho contaminante se le debera realizar un seguimiento diario. Si al obtener el
+resultado de dos datos consecutivos adicionales se encuentran valores dentro del rango, se declara
+el nivel que corresponda.
+
+e Por prondéstico: Se podra declarar un nivel con anticipacion cuando el modelo de prondstico
+indique dicha condicién (prevencidn, alerta o emergencia) teniendo en cuenta la representatividad
+espacial del estado excepcional. El modelo de prondstico como minimo debera estar calibrado y
+haberse probado como herramienta valida de prondstico bajo condiciones meteoroldgicas
+especificas.
+
+Paragrafo 1. Las declaraciones de los niveles, debera tener en cuenta los datos del estado de la calidad
+del aire y meteorolégicos mas actualizados que estén disponibles. Esta decision debera estar
+acompafiada de un informe técnico de soporte.
+
+Paragrafo 2. La informacion para la declaracién de los niveles puede generarse mediante el uso de
+estaciones fijas 0 indicativas de monitoreo, siempre y cuando las mediciones se encuentren dentro del
+area de influencia del evento y sean representativas del mismo, cumplan con porcentaje de datos
+validos para el periodo analizado, se asegure la certidumbre de la informacion y las estaciones de
+monitoreo hayan sido ubicadas siguiendo los criterios del Protocolo para el Monitoreo y Seguimiento
+de la Calidad del Aire.
+
+Articulo 12. Representatividad espacial de los niveles de prevencion, alerta o emergencia. La
+declaratoria del respectivo nivel de prevencion, alerta o emergencia en la totalidad de un municipio o
+centro urbano se realizara con base en la informacion que arroje como minimo el 50% del total de las
+estaciones de monitoreo, fijas 0 indicativas, instaladas para el monitoreo del respectivo contaminante.
+
+Para el caso de puntos de monitoreo que de forma individual presenten condiciones para la declaratoria
+de alguno de los niveles de prevencién, alerta o emergencia, estos podran declararse con base en los
+datos propios del punto de monitoreo.
+
+ARTICULO 13. Finalizacion o re-categorizacion de niveles de prevencion, alerta o emergencia.
+Para declarar la finalizacion del estado excepcional se debera analizar rigurosamente la serie de datos
+durante el evento de contaminacion. Al reportarse un valor de medias moviles del contaminante de
+interés que después de la declaratoria del nivel que corresponda, se encuentre por debajo del limite
+inferior del rango previsto para dicho nivel, se debera realizar el conteo del numero de datos horarios
+que presentan la misma condicion (estar por debajo del limite inferior respectivo). Si después de 48
+horas seguidas al dato reportado en mas del 75% del tiempo, se encuentran valores promedio (medias
+modviles) por debajo del limite inferior, se procedera a dar por finalizado el estado de excepcidn o re-
+categorizarlo al nivel que corresponda.
+
+En el caso del ozono se declarara la finalizacion del estado excepcional si después de 4 horas seguidas
+el dato reportado en mas del 75% del tiempo se encuentran valores promedio (medias mdviles) por
+debajo del limite inferior, se procedera a dar por finalizado el evento o recategorizarlo.
+
+Paragrafo. El andlisis anterior también podra realizarse mediante el uso de modelos de dispersion
+
+siempre que la certidumbre del modelo sea superior al 80% entre lo medido y lo simulado.
+
+Articulo 14. Coordinacion institucional para la atencién de los niveles de prevencion, alerta o
+emergencia. Las acciones que deban desarrollarse para el manejo de estos estados excepcionales
+
+
+=== PAGINA 7 ===
+AALS
+
+Resolucion No. del
+
+Lo J
+
+Hoja No.7
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+deberan implementarse de manera coordinada con todas las entidades responsables de la gestion del
+riesgo a nivel departamental, municipal y distrital sin perjuicio del cumplimiento de las competencias
+especificas atribuidas a cada una de ellas, asi como otras entidades o instituciones que por la
+naturaleza de sus funciones o de su relacién con la problematica, asi lo ameriten.
+
+CAPITULO III
+AREAS FUENTE DE CONTAMINACION
+
+Articulo 15. Elaboracion de los Programas de Reduccion de la Contaminacion del Aire. Para la
+elaboracién de los programas de reduccién de la contaminacion, las autoridades ambientales
+competentes en el area de su jurisdiccin, que de acuerdo con las mediciones de calidad del aire hayan
+clasificado una zona de su jurisdiccién como area-fuente de contaminacién de acuerdo con lo
+establecido en el articulo 2.2.5.1.10.4 del Decreto 1076 de 2015, deberan identificar el contaminante o
+contaminantes que exceden la norma de calidad del aire.
+
+En las zonas en donde se excedan las normas de calidad del aire, la autoridad ambiental competente,
+debera elaborar un programa de reduccién de la contaminacidn, identificando acciones y medidas que
+permitan reducir los niveles de concentracién de los contaminantes a niveles por debajo de los maximos
+establecidos. Para la elaboracion e implementacin de dichos programas, las autoridades ambientales
+competentes deberan garantizar la participacion de representantes de la sociedad civil, autoridades
+territoriales, sector empresarial y otras entidades 0 instituciones que por la naturaleza de sus funciones
+o de su relacion con la problematica, asi lo ameriten. La autoridad ambiental competente previo analisis
+de la problematica, debera considerar para su aplicacion acciones y medidas tales como:
+
+- Renovacidn del parque automotor, priorizando la incorporacién de tecnologias de cero y bajas
+emisiones.
+
+- Reforzamiento de los programas de seguimiento al cumplimiento de la normativa para fuentes fijas
+y moviles.
+
+—  Mejoramiento y modernizacion de la infraestructura de monitoreo de los contaminantes del aire
+(emision — inmision)
+
+— Adopcidn de planes de movilidad.
+
+—  Definicion de Programas de estimulos para el uso y la adquisicion de vehiculos eléctricos
+
+-  Definicion de Programas de mantenimiento preventivo vehicular.
+
+-  Mejoramiento o implementacién de sistemas de control de emisiones en proyectos, obras o
+actividades.
+
+- Control de la resuspensi6n de particulas.
+
+-  Incorporacion de tecnologias mas limpias en las industrias.
+
+- Mantenimiento y mejoramiento de vias.
+
+-  Definicion de Programas de mejoramiento del espacio publico.
+
+- _ Integracidn de politicas de desarrollo urbano, transporte y calidad del aire.
+
+- Establecimiento de directrices y determinantes ambientales para la planeacion del territorio,
+teniendo en cuenta el comportamiento y dispersin de los contaminantes del aire
+
+-  Fortalecimiento de la educacion ambiental, investigacion y desarrollo tecnoldgico.
+
+-  Prevencidn a la poblacion respecto a la exposicion a niveles altos de contaminacion.
+
+- Cobertura y reforestacion de areas afectadas por la erosion.
+
+-—  Ampliacion en cobertura de areas verdes.
+
+- Programas de fiscalizacion y vigilancia.
+
+- Las demas que estime convenientes.
+
+Articulo 16. Metodologia de calculo para la clasificacion de las clases de area fuente de
+\. contaminacién del aire. Para la clasificacion de areas fuente de contaminacién del aire de que trata
+
+
+=== PAGINA 8 ===
+Resolucion No.
+
+{
+
+del ; Hoja No.8
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+
+disp
+
+i. Definir el afio calendario a evaluar.
+ii. Calcular las medias moviles (promedios corridos) de tres (3) afios de concentracion para cada dia
+del afio calendario en evaluacion.
+iii. Contar el numero de dias que presentan excedencias del nivel maximo permisible anual del
+contaminante.
+iv. Calcular el porcentaje de excedencias de la norma anual, relacionando el numero de dias con
+
+osiciones”
+
+el articulo 2.2.5.1.10.4 del Decreto 1076 de 2015, se utilizaran medias mdviles del contaminante
+evaluado que se calculan con base en las mediciones diarias, de la siguiente forma:
+
+excedencias con respecto al total de dias de muestreo.
+v. Comparar los resultados con respecto a las clases de area fuente definidas en el Decreto 1076 de
+
+2015.
+
+vi. Determinar el tipo de area fuente.
+
+Articulo 17. Delimitacién de las areas fuente de contaminaci6n del aire. Las areas fuente de
+contaminacion del aire deberan ser delimitadas individualmente por las autoridades ambientales
+competentes, con base en modelizacién de contaminantes y las areas de cobertura de cada punto de
+monitoreo definidas en el disefio del SVCA, utilizando la metodologia y algoritmos matematicos que
+representen el fendmeno a modelizar.
+
+CAPITULO IV
+INDICE DE CALIDAD DEL AIRE
+
+Articulo 18. indice de Calidad del Aire - ICA. El ICA es un valor adimensional para reportar el estado
+de la calidad del aire en funcién de un codigo de colores al que estan asociadas unos efectos generales
+que deben ser tenidos en cuenta para reducir la exposicion a altas concentraciones por parte de la
+poblacion. Este indice también sera utilizado en el prondstico de la calidad del aire.
+
+Articulo 19. Descripcion general del ICA. La descripcién general del indice de calidad del aire se
+establece en la Tabla No. 5.
+
+Tabla No. 5. Descripcién general del indice de Calidad del Aire
+
+Estado de la
+Rango Color éalidad del alr Efectos
+0-50 Verde Buena La contaminacién atmosférica supone un riesgo bajo |
+para la salud.
+51-100 Amarillo Aceptable Posibles sintomas respiratorios en grupos poblacionales
+sensibles. |
+Los grupos poblaciones sensibles pueden presentar
+efectos sobre la salud.
+1) Ozono Troposférico: Las personas con
+Pr enfermedades pulmonares, nifios, adultos mayores y las
+101-150 | Naranja erie que constantemente realizan actividad fisica al aire libre,
+sensibles deben reducir su exposicion a los contaminantes del
+aire.
+2) Material Particulado: Las personas con enfermedad
+cardiaca o pulmonar, los adultos mayores y los nifios se
+consideran sensibles y por lo tanto en mayor riesgo.
+" Todos los individuos pueden comenzar a experimentar
+151 - 200 Rojo ee la efectos sobre la salud. Los grupos sensibles pueden
+= experimentar efectos mas graves para la salud.
+
+
+=== PAGINA 9 ===
+Hoja No.9
+
+Resolucién No. del
+
+‘om J
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+Estado de la
+calidad del aire
+Muy Daina para | Estado de alerta que significa que todos pueden
+la salud experimentar efectos mas graves para la salud.
+Advertencia_ sanitaria. Toda la poblacién puede
+presentar efectos adversos graves en la salud humana
+y estan propensos a verse afectados por graves efectos
+sobre la salud.
+
+Rango | Color Efectos
+
+201 - 300 | Purpura
+
+301-500 | Marron Peligroso
+
+Articulo 20. Puntos de corte del ICA. En la Tabla No.6 se presentan los puntos de corte del indice de
+calidad del aire respecto a los contaminantes criterio.
+
+Tabla No. 6. Puntos de corte del ICA
+indice de Calidad del Aire Puntos de corte del ICA
+
+PMio PM25 co $02 NO2 Os O3
+Categoria pgim3 pgim3 pgim? | pgim3 | pgim? | pgim> yg/m?
+24horas | 24horas | 8horas | thora | 1 hora | 8 horas | 4 hora‘)
+
+ICA Color
+
+0-50 Verde Buena 0-12 0-5094 | 0-93 |0-100} 0-106 | _........
+
+5095- | 94- | 101- | 107-
+10819 197 189 438. | ce
+
+51-100 | Amarillo} Aceptable
+
+Dafina ala
+salud de
+Grupos
+
+Sensibles
+
+10820 -
+14254
+
+198- | 190-
+486 677
+
+245 -
+323
+
+101 - 150 | Naranja 155-254 | 38-55 139 - 167
+
+14255 —
+17688
+
+487- | 678- 324 -
+
+Dafinaala
+797 | 1221 | 168-207} “aoy
+
+salud 56 - 150
+
+151-200} Rojo 255 - 354
+
+17689- | 798- | 1222-
+34862 1583 | 2349
+
+402 -
+794
+
+Muy dafiina a
+
+201 - 300 | Purpura iaealud
+
+355-424 | 151-250 208 - 393
+
+34863- | 1584- | 2350-
+57703 | 2629 | 3853
+
+795 -
+
+301 - 500 | Marron 1185
+
+Peligrosa 425-604 | 251-500 394(2)
+
+‘ En general, se requiere que en todas la zonas de monitoreo se reporte el ICA de ozono de 8 horas. Sin embargo, hay un pequefio numero de areas
+donde un ICA basado en valores de ozono de 1 hora seria mas precautorio'. En estos casos, ademas de calcular el valor del indice de ozono de 8 horas,
+se debe calcular ICA de ozono de 1 hora y reportar el mas alto de los dos.
+
+(2 El ICA de ozono de 8 horas no sera calculado para concentraciones superiores a 394 g/m? Para valores superiores se realiza unicamente el calculo de
+ICA de ozono para 1 hora,
+
+Articulo 21. Calculo del ICA. El ICA sera calculado a partir de la siguiente ecuacion:
+
+Taito ~ Ihajo
+
+(Ay = Bit = PCoajo
+
+x G = PCrajo) + Ihajo
+En donde:
+
+ICA p = Indice de Calidad del Aire para el contaminante p.
+C p = Concentracién medida para el contaminante p.
+
+PC atto= Punto de corte mayor 0 igual a C »
+PC bajo = Punto de corte menor 0 igual a C p
+
+| atto = Valor del ICA correspondiente al PC ato
+| bajo = Valor del ICA correspondiente al PC bajo
+
+' Estaciones ubicadas en zonas de alto trafico vehicular en épocas de intensa radiacion solar.
+
+=== PAGINA 10 ===
+Resolucién No. del . Hoja No.10
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+Paragrafo 1. En el caso de estaciones que monitorean mas de un contaminant, el calculo del ICA sera
+realizado para cada uno de los contaminantes medidos en el punto de monitoreo. Los valores de los
+ICA deberan ser reportados en los informes periddicos de calidad del aire y la pagina web de la
+autoridad ambiental competente, con énfasis en el mayor valor obtenido del calculo de cada uno de los
+contaminantes.
+
+Paragrafo 2. Si la tecnologia de monitoreo es manual, se debe realizar su reporte en una resolucion
+temporal diaria. Si la tecnologia de monitoreo es en tiempo real, se debe realizar el reporte diario yel
+reporte del ICA de los promedios moviles de acuerdo con los tiempos de exposicion definidos.
+
+Paragrafo 3. El ICA movil corresponde al valor obtenido usando como base la concentracién promedio
+corrida para el tiempo de exposicion que corresponda a cada contaminante.
+
+CAPITULO V
+SOCIALIZACION Y DIVULGACION DE RESULTADOS
+
+ARTICULO 22. Socializacion y Divulgacién de Resultados. Para lograr una efectiva comunicacion
+de la informaci6n del estado de la calidad del aire a la ciudadania, las autoridades ambientales deberan
+disefiar e implementar una estrategia de comunicacin que involucre a los diferentes usuarios de la
+informacion en coordinacién con todas las entidades responsables de la gestidn del riesgo a nivel
+departamental, municipal y distrital, sin perjuicio del cumplimiento de las competencias especificas
+atribuidas a cada una de ellas.
+
+ARTICULO 23. Informe nacional del estado de la calidad del aire. El Instituto de Hidrologia,
+Meteorologia y Estudios Ambientales - IDEAM debera realizar informes anuales del estado de la
+calidad del aire en Colombia, de acuerdo con los lineamientos que para tal fin establezca el Ministerio
+de Ambiente y Desarrollo Sostenible.
+
+ARTICULO 24. Informes del estado de la calidad del aire por parte de las autoridades
+ambientales. Las autoridades ambientales deberan elaborar y publicar como minimo informes
+mensuales, trimestrales y anuales del estado de la calidad del aire a través de sus paginas web y del
+SISAIRE, y de conformidad con lo establecido en el Protocolo para el Monitoreo y Seguimiento de la
+Calidad del Aire.
+
+Paragrafo. Cuando se presente el incumplimiento de los niveles maximos permisibles por causa de
+fenomenos meteoroldgicos atipicos 0 aumento en la concentracion de fondo o transporte global de
+contaminantes debido a eventos ambientales, las autoridades ambientales competentes, deberan
+comunicar oportunamente a la comunidad sobre estos eventos o fendmenos y deberan incluir en el
+informe de calidad del aire, la evaluacion técnica de las circunstancias reportadas.
+
+ARTICULO 25. Migracion de la informacion del estado de la calidad del aire al SISAIRE. Los SVCA
+operados por Autoridades Ambientales y los proyectos, obras o actividades que realicen monitoreo con
+una periodicidad permanente deberan migrar la informacion del estado de la calidad del aire medida al
+Subsistema de Informacion Sobre Calidad del Aire — SISAIRE, siendo responsabilidad de cada
+operador mantener su informacién actualizada y validada.
+
+ARTICULO 26. Vigencia y Derogatorias. La presente resolucin rige a partir del 1 de enero de 2018,
+fecha a partir de la cual se derogan la Resolucién 601 de 2006 y la Resolucién 610 de 2010, el Anexo
+
+
+=== PAGINA 11 ===
+¢) ,
+Resolucién No. 4 * del 01 Nov < Hoja No.11
+
+“Por la cual se adopta la norma de calidad del aire ambiente y se dictan otras
+disposiciones”
+
+2. “Procedimiento de calculo para la determinacion de area-fuente” del manual de disefio de sistemas
+de vigilancia de la calidad del aire y los numerales 7.6.7 “indice de Calidad del Aire”, 7.3.1.1. “Manejo y
+presentacion de las variables de calidad del aire” y 7.3.2.8. “Comparacién de los valores de
+concentracion con la norma’ del manual de operacion de sistemas de vigilancia de la calidad del aire
+del Protocolo para el Monitoreo y Seguimiento de la Calidad del Aire adoptado por la Resolucién 650
+de 2010 y ajustado por la Resolucion 2154 de 2010.
+
+PUBLIQUESE Y CUMPLASE
+
+J en Bogota D.C. alos
+\
+
+LUIS GILBERTO MURILLO URRUTIA
+Ministro de Ambiente y Desarrollo Sostenible
+
+Proyecto:
+Sergio Hernandez — Profesional Especializado. Direccion de Asunt¥s Ambientales, Sectorial y Urbana ea
+Reviso: .
+jauricio Gaitan Var6n - Director (E) de Asuntos Ambientales Sectorial y Urbana
+«t@laudia Fernanda Carvajal- Coordinador OAJ
+oh Luz Stella Rodriguez Jara - Abogado OAJ
+Mauricio Rueda Gomez - Abogado OAJ
+Aprobo:
+Carlos Alberto Botero ~ Viceministro de Ambiente y Desarrollo Sostenible
+Mauricio Gaitan Varén — Director (E) de Asuntos i ap y Urbana
+
+Jaime Asprilla Manyoma- Jefe Oficina Asesora Juridica
+
+11
+
+7]
+
