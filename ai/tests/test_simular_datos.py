@@ -46,6 +46,20 @@ def test_csv_existen(tmp_path):
     assert (tmp_path / "sim_events.csv").is_file()
 
 
+def test_anomalia_contextual(datos):
+    df, ev = datos
+    ctx = ev[ev.event_type == "anomalia_contextual"]
+    assert 4 <= len(ctx) <= 6
+    assert ctx.description.str.contains("caida de humedad").sum() == 2
+    for e in ctx.itertuples():
+        assert 30 <= (e.end_utc - e.start_utc).total_seconds() / 60 <= 90
+        w = df[(df.received_at >= e.start_utc) & (df.received_at < e.end_utc)]
+        assert len(w) > 0
+        assert w.pm25.between(20, 35).all()  # siempre bajo el umbral de 37
+        local = w.received_at - pd.Timedelta(hours=5)
+        assert (local.dt.hour < 5).all()  # madrugada, hora Colombia
+
+
 def test_huecos_sin_filas(datos):
     df, ev = datos
     gaps = ev[ev.event_type == "hueco_de_datos"]

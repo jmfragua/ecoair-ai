@@ -3,3 +3,5 @@ secrets.h
 .venv/
 __pycache__/
 ai/data/
+ai/models/
+docs/normas/*.pdf

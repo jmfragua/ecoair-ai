@@ -16,8 +16,14 @@ Supuestos:
 - Todo se recorta a los rangos del contrato (temperatura -40..80, humedad 0..100,
   PM 0..1000) y se redondea a 1 decimal.
 - Eventos anomalos inyectados sin solaparse (etiquetas en sim_events.csv, end_utc exclusivo):
-  pico_corto, episodio_largo, sensor_congelado, temperatura_imposible, hueco_de_datos.
-  Un hueco_de_datos es un intervalo sin filas.
+  pico_corto, episodio_largo, sensor_congelado, temperatura_imposible, hueco_de_datos,
+  anomalia_contextual. Un hueco_de_datos es un intervalo sin filas.
+- anomalia_contextual: 4 a 6 eventos de 30 a 90 min entre las 0 y las 5 h (hora Colombia)
+  con PM2.5 entre 20 y 35 ug/m3, siempre bajo el umbral de 37, en horas donde lo normal es
+  bajo; en 2 de ellos la humedad cae ademas 15 a 25 puntos. Esta DISENADO para probar la
+  deteccion por contexto (hora del dia) y no demuestra precision real.
+- Los eventos contextuales se sortean despues de todo lo demas: con la misma semilla, el
+  resto del dataset es igual al de versiones anteriores del generador.
 
 Uso:
   python simular_datos.py                      # genera ai/data/sim_*.csv
@@ -38,7 +44,11 @@ DAYS = 30
 COLOMBIA_OFFSET = pd.Timedelta(hours=5)
 VARIABLES = ["temperature", "humidity", "pm25", "pm10"]
 RANGES = {"temperature": (-40, 80), "humidity": (0, 100), "pm25": (0, 1000), "pm10": (0, 1000)}
-EVENT_TYPES = ["pico_corto", "episodio_largo", "sensor_congelado", "temperatura_imposible", "hueco_de_datos"]
+EVENT_TYPES = [
+    "pico_corto", "episodio_largo", "sensor_congelado", "temperatura_imposible", "hueco_de_datos",
+    "anomalia_contextual",
+]
+MADRUGADA_FIN_MIN = 5 * 60  # los eventos contextuales ocurren entre las 0 y las 5 h hora Colombia
 DATA_DIR = Path(__file__).resolve().parent / "data"
 BATCH_SIZE = 1000
 
@@ -51,10 +61,16 @@ def _parse_end(end):
     return ts.floor("min")
 
 
-def _place(rng, n, duration, taken, margin=30, edge=60):
-    """Elige el inicio (indice de minuto) de un evento sin solaparse con los ya colocados."""
+def _place(rng, n, duration, taken, margin=30, edge=60, allowed=None):
+    """Elige el inicio (indice de minuto) de un evento sin solaparse con los ya colocados.
+
+    allowed: mascara booleana opcional de inicios permitidos (p. ej. solo madrugada).
+    """
+    candidates = np.arange(edge, n - edge - duration)
+    if allowed is not None:
+        candidates = candidates[allowed[candidates]]
     for _ in range(1000):
-        start = int(rng.integers(edge, n - edge - duration))
+        start = int(rng.choice(candidates)) if allowed is not None else int(rng.integers(edge, n - edge - duration))
         end = start + duration
         if all(end + margin <= s or start >= e + margin for s, e in taken):
             taken.append((start, end))
@@ -147,6 +163,23 @@ def generar(seed=42, end=None, days=DAYS):
         temp_events.append((s, rng.uniform(55, 65)))
 
     ratio = np.clip(pm_ratio[day] + rng.normal(0, 0.05, n), 1.3, 2.2)
+
+    # anomalia_contextual: se sortea despues de todo lo anterior para que, con la misma
+    # semilla, el resto del dataset no cambie al anadir este tipo de evento.
+    minuto_local = local.hour.to_numpy() * 60 + local.minute.to_numpy()
+    n_ctx = int(rng.integers(4, 7))
+    for k in range(n_ctx):
+        dur = int(rng.integers(30, 91))
+        s = _place(rng, n, dur, taken, allowed=(minuto_local + dur <= MADRUGADA_FIN_MIN))
+        level = rng.uniform(20, 35)
+        pm25[s:s + dur] = np.clip(level + rng.normal(0, 1.0, dur), 20, 35)
+        desc = f"PM2.5 alrededor de {level:.1f} ug/m3 durante {dur} min en madrugada (hora Colombia)"
+        if k < 2:
+            drop = rng.uniform(15, 25)
+            humidity[s:s + dur] -= drop
+            desc += f", con caida de humedad de {drop:.1f} puntos"
+        add("anomalia_contextual", s, dur, desc)
+
     df = pd.DataFrame({
         "device_id": DEVICE_ID,
         "received_at": idx,
@@ -186,12 +219,13 @@ def generar(seed=42, end=None, days=DAYS):
     return df, events_df
 
 
-def guardar_csv(df, events_df, out_dir=DATA_DIR):
+def guardar_csv(df, events_df, out_dir=DATA_DIR, prefix="sim_"):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_dir / "sim_measurements.csv", index=False)
-    events_df.to_csv(out_dir / "sim_events.csv", index=False)
-    return out_dir / "sim_measurements.csv", out_dir / "sim_events.csv"
+    meas, events = out_dir / f"{prefix}measurements.csv", out_dir / f"{prefix}events.csv"
+    df.to_csv(meas, index=False)
+    events_df.to_csv(events, index=False)
+    return meas, events
 
 
 def insertar_db(df):
@@ -248,11 +282,13 @@ def main(argv=None):
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--end", help="fin del periodo en UTC (ISO 8601); por defecto, ahora")
     parser.add_argument("--out-dir", default=str(DATA_DIR))
+    parser.add_argument("--prefix", default="sim_",
+                        help="prefijo de los CSV (p. ej. sim_test_ para el conjunto de prueba)")
     parser.add_argument("--to-db", action="store_true", help="insertar en PostgreSQL")
     args = parser.parse_args(argv)
 
     df, events_df = generar(seed=args.seed, end=args.end)
-    paths = guardar_csv(df, events_df, args.out_dir)
+    paths = guardar_csv(df, events_df, args.out_dir, args.prefix)
     resumen(df, events_df)
     print(f"\nGuardado en {paths[0]} y {paths[1]}")
     if args.to_db:
