@@ -349,6 +349,28 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .al__msg { font-size: .83rem; color: var(--text-2); margin-top: 4px; }
 .empty { color: var(--muted); font-size: .9rem; }
 
+/* ---------- Suscripcion por correo ---------- */
+.subs { display: grid; gap: 12px; max-width: 760px; }
+.subs__row { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: .78rem; font-weight: 600; color: var(--text-2); }
+.field input, .field select {
+  font: inherit; color: var(--text); background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%;
+}
+.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: .8rem; color: var(--text-2); line-height: 1.45; }
+.consent input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--ok); }
+.subs__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.btn {
+  font: inherit; font-weight: 650; color: var(--page); background: var(--text);
+  border: 0; border-radius: 999px; padding: 10px 20px; min-height: 44px; cursor: pointer;
+}
+.btn:disabled { opacity: .55; cursor: progress; }
+.subs__msg { font-size: .85rem; color: var(--text-2); }
+.subs__msg[data-kind="ok"] { color: #8fe08f; }
+.subs__msg[data-kind="error"] { color: #ffb3b3; }
+
 /* ---------- Pie ---------- */
 .foot {
   max-width: 1440px; margin: 20px auto 0; padding-top: 16px;
@@ -406,7 +428,8 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .card { padding: 22px; }
   .card--ica, .card--rec { grid-column: span 1; }
-  .card--env, .card--chart, .card--alerts { grid-column: 1 / -1; }
+  .card--env, .card--chart, .card--alerts, .card--subs { grid-column: 1 / -1; }
+  .subs__row { grid-template-columns: 2fr 1fr; }
   .chart__svg { height: 300px; }
 }
 
@@ -425,6 +448,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .card--env .env__value { font-size: 2.8rem; }
   .card--alerts { grid-column: 3 / 5; grid-row: 3; max-height: 380px; overflow: auto; }
   .card--chart { grid-column: 1 / -1; grid-row: 4; }
+  .card--subs { grid-column: 1 / -1; grid-row: 5; }
   .gauge { max-width: 420px; }
   .gauge__value { font-size: 5.4rem; }
   .chart__svg { height: 360px; }

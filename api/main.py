@@ -3,10 +3,12 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import quote
 from typing import Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import psycopg
 from psycopg.rows import dict_row
@@ -14,6 +16,19 @@ from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
+from subscriptions import (
+    LIMITE_IP,
+    MENSAJE_GENERICO,
+    MENSAJE_LIMITE,
+    VENTANA_IP_S,
+    CONSENT_VERSION,
+    LimitadorVentana,
+    decidir_registro,
+    hash_token,
+    ip_cliente,
+    normalizar_email,
+    texto_consentimiento,
+)
 from historial import (
     BUCKET_MAX,
     BUCKET_MIN,
@@ -233,6 +248,132 @@ async def air_quality_history(
     sim = await _con_timeout(query(SQL_ES_SIMULADO, params))
     return construir_historial(device_id, filas, ahora, hours, bucket_min,
                                bool(sim and sim[0]["is_simulated"]))
+
+
+# ---------- Suscripciones a alertas por correo (requiere db/migrations/005) ----------
+# El correo de confirmacion lo envia el servicio notifier/: la API nunca usa SMTP ni guarda
+# tokens en claro. Respuestas genericas: nunca se revela si un correo ya existe.
+
+limitador_ip = LimitadorVentana(LIMITE_IP, VENTANA_IP_S)
+FALTA_005 = "Falta aplicar db/migrations/005_subscriptions.sql"
+
+
+def _confiar_proxy():
+    return os.getenv("TRUST_PROXY_HEADERS", "false").strip().lower() in ("1", "true", "si", "sí", "yes")
+
+
+class SuscripcionIn(BaseModel):
+    email: str
+    device_id: str
+    accepted_terms: bool
+    min_severity: Literal["aviso", "critica"] = "aviso"
+
+
+@app.get("/subscriptions/consent")
+async def subscriptions_consent():
+    """Texto de autorizacion (Ley 1581). El contacto sale de CONTACT_EMAIL, sin valor inventado."""
+    return texto_consentimiento(os.getenv("CONTACT_EMAIL"))
+
+
+async def _registrar(email, device_id, min_severity, ahora):
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            envios = await (await conn.execute(
+                "SELECT confirm_sent_count, last_confirm_sent_at FROM subscribers WHERE email = %s",
+                (email,),
+            )).fetchall()
+            fila = await (await conn.execute(
+                "SELECT id, confirmed_at, unsubscribed_at FROM subscribers "
+                "WHERE email = %s AND device_id = %s FOR UPDATE",
+                (email, device_id),
+            )).fetchone()
+            accion = decidir_registro(
+                fila, [(e["confirm_sent_count"], e["last_confirm_sent_at"]) for e in envios], ahora)
+            if accion == "insertar":
+                await conn.execute(
+                    "INSERT INTO subscribers (email, device_id, min_severity, consent_at, "
+                    "consent_text_version, confirm_requested_at) VALUES (%s, %s, %s, %s, %s, %s) "
+                    "ON CONFLICT (email, device_id) DO NOTHING",
+                    (email, device_id, min_severity, ahora, CONSENT_VERSION, ahora),
+                )
+            elif accion == "reactivar":
+                await conn.execute(
+                    "UPDATE subscribers SET min_severity = %s, consent_at = %s, consent_text_version = %s, "
+                    "confirm_requested_at = %s, confirmed_at = NULL, unsubscribed_at = NULL, "
+                    "confirm_token_hash = NULL, confirm_expires_at = NULL, "
+                    "confirm_attempts = 0, confirm_last_attempt_at = NULL WHERE id = %s",
+                    (min_severity, ahora, CONSENT_VERSION, ahora, fila["id"]),
+                )
+    return accion
+
+
+@app.post("/subscriptions", status_code=202)
+async def create_subscription(datos: SuscripcionIn, request: Request):
+    ip = ip_cliente(request.client.host if request.client else None, request.headers, _confiar_proxy())
+    if not limitador_ip.permitir(ip):
+        raise HTTPException(status_code=429, detail=MENSAJE_LIMITE)
+    if not datos.accepted_terms:
+        raise HTTPException(status_code=422, detail="Debes aceptar el tratamiento de datos para suscribirte")
+    email = normalizar_email(datos.email)
+    if email is None:
+        raise HTTPException(status_code=422, detail="El correo no tiene un formato válido")
+    await _con_timeout(require_device(datos.device_id))
+    try:
+        await _con_timeout(_registrar(email, datos.device_id, datos.min_severity, datetime.now(timezone.utc)))
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_005)
+    return {"mensaje": MENSAJE_GENERICO}
+
+
+def _pagina(titulo, texto, extra=""):
+    """Pagina HTML minima y autonoma (sin recursos externos)."""
+    return HTMLResponse(f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>{titulo} · EcoAir AI</title>
+<style>body{{margin:0;min-height:100vh;display:grid;place-items:center;background:#0d0d0d;color:#f0efec;
+font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}}main{{max-width:440px;background:#1a1a19;
+border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:24px}}h1{{font-size:1.25rem;margin:0 0 8px}}
+p{{color:#c3c2b7;line-height:1.5}}a{{color:#f0efec}}button{{font:inherit;font-weight:600;padding:10px 16px;
+border-radius:999px;border:0;background:#f0efec;color:#0d0d0d;cursor:pointer}}</style></head>
+<body><main><h1>{titulo}</h1><p>{texto}</p>{extra}<p><a href="/">Volver al panel</a></p></main></body></html>""")
+
+
+@app.get("/subscriptions/confirm", response_class=HTMLResponse)
+async def confirm_subscription(token: str = ""):
+    try:
+        filas = await _con_timeout(query(
+            "UPDATE subscribers SET confirmed_at = now(), confirm_token_hash = NULL, confirm_expires_at = NULL "
+            "WHERE confirm_token_hash = %s AND confirm_expires_at > now() "
+            "AND confirmed_at IS NULL AND unsubscribed_at IS NULL RETURNING id",
+            (hash_token(token),),
+        )) if 0 < len(token) <= 200 else []
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_005)
+    if filas:
+        return _pagina("Suscripción confirmada", "Recibirás un correo cuando se abra una alerta en esta estación.")
+    return _pagina("Enlace no válido", "El enlace no es válido o ya caducó (dura 24 h). Puedes suscribirte de nuevo desde el panel.")
+
+
+@app.get("/subscriptions/unsubscribe", response_class=HTMLResponse)
+async def unsubscribe_form(token: str = ""):
+    """Solo muestra un boton: abrir el enlace (p. ej. un antivirus) NO da de baja."""
+    accion = f"/subscriptions/unsubscribe?token={quote(token[:200], safe='')}"
+    boton = f'<form method="post" action="{accion}"><button type="submit">Darme de baja</button></form>'
+    return _pagina("Darse de baja", "Confirma que ya no quieres recibir alertas por correo de esta estación.", boton)
+
+
+@app.post("/subscriptions/unsubscribe", response_class=HTMLResponse)
+async def unsubscribe(token: str = ""):
+    """Da de baja. Tambien sirve para la baja con un clic (cabecera List-Unsubscribe-Post)."""
+    try:
+        if 0 < len(token) <= 200:
+            await _con_timeout(query(
+                "UPDATE subscribers SET unsubscribed_at = now() "
+                "WHERE unsubscribe_token_hash = %s AND unsubscribed_at IS NULL RETURNING id",
+                (hash_token(token),),
+            ))
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_005)
+    return _pagina("Baja procesada", "Si el enlace era válido, ya no recibirás más alertas por correo de esta estación.")
 
 
 # Dashboard publico en "/". Se monta AL FINAL para que no tape las rutas de la API.

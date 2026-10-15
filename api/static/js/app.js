@@ -546,6 +546,49 @@ async function refreshHistory() {
   }
 }
 
+// ---------- Suscripcion por correo ----------
+async function loadConsent() {
+  const span = $("subs-consent"), btn = $("subs-btn");
+  try {
+    const c = await getJSON("/subscriptions/consent");
+    span.textContent = c.texto; // incluye "contacto no configurado" si falta CONTACT_EMAIL
+    btn.disabled = false;
+  } catch {
+    span.textContent = "No se pudo cargar el texto de autorización. Inténtalo más tarde.";
+    btn.disabled = true;
+  }
+}
+
+function initSubscriptionForm() {
+  const form = $("subs-form"), msg = $("subs-msg"), btn = $("subs-btn");
+  const decir = (texto, kind) => { msg.textContent = texto; msg.dataset.kind = kind || ""; };
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const email = $("subs-email");
+    if (!email.value.trim() || !email.checkValidity()) { decir("Escribe un correo válido.", "error"); email.focus(); return; }
+    if (!$("subs-ok").checked) { decir("Debes aceptar la autorización para suscribirte.", "error"); $("subs-ok").focus(); return; }
+    btn.disabled = true; decir("Enviando…");
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const r = await fetch("/subscriptions", {
+        method: "POST", signal: ctrl.signal,
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: email.value.trim(), device_id: DEVICE,
+                               accepted_terms: true, min_severity: $("subs-sev").value }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.status === 202) { decir(data.mensaje, "ok"); form.reset(); }
+      else if (typeof data.detail === "string") decir(data.detail, "error");
+      else decir("Revisa los datos del formulario.", "error");
+    } catch {
+      decir("No se pudo enviar. Revisa la conexión e inténtalo de nuevo.", "error");
+    } finally {
+      clearTimeout(t); btn.disabled = false;
+    }
+  });
+}
+
 async function loadDeviceName() {
   $("device-name").textContent = DEVICE;
   try {
@@ -558,6 +601,8 @@ function start() {
   initGauge();
   initRanges();
   initScaleToggle();
+  initSubscriptionForm();
+  loadConsent();
   loadDeviceName();
   refresh();
   refreshHistory();

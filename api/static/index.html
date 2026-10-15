@@ -183,6 +183,37 @@
       <ol class="timeline" id="alerts"></ol>
       <p class="empty" id="alerts-empty" hidden>Sin alertas registradas.</p>
     </section>
+    <!-- Suscripcion por correo -->
+    <section class="card card--subs" aria-labelledby="subs-title" style="--i:7">
+      <header class="card__head">
+        <h2 id="subs-title" class="card__title">Recibir alertas por correo</h2>
+        <span class="chip chip--muted">doble confirmación</span>
+      </header>
+      <form id="subs-form" class="subs" novalidate>
+        <div class="subs__row">
+          <div class="field">
+            <label for="subs-email">Correo electrónico</label>
+            <input id="subs-email" name="email" type="email" inputmode="email" autocomplete="email"
+                   maxlength="254" required placeholder="nombre@correo.com">
+          </div>
+          <div class="field field--sev">
+            <label for="subs-sev">Avisarme desde</label>
+            <select id="subs-sev" name="min_severity">
+              <option value="aviso">Aviso o crítica</option>
+              <option value="critica">Solo crítica</option>
+            </select>
+          </div>
+        </div>
+        <label class="consent">
+          <input id="subs-ok" type="checkbox" required>
+          <span id="subs-consent">Cargando el texto de autorización…</span>
+        </label>
+        <div class="subs__actions">
+          <button id="subs-btn" class="btn" type="submit">Suscribirme</button>
+          <p id="subs-msg" class="subs__msg" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
   </main>
 
   <footer class="foot">

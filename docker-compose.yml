@@ -42,6 +42,11 @@ services:
       DB_HOST: postgres
       DB_PORT: "5432"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Contacto del responsable para el texto de consentimiento (Ley 1581). Sin valor inventado:
+      # si falta, el formulario muestra "contacto no configurado".
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      # true solo detras de un proxy (tunel de Cloudflare, Railway): usa CF-Connecting-IP / X-Forwarded-For
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
     ports:
       - "8000:8000"
     depends_on:
@@ -58,6 +63,28 @@ services:
       DB_HOST: postgres
       DB_PORT: "5432"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  notifier:
+    # Contexto en la raiz para reutilizar api/subscriptions.py (ver notifier/Dockerfile).
+    # Solo este servicio tiene las credenciales SMTP y el secreto de los enlaces de baja.
+    build:
+      context: .
+      dockerfile: notifier/Dockerfile
+    container_name: ecoair-notifier
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      BASE_URL: ${BASE_URL:-}
+      SUBSCRIPTION_SECRET: ${SUBSCRIPTION_SECRET:-}
+      NOTIFIER_DRY_RUN: ${NOTIFIER_DRY_RUN:-true}
+      NOTIFY_ON_CLOSE: ${NOTIFY_ON_CLOSE:-false}
     depends_on:
       - postgres
     restart: unless-stopped
