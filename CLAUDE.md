@@ -23,12 +23,25 @@ Leyenda: [E2E] probado de punta a punta con el sistema real · [TESTS] solo test
 - [E2E] Dashboard público (api/static/, servido en "/"): probado en el navegador del Mac y en
   un celular conectado a la misma Wi-Fi.
 - [E2E] GET /devices/{id}/air-quality/history: lo consume el dashboard en esas mismas pruebas.
-- [TESTS] 36 tests de la API (pytest en api/), incluida la validación de parámetros del
-  historial (422) y que "/" sirve la página sin tapar las rutas de la API.
+- [E2E] Suscripción por correo, probada hoy en modo DRY_RUN: suscribirse desde el panel,
+  confirmar con el enlace del correo, alerta simulada de dispositivo caído enviada al
+  suscriptor (escrita en el log del notifier) y baja con el botón. Comprobado: el GET de
+  /subscriptions/unsubscribe NO cancela; el POST sí.
+- [NO PROBADO] Envío real por Gmail (SMTP): todavía no se ha probado. NOTIFIER_DRY_RUN es true
+  por defecto; hay que poner NOTIFIER_DRY_RUN=false de forma explícita para enviar.
+- [TESTS] 66 tests de la API (pytest en api/): historial (422 y "/" sin tapar las rutas) y
+  suscripciones (respuesta genérica, consentimiento, límites por IP con y sin proxy, baja).
+- [TESTS] 15 tests del notifier (pytest en notifier/): plantillas, severidad, reintentos con
+  espera creciente (confirmación y alertas), logs sin correos ni tokens, DRY_RUN.
 - [SIM] Isolation Forest (ai/): evaluado solo con datos simulados; NO está en ningún servicio.
   En la última evaluación no aportó frente a las reglas en la anomalía contextual de PM.
-- PENDIENTE: notificaciones, registro por QR, asistente RAG, Isolation Forest con datos reales,
-  pantalla OLED.
+- PENDIENTE:
+  - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
+  - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
+  - BASE_URL apunta a la IP local http://192.168.1.200:8000: los enlaces de los correos solo
+    funcionan en la misma Wi-Fi. Cambiarla a la URL pública antes de la feria.
+  - Probar el envío real por Gmail.
+  - Registro por QR, asistente RAG, Isolation Forest con datos reales, pantalla OLED.
 - Opcional: MQ-135, LED RGB y buzzer, ciclos de reposo del SDS011.
 
 ## Hardware (no inventar mediciones)
@@ -41,7 +54,7 @@ Leyenda: [E2E] probado de punta a punta con el sistema real · [TESTS] solo test
 - Rangos válidos: temperature -40..80, humidity 0..100, pm25 y pm10 0..1000.
 
 ## Componentes en ~/ecoair
-- docker-compose.yml, 5 servicios con restart: unless-stopped:
+- docker-compose.yml, 6 servicios con restart: unless-stopped:
   - mosquitto (1883) y postgres 16 (puerto 5433 en el Mac, porque el 5432 lo ocupa otro Postgres local).
   - ingestor (ingestor/): MQTT -> valida -> PostgreSQL. Reintenta el broker y reconecta a la base.
   - api (api/, puerto 8000): FastAPI de solo lectura. El Dockerfile copia todos los api/*.py
@@ -49,14 +62,22 @@ Leyenda: [E2E] probado de punta a punta con el sistema real · [TESTS] solo test
   - alerter (alerter/): revisa cada 60 s y abre/cierra alertas. Build con contexto en la raíz
     para reutilizar api/{ica,calidad_aire,recomendaciones}.py y ai/{reglas_sensor,features}.py
     sin duplicarlos; el .dockerignore de la raíz excluye .env, datos, docs y PDF.
-  - Al cambiar código de api o alerter hay que reconstruir: docker compose up -d --build <servicio>.
+  - notifier (notifier/): correos de confirmación (cada 10 s) y de alertas (cada 30 s) con una
+    cola en la base (notifications_sent: un correo por episodio, reintentos 1, 2, 4, 8 min,
+    máximo 5). Único servicio con SMTP_* y SUBSCRIPTION_SECRET. Build con contexto en la raíz
+    para reutilizar api/subscriptions.py. NOTIFIER_DRY_RUN=true por defecto (escribe el correo
+    en el log y no lo envía). Sin SMTP_* arranca en DRY_RUN; BASE_URL y SUBSCRIPTION_SECRET
+    son obligatorias. Los logs enmascaran el correo (a***@gmail.com) y nunca llevan tokens,
+    salvo en DRY_RUN.
+  - Al cambiar código de api, alerter o notifier hay que reconstruir: docker compose up -d --build <servicio>.
 - Base de datos:
   - db/schema.sql: tablas devices, measurements, alerts.
   - Migraciones APLICADAS: 002_simulated.sql (measurements.is_simulated, dispositivo
     ecoair-sim-01) y 004_alerts.sql (kind amplía a threshold/anomaly/sensor/device_down;
     rule_code, severity, started_at, ended_at, last_seen_at, details, is_simulated; una sola
     alerta abierta por device_id + rule_code). La 004 se verificó: la tabla alerts muestra
-    sus 14 columnas.
+    sus 14 columnas. Y 005_subscriptions.sql (aplicada el 15 oct 2026): tablas subscribers
+    (email, consentimiento, tokens solo como hash SHA-256, sin IP) y notifications_sent.
   - 003_air_levels_borrador.sql: SOLO BORRADOR, no aplicada (las tablas del ICA viven en api/ica.py).
 - Endpoints de la API:
   - GET /health (503 si la base no responde en 3 s).
@@ -69,6 +90,17 @@ Leyenda: [E2E] probado de punta a punta con el sistema real · [TESTS] solo test
     con horas cubiertas, "parcial" (cobertura < 75 %) e is_simulated. 422 si los parámetros
     no son válidos, 503 si la consulta pasa de 5 s.
   - GET /alerts (?device_id, ?limit): formato antiguo, se mantiene por compatibilidad.
+  - Suscripción por correo (api/subscriptions.py, lógica pura):
+    - GET /subscriptions/consent: texto de autorización (Ley 1581); el contacto sale de
+      CONTACT_EMAIL; si falta, muestra "contacto no configurado".
+    - POST /subscriptions (email, device_id, accepted_terms, min_severity aviso|critica): siempre
+      202 con el mismo mensaje (no revela si el correo existe). 422 sin consentimiento o correo
+      inválido; 429 con más de 20 peticiones en 10 min por IP; 3 confirmaciones por correo en 24 h.
+      Con TRUST_PROXY_HEADERS=true (solo detrás de Cloudflare/Railway) la IP sale de
+      CF-Connecting-IP o X-Forwarded-For.
+    - GET /subscriptions/confirm?token= (enlace válido 24 h).
+    - GET /subscriptions/unsubscribe?token= solo muestra un botón; el POST da de baja (también
+      sirve para la baja con un clic de List-Unsubscribe). Token de baja = HMAC con SUBSCRIPTION_SECRET.
   - Todas devuelven 404 si el dispositivo no existe.
 - Dashboard (api/static/, servido por la API en "/" con StaticFiles montado al final):
   - HTML, CSS y JavaScript sin framework. Dispositivo por defecto ecoair-node-01; se cambia
