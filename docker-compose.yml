@@ -48,5 +48,19 @@ services:
       - postgres
     restart: unless-stopped
 
+  alerter:
+    # Contexto en la raiz para reutilizar api/*.py y ai/*.py sin duplicarlos (ver alerter/Dockerfile).
+    build:
+      context: .
+      dockerfile: alerter/Dockerfile
+    container_name: ecoair-alerter
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
 volumes:
   pgdata:

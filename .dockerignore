@@ -1,0 +1,17 @@
+# Solo afecta a los builds con contexto en la raiz (alerter). api/ e ingestor/ usan su propio contexto.
+.env
+.env.*
+**/.env
+.git
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/tests
+ai/data
+ai/models
+ai/*.csv
+docs/
+*.pdf
+**/*.pdf
+node_modules
+**/node_modules

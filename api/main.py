@@ -2,15 +2,16 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+import psycopg
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
-from calidad_aire import construir_respuesta
+from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
 
 DB_DSN = (
     f"host={os.getenv('DB_HOST', 'localhost')} port={os.getenv('DB_PORT', '5433')} "
@@ -153,32 +154,52 @@ async def _con_timeout(coro):
 async def air_quality_current(device_id: str):
     await _con_timeout(require_device(device_id))
     ahora = datetime.now(timezone.utc)
-    ventanas = await _con_timeout(query(
-        "SELECT "
-        "avg(pm25) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS pm25_1h, "
-        "avg(pm10) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS pm10_1h, "
-        "count(*) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS muestras_1h, "
-        "count(DISTINCT date_trunc('minute', received_at)) "
-        "  FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS minutos_1h, "
-        "avg(pm25) AS pm25_24h, avg(pm10) AS pm10_24h, count(*) AS muestras_24h, "
-        "count(DISTINCT date_trunc('minute', received_at)) AS minutos_24h "
-        "FROM measurements "
-        "WHERE device_id = %(device_id)s "
-        "AND received_at > %(ahora)s - interval '24 hours' AND received_at <= %(ahora)s",
-        {"device_id": device_id, "ahora": ahora},
-    ))
-    ultima = await _con_timeout(query(
-        "SELECT received_at, temperature, humidity FROM measurements "
-        "WHERE device_id = %s AND received_at <= %s ORDER BY received_at DESC LIMIT 1",
-        (device_id, ahora),
-    ))
-    v = ventanas[0]
-    return construir_respuesta(
-        device_id,
-        {"pm25_media": v["pm25_1h"], "pm10_media": v["pm10_1h"],
-         "muestras": v["muestras_1h"], "minutos_con_datos": v["minutos_1h"]},
-        {"pm25_media": v["pm25_24h"], "pm10_media": v["pm10_24h"],
-         "muestras": v["muestras_24h"], "minutos_con_datos": v["minutos_24h"]},
-        ultima[0] if ultima else None,
-        ahora,
-    )
+    params = {"device_id": device_id, "ahora": ahora}
+    ventanas = await _con_timeout(query(SQL_VENTANAS, params))
+    ultima = await _con_timeout(query(SQL_ULTIMA, params))
+    ventana_1h, ventana_24h = ventanas_desde_fila(ventanas[0])
+    return construir_respuesta(device_id, ventana_1h, ventana_24h, ultima[0] if ultima else None, ahora)
+
+
+class AlertDetalle(BaseModel):
+    id: int
+    device_id: str
+    kind: str
+    rule_code: Optional[str] = None
+    severity: Optional[str] = None
+    message: str
+    detected_at: datetime
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    last_seen_at: Optional[datetime] = None
+    abierta: bool
+    details: Optional[dict] = None
+    is_simulated: bool
+
+
+@app.get("/devices/{device_id}/alerts", response_model=list[AlertDetalle])
+async def device_alerts(
+    device_id: str,
+    estado: Literal["abiertas", "todas"] = "todas",
+    limit: int = Query(50, ge=1, le=500),
+):
+    """Alertas del servicio alerter (requiere db/migrations/004_alerts.sql).
+
+    abiertas = ended_at IS NULL y started_at no nulo (las filas anteriores a la 004 no cuentan).
+    """
+    await _con_timeout(require_device(device_id))
+    try:
+        return await _con_timeout(query(
+            "SELECT id, device_id, kind, rule_code, severity, message, detected_at, started_at, "
+            "ended_at, last_seen_at, (ended_at IS NULL AND started_at IS NOT NULL) AS abierta, "
+            "details, is_simulated "
+            "FROM alerts WHERE device_id = %(device_id)s "
+            "AND (%(estado)s = 'todas' OR (ended_at IS NULL AND started_at IS NOT NULL)) "
+            "ORDER BY COALESCE(started_at, detected_at) DESC LIMIT %(limit)s",
+            {"device_id": device_id, "estado": estado, "limit": limit},
+        ))
+    except psycopg.errors.UndefinedColumn:
+        raise HTTPException(
+            status_code=503,
+            detail="Falta aplicar db/migrations/004_alerts.sql (columnas nuevas de alerts)",
+        )

@@ -24,6 +24,37 @@ COBERTURA_MIN_24H = 0.75
 LIMITE_DIARIO = {"pm25": 37, "pm10": 75}  # Res. 2254, Art. 2, Tabla 1 (24 h, µg/m³)
 SEVERIDAD = [None, "prevencion", "alerta", "emergencia"]
 
+# Consultas compartidas por la API y el alerter (parametros: device_id, ahora). Este modulo
+# no las ejecuta: solo las define, para no duplicar el SQL.
+SQL_VENTANAS = (
+    "SELECT "
+    "avg(pm25) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS pm25_1h, "
+    "avg(pm10) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS pm10_1h, "
+    "count(*) FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS muestras_1h, "
+    "count(DISTINCT date_trunc('minute', received_at)) "
+    "  FILTER (WHERE received_at > %(ahora)s - interval '1 hour') AS minutos_1h, "
+    "avg(pm25) AS pm25_24h, avg(pm10) AS pm10_24h, count(*) AS muestras_24h, "
+    "count(DISTINCT date_trunc('minute', received_at)) AS minutos_24h "
+    "FROM measurements "
+    "WHERE device_id = %(device_id)s "
+    "AND received_at > %(ahora)s - interval '24 hours' AND received_at <= %(ahora)s"
+)
+SQL_ULTIMA = (
+    "SELECT received_at, temperature, humidity FROM measurements "
+    "WHERE device_id = %(device_id)s AND received_at <= %(ahora)s "
+    "ORDER BY received_at DESC LIMIT 1"
+)
+
+
+def ventanas_desde_fila(v):
+    """Convierte la fila de SQL_VENTANAS en (ventana_1h, ventana_24h) para construir_respuesta."""
+    return (
+        {"pm25_media": v["pm25_1h"], "pm10_media": v["pm10_1h"],
+         "muestras": v["muestras_1h"], "minutos_con_datos": v["minutos_1h"]},
+        {"pm25_media": v["pm25_24h"], "pm10_media": v["pm10_24h"],
+         "muestras": v["muestras_24h"], "minutos_con_datos": v["minutos_24h"]},
+    )
+
 
 def _ventana(v, horas):
     minutos = v.get("minutos_con_datos") or 0
