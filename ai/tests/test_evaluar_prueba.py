@@ -8,7 +8,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from entrenar_anomalias import entrenar  # noqa: E402
-from evaluar_prueba import VARIANTES, auc_por_tipo, cerca_de_eventos  # noqa: E402
+from evaluar_prueba import VARIANTES, auc_por_tipo, cerca_de_eventos, umbral_para_presupuesto  # noqa: E402
 from features import construir_features  # noqa: E402
 from scoring import puntuar_features  # noqa: E402
 from simular_datos import generar, main  # noqa: E402
@@ -65,3 +65,28 @@ def test_entrenar_con_variante_b():
     s = puntuar_features(feats, modelo)
     assert s["score"].notna().all()
     assert s["es_anomalia"].any()
+
+
+def _ts(*minutos):
+    return [T0 + pd.Timedelta(minutes=m) for m in minutos]
+
+
+def test_umbral_para_presupuesto_caso_conocido():
+    # 1 dia, presupuesto 2: con score >= 9 hay 2 episodios; al anadir 8 serian 3.
+    umbral, eps = umbral_para_presupuesto([10, 9, 8, 7], _ts(0, 100, 200, 205), 2, dias=1)
+    assert umbral == 9
+    assert eps == 2
+
+
+def test_umbral_para_es_conservador_si_fusiona():
+    # Presupuesto 1: score 9 crea un 2o episodio (gap 16 min) y se para ahi,
+    # aunque con score 8 (minuto 8) los tres se fusionarian en uno solo.
+    umbral, eps = umbral_para_presupuesto([10, 9, 8], _ts(0, 16, 8), 1, dias=1)
+    assert umbral == 10
+    assert eps == 1
+
+
+def test_umbral_si_ni_la_primera_fila_cabe():
+    umbral, eps = umbral_para_presupuesto([10, 9], _ts(0, 100), 0, dias=1)
+    assert umbral == np.inf
+    assert eps == 0

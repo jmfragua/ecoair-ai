@@ -13,6 +13,7 @@ DATOS SIMULADOS con eventos disenados por nosotros: no demuestran precision real
 """
 
 import argparse
+import bisect
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,7 +36,7 @@ from entrenar_anomalias import (
 )
 from features import MODEL_FEATURES, construir_features, promediar_por_minuto
 from reglas_sensor import CAIDO_MIN, CONGELADO_MIN, SALTO_TEMP_C, evaluar_reglas
-from scoring import puntuar_features
+from scoring import EPISODIO_GAP_MIN, agrupar_episodios, puntuar_features
 
 BASE = Path(__file__).resolve().parent
 DATA_DIR = BASE / "data"
@@ -63,6 +64,16 @@ DEFINICION_VARIANTES = {
           "humidity_vs_hora, temperature_vs_hora, pm25_std_15, las 4 *_std_10, ratio_pm10_pm25, "
           "hora_sin y hora_cos."),
 }
+PRESUPUESTOS = [1, 2, 5]  # episodios de falsa alarma por dia
+MAX_FA_EJEMPLOS = 3  # ejemplos de falsa alarma impresos por variante y presupuesto
+SUPUESTO_UMBRAL = (
+    "El umbral de cada presupuesto se fija con las filas normales del ENTRENAMIENTO (semilla 42, "
+    f"a más de {CERCA_MIN} min de cualquier evento): eso usa las etiquetas de la semilla 42 para "
+    "saber qué filas son normales, pero no para entrenar el modelo. Todo se evalúa solo con la "
+    f"semilla 43. Episodio = filas marcadas separadas por menos de {EPISODIO_GAP_MIN} min. "
+    "Falsa alarma = episodio sin ningún evento real a menos de 15 min. Se reportan los tres "
+    "presupuestos sin elegir ninguno. contamination y random_state del modelo no cambian."
+)
 CAPAS = {
     "a": f"Regla PM2.5 > {RULE_PM25}",
     "b": "Reglas de sensor",
@@ -134,6 +145,58 @@ def deteccion_por_evento(detecciones, events):
     return pd.DataFrame(filas)
 
 
+def umbral_para_presupuesto(scores, ts, presupuesto_por_dia, dias, gap_min=EPISODIO_GAP_MIN):
+    """Umbral de score que no supera `presupuesto_por_dia` episodios por dia en estas filas.
+
+    Se recorren los scores de mayor a menor anadiendo filas (empates juntos) y se cuenta de
+    forma incremental el numero de episodios (filas separadas por menos de gap_min minutos).
+    El numero de episodios no es monotono (bajar el umbral puede fusionar episodios), asi que
+    se para en el primer umbral que supera el presupuesto y se devuelve el anterior
+    (opcion conservadora). Una fila se marca si score >= umbral.
+    Devuelve (umbral, episodios_en_esas_filas).
+    """
+    scores = np.asarray(scores, dtype=float)
+    naive = pd.to_datetime(pd.Series(ts), utc=True).dt.tz_localize(None).dt.as_unit("ns")
+    t = naive.to_numpy().astype(np.int64)  # nanosegundos, igual que Timedelta.value
+    gap = pd.Timedelta(minutes=gap_min).value
+    limite = presupuesto_por_dia * dias
+    orden = np.argsort(-scores, kind="stable")
+    marcadas = []  # tiempos marcados, ordenados
+    episodios = 0
+    umbral, episodios_ok = np.inf, 0
+    i = 0
+    while i < len(orden):
+        valor = scores[orden[i]]
+        while i < len(orden) and scores[orden[i]] == valor:
+            x = t[orden[i]]
+            k = bisect.bisect_left(marcadas, x)
+            prev_link = k > 0 and x - marcadas[k - 1] < gap
+            next_link = k < len(marcadas) and marcadas[k] - x < gap
+            if prev_link and next_link:
+                if marcadas[k] - marcadas[k - 1] >= gap:
+                    episodios -= 1  # une dos episodios
+            elif not prev_link and not next_link:
+                episodios += 1
+            marcadas.insert(k, x)
+            i += 1
+        if episodios > limite:
+            break
+        umbral, episodios_ok = valor, episodios
+    return umbral, episodios_ok
+
+
+def episodios_y_eventos(episodios, events, minutos=CERCA_MIN):
+    """Para cada evento: detectado si algun episodio se solapa con el. Falsas alarmas:
+    episodios sin ningun evento a menos de `minutos`."""
+    margen = pd.Timedelta(minutes=minutos)
+    detectado = [bool(((episodios.inicio < e.end_utc) & (episodios.fin > e.start_utc)).any())
+                 for e in events.itertuples()]
+    cerca = np.zeros(len(episodios), dtype=bool)
+    for e in events.itertuples():
+        cerca |= ((episodios.inicio < e.end_utc + margen) & (episodios.fin > e.start_utc - margen)).to_numpy()
+    return np.array(detectado, dtype=bool), int((~cerca).sum())
+
+
 def _fmt_auc(v):
     return "n/a" if v is None else f"{v:.3f}"
 
@@ -197,6 +260,39 @@ def main(argv=None):
     normal = (tipos == "") & ~cerca
     prevalencia = float((tipos != "").sum() / ((tipos != "").sum() + normal.sum()))
 
+    # ---- Curva de operacion: umbral fijado con filas normales del entrenamiento ----
+    train_events = cargar_eventos(data_dir / "sim_events.csv")
+    dias_train = ((feats_train["timestamp"].max() + UN_MIN - feats_train["timestamp"].min())
+                  / pd.Timedelta(days=1))
+    normal_train = ~cerca_de_eventos(feats_train["timestamp"], train_events)
+    curva = {}
+    for v, modelo in modelos.items():
+        s_train = puntuar_features(feats_train, modelo)
+        curva[v] = []
+        for p in PRESUPUESTOS:
+            umbral, ep_train = umbral_para_presupuesto(
+                s_train.loc[normal_train, "score"], s_train.loc[normal_train, "timestamp"], p, dias_train)
+            marcadas = scored[v]["score"] >= umbral
+            eps = agrupar_episodios(scored[v], modelo, marcadas)
+            detectado, fa_test = episodios_y_eventos(eps, events)
+            curva[v].append({
+                "presupuesto_fa_por_dia": p,
+                "umbral_score": float(umbral),
+                "fa_episodios_entrenamiento": ep_train,
+                "fa_por_dia_entrenamiento": ep_train / dias_train,
+                "episodios_prueba": int(len(eps)),
+                "filas_marcadas_prueba": int(marcadas.sum()),
+                "fa_episodios_prueba": fa_test,
+                "fa_por_dia_prueba": fa_test / dias,
+                "detectados_por_tipo": {
+                    t: f"{int(detectado[(events.event_type == t).to_numpy()].sum())}/{int((events.event_type == t).sum())}"
+                    for t in EVENT_TYPES
+                },
+                "detectados_total": f"{int(detectado.sum())}/{len(events)}",
+                "_detectado": detectado,
+                "_episodios": eps,
+            })
+
     # ---- Guardar ----
     models_dir.mkdir(parents=True, exist_ok=True)
     rutas = []
@@ -230,12 +326,24 @@ def main(argv=None):
                                        for t in EVENT_TYPES},
                 **falsas[v],
             },
+            "curva_operacion_prueba": {
+                "advertencia": ADVERTENCIA,
+                "supuesto": SUPUESTO_UMBRAL,
+                "puntos": [{k: val for k, val in c.items() if not k.startswith("_")} for c in curva[v]],
+            },
         }
         (models_dir / f"{name}.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2, default=str))
         rutas += [models_dir / f"{name}.joblib", models_dir / f"{name}.json"]
     capas_path = data_dir / "sim_test_detecciones_por_capa.csv"
     detecciones.assign(capa=detecciones.capa.map(CAPAS), is_simulated=True).to_csv(capas_path, index=False)
     rutas.append(capas_path)
+    episodios_path = data_dir / "sim_test_episodios.csv"
+    pd.concat(
+        [c["_episodios"].assign(variante=v, presupuesto_fa_por_dia=c["presupuesto_fa_por_dia"])
+         for v in curva for c in curva[v]],
+        ignore_index=True,
+    ).assign(is_simulated=True).to_csv(episodios_path, index=False)
+    rutas.append(episodios_path)
 
     # ---- Reporte ----
     w = 92
@@ -305,6 +413,59 @@ def main(argv=None):
                 continue
             vistos.add(etiqueta)
             print(f"  (IF {v}) [{etiqueta}] {r.inicio}: {r.mensaje}")
+
+    print("\n" + "=" * w)
+    print("CURVA DE OPERACIÓN (episodios) — " + ADVERTENCIA)
+    print("=" * w)
+    print(f"Supuesto: {SUPUESTO_UMBRAL}")
+    print(f"Días: entrenamiento {dias_train:.1f}, prueba {dias:.1f}.")
+    for v in modelos:
+        print(f"\n  Isolation Forest {v}")
+        print(f"  {'FA/día objetivo':<16}" + "".join(f"{p:>12}" for p in PRESUPUESTOS))
+        filas_curva = [
+            ("umbral score", lambda c: f"{c['umbral_score']:.4f}"),
+            ("FA/día entren.", lambda c: f"{c['fa_por_dia_entrenamiento']:.2f}"),
+            ("FA/día prueba", lambda c: f"{c['fa_por_dia_prueba']:.2f}"),
+            ("FA episodios pr.", lambda c: f"{c['fa_episodios_prueba']}"),
+            ("episodios prueba", lambda c: f"{c['episodios_prueba']}"),
+            ("filas marcadas", lambda c: f"{c['filas_marcadas_prueba']}"),
+        ]
+        for nombre, f in filas_curva:
+            print(f"  {nombre:<16}" + "".join(f"{f(c):>12}" for c in curva[v]))
+        print("  detectados / total:")
+        for t in EVENT_TYPES:
+            print(f"    {t:<22}" + "".join(f"{c['detectados_por_tipo'][t]:>12}" for c in curva[v]))
+        print(f"    {'TOTAL':<22}" + "".join(f"{c['detectados_total']:>12}" for c in curva[v]))
+    print("\n  Referencia (sin umbral de score): (a) PM2.5 > 37 y (b) reglas de sensor, ver la tabla "
+          "de detección por evento de arriba.")
+
+    print("\n--- Episodios de anomalia_contextual y falsas alarmas en la prueba, por variante y presupuesto ---")
+    for v in modelos:
+        for c in curva[v]:
+            eps = c["_episodios"]
+            print(f"  IF {v}, {c['presupuesto_fa_por_dia']} FA/día:")
+            mostrados, fa_mostradas = 0, 0
+            for r in eps.itertuples():
+                ev = events[(events.start_utc < r.fin) & (events.end_utc > r.inicio)]
+                cerca_ev = events[(events.start_utc - pd.Timedelta(minutes=CERCA_MIN) < r.fin)
+                                  & (events.end_utc + pd.Timedelta(minutes=CERCA_MIN) > r.inicio)]
+                if len(ev) and ev.event_type.iloc[0] == "anomalia_contextual":
+                    etiqueta = "anomalia_contextual"
+                elif len(cerca_ev) == 0:
+                    etiqueta = "FALSA ALARMA"
+                    fa_mostradas += 1
+                    if fa_mostradas > MAX_FA_EJEMPLOS:
+                        continue
+                else:
+                    continue
+                mostrados += 1
+                print(f"    [{etiqueta}] {r.inicio} -> {r.fin} ({r.filas} filas, score máx {r.score_max:.3f}): "
+                      f"{r.mensaje}")
+            if fa_mostradas > MAX_FA_EJEMPLOS:
+                print(f"    ... {fa_mostradas - MAX_FA_EJEMPLOS} falsas alarmas más (todas en "
+                      f"{episodios_path.name})")
+            if mostrados == 0:
+                print("    (ninguno)")
 
     print("\nArchivos guardados:")
     for p in rutas:

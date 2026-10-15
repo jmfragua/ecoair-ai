@@ -25,10 +25,11 @@ PISO_ESCALA = {
 }
 DETALLE = {
     "pm25_media_15": "por su media de 15 min",
-    "pm25_std_15": "por su variabilidad en 15 min",
 }
+VENTANA_STD = {"pm25_std_15": 15}  # el resto de *_std son de 10 min
 TOPE_VECES = 50
 UMBRAL_OTRAS = 3
+EPISODIO_GAP_MIN = 10
 
 
 def _variable(feature):
@@ -48,9 +49,13 @@ def desviaciones(row, modelo):
     """Distancia con signo de cada feature a su mediana, en unidades de escala (con piso)."""
     features = modelo["features"]
     x = row[features].astype(float)
+    return (x - modelo["median"][features]) / _escala_con_piso(modelo)
+
+
+def _escala_con_piso(modelo):
+    features = modelo["features"]
     piso = pd.Series({f: PISO_ESCALA.get(f, 0.0) for f in features})
-    escala = modelo["escala"][features].combine(piso, max)
-    return (x - modelo["median"][features]) / escala
+    return modelo["escala"][features].combine(piso, max)
 
 
 def explicar(row, modelo):
@@ -85,10 +90,17 @@ def explicar(row, modelo):
         }[var]
         msg = (f"{NOMBRES[var]} de {valor_txt}{hora}, {abs(valor):.1f} {unidad} {lado} "
                f"de lo habitual para esa hora ({_intensidad(veces, signo)}). {causa}")
-    elif top.endswith("_std_10") and signo < 0:
+    elif top.endswith("_std_10") or top in VENTANA_STD:
+        # Lo anomalo es la variabilidad, no el valor actual: no se menciona el valor.
         var = _variable(top)
-        msg = (f"{NOMBRES[var]} casi sin variación en 10 min (desv. {valor:.2f}). "
-               "Posible sensor congelado.")
+        ventana = VENTANA_STD.get(top, 10)
+        if signo < 0:
+            msg = (f"{NOMBRES[var]} casi sin variación en {ventana} min (desv. {valor:.2f}). "
+                   "Posible sensor congelado.")
+        else:
+            msg = (f"{NOMBRES[var]} con variación inusual en los últimos {ventana} min "
+                   f"(desv. {valor:.1f} {UNIDADES[var]}, {_intensidad(veces, signo)}). "
+                   "Posible cambio brusco o lectura inestable.")
     else:
         var = _variable(top)
         actual = row[var]
@@ -101,8 +113,7 @@ def explicar(row, modelo):
         else:
             texto = f"Humedad de {actual:.0f} %"
             causa = "Posible fallo del sensor de humedad o condición inusual."
-        detalle = DETALLE.get(top, "por su variabilidad en 10 min" if top.endswith("_std_10") else "")
-        detalle = f" ({detalle})" if detalle else ""
+        detalle = f" ({DETALLE[top]})" if top in DETALLE else ""
         msg = f"{texto}, {_intensidad(veces, signo)}{detalle}. {causa}"
 
     otras = [f for f in orden.index[1:3] if orden[f] >= UMBRAL_OTRAS]
@@ -122,6 +133,35 @@ def puntuar_features(feats, modelo):
     if mask.any():
         out.loc[mask, "mensaje"] = [explicar(row, modelo) for _, row in out[mask].iterrows()]
     return out
+
+
+def agrupar_episodios(scored, modelo, marcadas=None, gap_min=EPISODIO_GAP_MIN):
+    """Fusiona filas marcadas separadas por menos de `gap_min` minutos en episodios de alarma.
+
+    scored: salida de puntuar_features. marcadas: mascara booleana opcional (por defecto,
+    es_anomalia). Devuelve inicio, fin (exclusivo: ultima fila + 1 min), score_max, filas y
+    mensaje. El mensaje se explica con la fila del episodio cuya feature esta mas lejos de su
+    mediana (en unidades de escala con piso).
+    """
+    marcadas = scored["es_anomalia"] if marcadas is None else pd.Series(marcadas, index=scored.index)
+    m = scored[marcadas.to_numpy()].sort_values("timestamp")
+    columnas = ["inicio", "fin", "score_max", "filas", "mensaje"]
+    if m.empty:
+        return pd.DataFrame(columns=columnas)
+    features = modelo["features"]
+    z = ((m[features] - modelo["median"][features]) / _escala_con_piso(modelo)).abs().max(axis=1)
+    grupo = (m["timestamp"].diff() >= pd.Timedelta(minutes=gap_min)).cumsum()
+    filas = []
+    for _, g in m.groupby(grupo):
+        fila_max = g.loc[z[g.index].idxmax()]
+        filas.append({
+            "inicio": g["timestamp"].iloc[0],
+            "fin": g["timestamp"].iloc[-1] + pd.Timedelta(minutes=1),
+            "score_max": float(g["score"].max()),
+            "filas": int(len(g)),
+            "mensaje": explicar(fila_max, modelo),
+        })
+    return pd.DataFrame(filas, columns=columnas)
 
 
 def puntuar(df, modelo):
