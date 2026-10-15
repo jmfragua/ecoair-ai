@@ -22,5 +22,31 @@ services:
       - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     restart: unless-stopped
 
+  ingestor:
+    build: ./ingestor
+    container_name: ecoair-ingestor
+    environment:
+      MQTT_HOST: mosquitto
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - mosquitto
+      - postgres
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    container_name: ecoair-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
 volumes:
   pgdata:
