@@ -1,17 +1,28 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import psycopg
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
+from historial import (
+    BUCKET_MAX,
+    BUCKET_MIN,
+    HORAS_MAX,
+    HORAS_MIN,
+    SQL_ES_SIMULADO,
+    SQL_HISTORIAL,
+    construir_historial,
+)
 
 DB_DSN = (
     f"host={os.getenv('DB_HOST', 'localhost')} port={os.getenv('DB_PORT', '5433')} "
@@ -20,6 +31,8 @@ DB_DSN = (
 
 HEALTH_TIMEOUT_SECONDS = 3
 QUERY_TIMEOUT_SECONDS = 5
+# Ruta absoluta: funciona igual en Docker (/app/static) y en local (api/static).
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # check: verifica cada conexion antes de entregarla y descarta las rotas
 # (p. ej. tras reiniciar Postgres). connect_timeout (libpq) acota cada intento de conexion.
@@ -203,3 +216,24 @@ async def device_alerts(
             status_code=503,
             detail="Falta aplicar db/migrations/004_alerts.sql (columnas nuevas de alerts)",
         )
+
+
+@app.get("/devices/{device_id}/air-quality/history")
+async def air_quality_history(
+    device_id: str,
+    hours: int = Query(24, ge=HORAS_MIN, le=HORAS_MAX),
+    bucket_min: int = Query(5, ge=BUCKET_MIN, le=BUCKET_MAX),
+):
+    """Promedios por intervalo (date_bin) de PM2.5, PM10, temperatura y humedad."""
+    await _con_timeout(require_device(device_id))
+    ahora = datetime.now(timezone.utc)
+    params = {"device_id": device_id, "bucket_min": bucket_min,
+              "desde": ahora - timedelta(hours=hours), "ahora": ahora}
+    filas = await _con_timeout(query(SQL_HISTORIAL, params))
+    sim = await _con_timeout(query(SQL_ES_SIMULADO, params))
+    return construir_historial(device_id, filas, ahora, hours, bucket_min,
+                               bool(sim and sim[0]["is_simulated"]))
+
+
+# Dashboard publico en "/". Se monta AL FINAL para que no tape las rutas de la API.
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

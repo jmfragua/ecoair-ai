@@ -11,6 +11,8 @@ RUN pip install -r requirements.txt
 # Todos los modulos de la API (main, ica, calidad_aire, recomendaciones...). Los tests no se copian.
 # Al cambiar cualquier .py hay que reconstruir la imagen: docker compose up -d --build api
 COPY *.py ./
+# Dashboard publico (HTML, CSS, JS y fuente local; sin recursos de internet)
+COPY static/ ./static/
 
 RUN useradd --create-home --uid 1000 ecoair
 USER ecoair
