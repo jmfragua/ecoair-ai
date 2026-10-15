@@ -26,6 +26,13 @@ y un dashboard las muestra. No sustituye equipos certificados de calidad del air
 - La clave de la base está en .env como POSTGRES_PASSWORD. Nunca la escribas en el código ni en este archivo.
 - Para ejecutar los scripts: cargar .env y usar DB_PORT=5433.
 
+## Datos simulados
+- Los datos simulados usan el dispositivo ecoair-sim-01 y measurements.is_simulated = true
+  (migración db/migrations/002_simulated.sql; generador ai/simular_datos.py).
+- Los scripts de entrenamiento y los reportes de datos reales deben filtrar is_simulated = false.
+- Todo modelo entrenado con datos simulados lleva el prefijo sim_ y se describe como prueba de
+  software, no como evidencia de precisión.
+
 ## Reglas
 - Responder en español, simple y por pasos.
 - Distinguir regla por umbral (no es IA) de detección de anomalías con Isolation Forest.
