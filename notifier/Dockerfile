@@ -11,6 +11,8 @@ WORKDIR /app
 COPY notifier/requirements.txt .
 RUN pip install -r requirements.txt
 
+# Configuracion comun (DATABASE_URL o DB_*)
+COPY shared/ ./shared/
 COPY api/subscriptions.py ./
 COPY notifier/*.py ./
 

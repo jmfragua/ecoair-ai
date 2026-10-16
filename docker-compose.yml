@@ -1,11 +1,18 @@
 services:
   mosquitto:
-    image: eclipse-mosquitto:2
+    # Configuracion generada al arrancar desde variables (mosquitto/entrypoint.sh).
+    # Con MQTT_DEVICE_* y MQTT_INGESTOR_* en .env: autenticacion + ACL. Sin ellas, en local se
+    # mantiene el modo anonimo de antes (MQTT_ALLOW_ANONYMOUS=true solo aqui, nunca en Railway).
+    build: ./mosquitto
     container_name: ecoair-mosquitto
+    environment:
+      MQTT_DEVICE_USER: ${MQTT_DEVICE_USER:-}
+      MQTT_DEVICE_PASSWORD: ${MQTT_DEVICE_PASSWORD:-}
+      MQTT_INGESTOR_USER: ${MQTT_INGESTOR_USER:-}
+      MQTT_INGESTOR_PASSWORD: ${MQTT_INGESTOR_PASSWORD:-}
+      MQTT_ALLOW_ANONYMOUS: ${MQTT_ALLOW_ANONYMOUS:-true}
     ports:
       - "1883:1883"
-    volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     restart: unless-stopped
 
   postgres:
@@ -23,10 +30,16 @@ services:
     restart: unless-stopped
 
   ingestor:
-    build: ./ingestor
+    # Contexto en la raiz para copiar shared/ (ver ingestor/Dockerfile).
+    build:
+      context: .
+      dockerfile: ingestor/Dockerfile
     container_name: ecoair-ingestor
     environment:
       MQTT_HOST: mosquitto
+      # Usuario de solo suscripcion (vacio = sin autenticacion, como antes)
+      MQTT_USER: ${MQTT_INGESTOR_USER:-}
+      MQTT_PASSWORD: ${MQTT_INGESTOR_PASSWORD:-}
       DB_HOST: postgres
       DB_PORT: "5432"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -36,7 +49,10 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./api
+    # Contexto en la raiz para copiar shared/ (ver api/Dockerfile).
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     container_name: ecoair-api
     environment:
       DB_HOST: postgres
@@ -81,6 +97,10 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      # Proveedor de correo: smtp (por defecto) o brevo (API HTTP)
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
       BASE_URL: ${BASE_URL:-}
       SUBSCRIPTION_SECRET: ${SUBSCRIPTION_SECRET:-}
       NOTIFIER_DRY_RUN: ${NOTIFIER_DRY_RUN:-true}

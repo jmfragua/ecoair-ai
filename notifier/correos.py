@@ -3,7 +3,7 @@
 import html
 from datetime import timedelta, timezone
 from email.message import EmailMessage
-from email.utils import make_msgid
+from email.utils import make_msgid, parseaddr
 from urllib.parse import quote
 
 COLOMBIA = timezone(timedelta(hours=-5))  # Colombia no tiene horario de verano
@@ -117,3 +117,23 @@ def correo_alerta(remitente, destino, alerta, kind, links):
         pie=[f'<a href="{html.escape(links["baja"])}">Darme de baja</a>', ADVERTENCIA],
     )
     return _mensaje(remitente, destino, asunto, texto, cuerpo, links["baja"])
+
+
+def payload_brevo(msg):
+    """JSON para POST /v3/smtp/email de Brevo a partir de un EmailMessage (sin la clave)."""
+    nombre, remitente = parseaddr(str(msg["From"]))
+    _, destino = parseaddr(str(msg["To"]))
+    sender = {"email": remitente}
+    if nombre:
+        sender["name"] = nombre
+    payload = {
+        "sender": sender,
+        "to": [{"email": destino}],
+        "subject": str(msg["Subject"]),
+        "textContent": msg.get_body(("plain",)).get_content(),
+        "htmlContent": msg.get_body(("html",)).get_content(),
+    }
+    cabeceras = {h: str(msg[h]) for h in ("List-Unsubscribe", "List-Unsubscribe-Post") if msg[h]}
+    if cabeceras:
+        payload["headers"] = cabeceras
+    return payload

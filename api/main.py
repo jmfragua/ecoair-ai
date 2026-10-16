@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -15,6 +16,12 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
+# shared/ esta en la raiz del repo en desarrollo; en Docker se copia junto al codigo (/app/shared).
+_RAIZ = Path(__file__).resolve().parent.parent
+if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
+    sys.path.insert(0, str(_RAIZ))
+
+from shared.settings import dsn_desde_entorno  # noqa: E402
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
 from subscriptions import (
     LIMITE_IP,
@@ -39,10 +46,8 @@ from historial import (
     construir_historial,
 )
 
-DB_DSN = (
-    f"host={os.getenv('DB_HOST', 'localhost')} port={os.getenv('DB_PORT', '5433')} "
-    f"dbname=ecoair user=ecoair password={os.environ['POSTGRES_PASSWORD']}"
-)
+# DATABASE_URL (Railway) o DB_HOST/DB_PORT/DB_NAME/DB_USER/POSTGRES_PASSWORD (compose local).
+DB_DSN = dsn_desde_entorno(connect_timeout=3)
 
 HEALTH_TIMEOUT_SECONDS = 3
 QUERY_TIMEOUT_SECONDS = 5
@@ -52,7 +57,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 # check: verifica cada conexion antes de entregarla y descarta las rotas
 # (p. ej. tras reiniciar Postgres). connect_timeout (libpq) acota cada intento de conexion.
 pool = AsyncConnectionPool(
-    DB_DSN + " connect_timeout=3",
+    DB_DSN,
     open=False,
     kwargs={"row_factory": dict_row},
     check=AsyncConnectionPool.check_connection,

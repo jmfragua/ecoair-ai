@@ -1,6 +1,15 @@
 """Constantes del alerter, en un solo sitio. Todas se pueden cambiar por variables de entorno."""
 
 import os
+import sys
+from pathlib import Path
+
+# shared/ esta en la raiz del repo en desarrollo; en Docker se copia junto al codigo (/app/shared).
+_RAIZ = Path(__file__).resolve().parent.parent
+if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
+    sys.path.insert(0, str(_RAIZ))
+
+from shared.settings import dsn_desde_entorno  # noqa: E402
 
 
 def _int(nombre, defecto):
@@ -24,10 +33,8 @@ VENTANA_SENSOR_MIN = {
     "fuera_de_rango_fisico": _int("ALERTER_VENTANA_RANGO_MIN", 15),
 }
 
-DB_DSN = (
-    f"host={os.getenv('DB_HOST', 'localhost')} port={os.getenv('DB_PORT', '5433')} "
-    f"dbname=ecoair user=ecoair password={os.environ.get('POSTGRES_PASSWORD', '')} connect_timeout=5"
-)
+# DATABASE_URL (Railway) o DB_HOST/DB_PORT/DB_NAME/DB_USER/POSTGRES_PASSWORD (compose local).
+DB_DSN = dsn_desde_entorno(connect_timeout=5)
 
 if REVISIONES_ABRIR < 1 or REVISIONES_CERRAR < 1:
     raise ValueError("ALERTER_REVISIONES_ABRIR y ALERTER_REVISIONES_CERRAR deben ser >= 1")

@@ -11,6 +11,8 @@ WORKDIR /app
 COPY alerter/requirements.txt .
 RUN pip install -r requirements.txt
 
+# Configuracion comun (DATABASE_URL o DB_*)
+COPY shared/ ./shared/
 # Modulos reutilizados (puros, sin acceso a red)
 COPY api/ica.py api/calidad_aire.py api/recomendaciones.py ./
 COPY ai/reglas_sensor.py ai/features.py ./

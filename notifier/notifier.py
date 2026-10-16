@@ -10,16 +10,19 @@
 Requiere db/migrations/005_subscriptions.sql; si falta, lo registra y espera sin morirse.
 """
 
+import json
 import logging
 import smtplib
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import psycopg
 from psycopg.rows import dict_row
 
 import config
-from correos import correo_alerta, correo_confirmacion, enlaces
+from correos import correo_alerta, correo_confirmacion, enlaces, payload_brevo
 from logica import destinatarios, error_seguro, puede_intentar
 from subscriptions import (  # noqa: E402  (logica.py ya anadio api/ al path)
     VIGENCIA_CONFIRMACION,
@@ -36,24 +39,51 @@ log = logging.getLogger("notifier")
 db = None
 
 
-class Mailer:
-    """Envia por SMTP (STARTTLS) o, en DRY_RUN, escribe el correo completo en el log."""
+class ErrorEnvio(Exception):
+    """Fallo del proveedor de correo (HTTP de Brevo). Nunca incluye la clave de la API."""
 
-    def __init__(self, dry_run, host, port, user, password):
+
+class Mailer:
+    """Envia por SMTP (STARTTLS) o por la API HTTP de Brevo; en DRY_RUN escribe el correo en el log."""
+
+    def __init__(self, dry_run, host, port, user, password, proveedor="smtp", brevo_api_key="",
+                 brevo_url="https://api.brevo.com/v3/smtp/email"):
         self.dry_run, self.host, self.port, self.user, self.password = dry_run, host, port, user, password
+        self.proveedor, self.brevo_api_key, self.brevo_url = proveedor, brevo_api_key, brevo_url
 
     def enviar(self, msg):
         destino = str(msg["To"])
         if self.dry_run:
             texto = msg.get_body(("plain",)).get_content()
-            log.info("DRY_RUN: correo NO enviado\nPara: %s\nAsunto: %s\nList-Unsubscribe: %s\n%s",
-                     destino, msg["Subject"], msg["List-Unsubscribe"], texto)
+            log.info("DRY_RUN (%s): correo NO enviado\nPara: %s\nAsunto: %s\nList-Unsubscribe: %s\n%s",
+                     self.proveedor, destino, msg["Subject"], msg["List-Unsubscribe"], texto)
             return "dry_run"
+        if self.proveedor == "brevo":
+            return self._enviar_brevo(msg, destino)
         with smtplib.SMTP(self.host, self.port, timeout=20) as s:
             s.starttls()
             s.login(self.user, self.password)
             s.send_message(msg)
-        log.info("Correo enviado a %s: %s", enmascarar_email(destino), msg["Subject"])
+        log.info("Correo enviado (smtp) a %s: %s", enmascarar_email(destino), msg["Subject"])
+        return "sent"
+
+    def _enviar_brevo(self, msg, destino):
+        req = urllib.request.Request(
+            self.brevo_url, method="POST",
+            data=json.dumps(payload_brevo(msg)).encode("utf-8"),
+            headers={"api-key": self.brevo_api_key, "content-type": "application/json",
+                     "accept": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                respuesta = json.loads(r.read() or b"{}")
+        except urllib.error.HTTPError as e:
+            detalle = e.read()[:300].decode("utf-8", "replace")
+            raise ErrorEnvio(f"Brevo respondio HTTP {e.code}: {detalle}") from None
+        except urllib.error.URLError as e:
+            raise ErrorEnvio(f"No se pudo contactar a Brevo: {e.reason}") from None
+        log.info("Correo enviado (brevo) a %s: %s (messageId %s)", enmascarar_email(destino),
+                 msg["Subject"], respuesta.get("messageId", "?"))
         return "sent"
 
 
@@ -123,9 +153,9 @@ def procesar_confirmaciones(conn, mailer):
                      ahora, s["id"]),
                 )
                 links = enlaces(config.BASE_URL, s["device_id"], token_confirmacion=token, token_baja=baja)
-                mailer.enviar(correo_confirmacion(config.SMTP_FROM or "EcoAir AI <noreply@ecoair.local>",
+                mailer.enviar(correo_confirmacion(config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>",
                                                   s["email"], s["device_id"], links))
-        except (smtplib.SMTPException, OSError) as e:
+        except (smtplib.SMTPException, OSError, ErrorEnvio) as e:
             # La transaccion ya se deshizo (sin token guardado); se cuenta el intento aparte.
             row = conn.execute(
                 "UPDATE subscribers SET confirm_attempts = confirm_attempts + 1, "
@@ -192,14 +222,14 @@ def enviar_pendientes(conn, mailer):
                   "severity": f["severity"], "message": f["message"],
                   "started_at": f["started_at"], "ended_at": f["ended_at"]}
         try:
-            estado = mailer.enviar(correo_alerta(config.SMTP_FROM or "EcoAir AI <noreply@ecoair.local>",
+            estado = mailer.enviar(correo_alerta(config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>",
                                                  f["email"], alerta, f["kind"], links))
             conn.execute(
                 "UPDATE notifications_sent SET status = %s, attempts = attempts + 1, last_attempt_at = now(), "
                 "sent_at = now(), last_error = NULL WHERE id = %s",
                 (estado, f["id"]),
             )
-        except (smtplib.SMTPException, OSError) as e:
+        except (smtplib.SMTPException, OSError, ErrorEnvio) as e:
             err = error_seguro(e)
             conn.execute(
                 "UPDATE notifications_sent SET status = 'failed', attempts = attempts + 1, "
@@ -210,9 +240,12 @@ def enviar_pendientes(conn, mailer):
 
 
 def main():
-    log.info("Notifier iniciado: confirmaciones cada %ss, alertas cada %ss, DRY_RUN=%s, cierre=%s",
-             config.INTERVALO_CONFIRMACIONES_S, config.INTERVALO_ALERTAS_S, config.DRY_RUN, config.NOTIFY_ON_CLOSE)
-    mailer = Mailer(config.DRY_RUN, config.SMTP_HOST, config.SMTP_PORT, config.SMTP_USER, config.SMTP_PASSWORD)
+    log.info("Notifier iniciado: proveedor=%s, confirmaciones cada %ss, alertas cada %ss, DRY_RUN=%s, cierre=%s",
+             config.EMAIL_PROVIDER, config.INTERVALO_CONFIRMACIONES_S, config.INTERVALO_ALERTAS_S,
+             config.DRY_RUN, config.NOTIFY_ON_CLOSE)
+    mailer = Mailer(config.DRY_RUN, config.SMTP_HOST, config.SMTP_PORT, config.SMTP_USER, config.SMTP_PASSWORD,
+                    proveedor=config.EMAIL_PROVIDER, brevo_api_key=config.BREVO_API_KEY,
+                    brevo_url=config.BREVO_API_URL)
     proxima = {"confirmaciones": 0.0, "alertas": 0.0}
     while True:
         ahora = time.monotonic()

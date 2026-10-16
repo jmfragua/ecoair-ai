@@ -1,22 +1,31 @@
 import json
 import logging
-import os
+import sys
 import time
+from pathlib import Path
 
 import paho.mqtt.client as mqtt
 import psycopg
 
+# shared/ esta en la raiz del repo en desarrollo; en Docker se copia junto al codigo (/app/shared).
+_RAIZ = Path(__file__).resolve().parent.parent
+if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
+    sys.path.insert(0, str(_RAIZ))
+
+from shared.settings import descripcion_db, dsn_desde_entorno, mqtt_desde_entorno  # noqa: E402
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("ingestor")
 
-MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+# MQTT_HOST/PORT/USER/PASSWORD/TLS y DATABASE_URL o DB_* (ver shared/settings.py).
+MQTT = mqtt_desde_entorno()
+MQTT_HOST, MQTT_PORT = MQTT["host"], MQTT["port"]
 MQTT_RETRY_SECONDS = 5
 TOPIC = "ecoair/+/telemetry"
-DB_DSN = (
-    f"host={os.getenv('DB_HOST', 'localhost')} port={os.getenv('DB_PORT', '5433')} "
-    f"dbname=ecoair user=ecoair password={os.environ['POSTGRES_PASSWORD']}"
-)
+DB_DSN = dsn_desde_entorno()
+
+# Codigos de CONNACK de credenciales (MQTT 3.1.1: 4 y 5; paho 2.x los convierte a 134 y 135).
+CODIGOS_CREDENCIALES = {4, 5, 134, 135}
 
 RANGES = {
     "temperature": (-40, 80),
@@ -32,7 +41,7 @@ def get_db():
     global db
     if db is None or db.closed:
         db = psycopg.connect(DB_DSN, autocommit=True)
-        log.info("Conectado a PostgreSQL")
+        log.info("Conectado a PostgreSQL (%s)", descripcion_db())
     return db
 
 
@@ -65,9 +74,35 @@ def validate(topic_device, data):
     return device_id, values
 
 
+def resultado_conexion(codigo, es_fallo, usuario):
+    """(ok, mensaje para el log) a partir del codigo de CONNACK. Nunca incluye la clave."""
+    if not es_fallo:
+        return True, f"Conectado al broker MQTT {MQTT_HOST}:{MQTT_PORT}"
+    if codigo in CODIGOS_CREDENCIALES:
+        quien = f"usuario '{usuario}'" if usuario else "sin usuario (anonimo)"
+        return False, (f"El broker MQTT rechazo las credenciales ({quien}, codigo {codigo}). "
+                       "Revisa MQTT_USER y MQTT_PASSWORD del ingestor y el ACL de Mosquitto.")
+    return False, f"El broker MQTT rechazo la conexion (codigo {codigo})"
+
+
 def on_connect(client, userdata, flags, reason_code, properties):
-    log.info("Conectado al broker MQTT (%s)", reason_code)
+    ok, mensaje = resultado_conexion(getattr(reason_code, "value", reason_code),
+                                     getattr(reason_code, "is_failure", False), MQTT["user"])
+    if not ok:
+        log.error(mensaje)  # paho reintenta solo, con espera creciente (reconnect_delay_set)
+        return
+    log.info(mensaje)
     client.subscribe(TOPIC, qos=0)
+
+
+def configurar_cliente(client, cfg):
+    """Credenciales y TLS opcionales; espera creciente entre reconexiones."""
+    if cfg["user"]:
+        client.username_pw_set(cfg["user"], cfg["password"])
+    if cfg["tls"]:
+        client.tls_set(ca_certs=cfg["ca_cert"])
+    client.reconnect_delay_set(min_delay=MQTT_RETRY_SECONDS, max_delay=60)
+    return client
 
 
 def on_message(client, userdata, msg):
@@ -100,9 +135,11 @@ def on_message(client, userdata, msg):
 
 
 def main():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client = configurar_cliente(mqtt.Client(mqtt.CallbackAPIVersion.VERSION2), MQTT)
     client.on_connect = on_connect
     client.on_message = on_message
+    log.info("Broker MQTT %s:%s, %s, TLS=%s", MQTT_HOST, MQTT_PORT,
+             f"usuario '{MQTT['user']}'" if MQTT["user"] else "sin usuario", MQTT["tls"])
     while True:
         try:
             client.connect(MQTT_HOST, MQTT_PORT)
