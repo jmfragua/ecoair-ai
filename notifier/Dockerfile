@@ -13,8 +13,11 @@ RUN pip install -r requirements.txt
 
 # Configuracion comun (DATABASE_URL o DB_*)
 COPY shared/ ./shared/
-COPY api/subscriptions.py ./
+# Modulos reutilizados (puros): suscripciones y calidad del aire para el correo de bienvenida
+COPY api/subscriptions.py api/calidad_aire.py api/ica.py api/recomendaciones.py ./
 COPY notifier/*.py ./
+# Modelo de prediccion experimental (JSON versionado en modelos/)
+COPY modelos/prediccion_pm25_v1.json ./modelos/
 
 RUN useradd --create-home --uid 1000 ecoair
 USER ecoair

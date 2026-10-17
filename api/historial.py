@@ -23,7 +23,7 @@ SQL_HISTORIAL = (
 )
 # Marca de simulado de la medicion mas reciente (usa el indice device_id, received_at).
 SQL_ES_SIMULADO = (
-    "SELECT is_simulated FROM measurements WHERE device_id = %(device_id)s "
+    "SELECT is_simulated FROM measurements WHERE device_id = %(device_id)s AND received_at <= now() "
     "ORDER BY received_at DESC LIMIT 1"
 )
 

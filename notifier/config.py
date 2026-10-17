@@ -27,6 +27,14 @@ MAX_INTENTOS = _int("NOTIFIER_MAX_INTENTOS", 5)
 DRY_RUN = _bool("NOTIFIER_DRY_RUN", True)
 NOTIFY_ON_CLOSE = _bool("NOTIFY_ON_CLOSE", False)
 INCLUIR_SIMULADOS = _bool("NOTIFIER_INCLUIR_SIMULADOS", False)
+# Solo se envia la bienvenida a suscripciones confirmadas en las ultimas N horas.
+BIENVENIDA_VENTANA_H = _int("NOTIFIER_BIENVENIDA_VENTANA_H", 24)
+# Correos de anomalias (Isolation Forest, EXPERIMENTAL). Apagados por defecto; si se activan,
+# como maximo 1 correo de anomalia por dispositivo (y suscriptor) cada ANOMALIAS_CORREO_CADA_H horas.
+ANOMALIAS_CORREO = _bool("ANOMALIAS_CORREO", False)
+ANOMALIAS_CORREO_CADA_H = _int("ANOMALIAS_CORREO_CADA_H", 6)
+# Modelo de prediccion experimental (por defecto modelos/prediccion_pm25_v1.json)
+MODELO_PREDICCION_PATH = os.getenv("MODELO_PREDICCION_PATH") or None
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = _int("SMTP_PORT", 587)

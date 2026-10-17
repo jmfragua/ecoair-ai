@@ -26,6 +26,7 @@ const RULES = {
   salto_temperatura: "Salto de temperatura",
   fuera_de_rango_fisico: "Valor fuera de rango",
   dispositivo_caido: "Dispositivo caído",
+  isolation_forest: "Anomalía (modelo)",
 };
 const SEV = {
   critica: { label: "Crítica", icon: "!" },
@@ -299,7 +300,9 @@ function renderAlerts(list) {
       el("div", { class: "al__head" },
         el("span", { class: "al__rule" }, RULES[a.rule_code] || a.rule_code || a.kind),
         el("span", { class: "al__sev" }, sev.label),
-        el("span", { class: `al__state${a.abierta ? " al__state--open" : ""}` }, a.abierta ? "Abierta" : "Cerrada")),
+        el("span", { class: `al__state${a.abierta ? " al__state--open" : ""}` }, a.abierta ? "Abierta" : "Cerrada"),
+        a.kind === "anomaly" ? el("span", { class: "al__model", title: "Detección de un modelo (Isolation Forest), no es una regla de la norma" }, "modelo, experimental") : null,
+        a.is_simulated ? el("span", { class: "al__sim" }, "SIMULACIÓN") : null),
       el("p", { class: "al__time" }, tiempo),
       dur ? el("p", { class: "al__time" },
         el("span", { class: "al__dur" }, `${a.abierta ? "Lleva" : "Duración:"} ${dur}`)) : null,
@@ -496,7 +499,8 @@ function renderChart(h) {
     el("td", {}, fechaHoraCol(p.t)), el("td", {}, fmtNum(p.pm25)), el("td", {}, fmtNum(p.pm10)),
     el("td", {}, fmtNum(p.temperature)), el("td", {}, fmtNum(p.humidity, 0)))));
 
-  $("sim-badge").hidden = !h.is_simulated;
+  simDatos = !!h.is_simulated;
+  setSimulacion();
 }
 
 // ---------- Ciclo de actualizacion ----------
@@ -546,6 +550,39 @@ async function refreshHistory() {
   }
 }
 
+// ---------- Prediccion experimental ----------
+// Solo se muestran los horizontes que superaron a la persistencia en la evaluacion; los demas dicen
+// "no disponible". La persistencia nunca se presenta como prediccion.
+const fmtErr = (v) => (v == null ? "—" : Number(v).toLocaleString("es-CO", { maximumFractionDigits: 2 }));
+function renderForecast(r) {
+  const lista = $("pred-list");
+  const items = (r.horizontes || []).map((h) => {
+    const etiqueta = el("span", { class: "pred__h" }, `En ${h.minutos / 60} h`);
+    if (!h.disponible) {
+      return el("li", { class: "pred__item" }, etiqueta,
+        el("span", { class: "pred__na" }, "No disponible: el modelo no superó la línea base"));
+    }
+    return el("li", { class: "pred__item" }, etiqueta,
+      el("span", { class: "pred__v" }, `${fmtNum(h.pm25)}`), el("span", { class: "unit" }, "µg/m³"),
+      el("span", { class: "pred__err" },
+        `Error medio en la evaluación: ${fmtErr(h.mae_modelo)} µg/m³ (línea base: ${fmtErr(h.mae_persistencia)})`));
+  });
+  lista.replaceChildren(...items);
+  $("pred-msg").textContent = r.estado === "ok" ? "" : r.texto;
+  $("pred-fuentes").textContent = r.fuentes || "";
+  $("pred-aviso").hidden = !r.aviso;
+  $("pred-aviso").textContent = r.aviso || "";
+}
+
+async function refreshForecast() {
+  if (deviceMissing) return;
+  try {
+    renderForecast(await getJSON(`/devices/${dev}/forecast`));
+  } catch {
+    if (!$("pred-list").children.length) $("pred-msg").textContent = "Predicción no disponible en este momento.";
+  }
+}
+
 // ---------- Suscripcion por correo ----------
 async function loadConsent() {
   const span = $("subs-consent"), btn = $("subs-btn");
@@ -589,12 +626,38 @@ function initSubscriptionForm() {
   });
 }
 
-async function loadDeviceName() {
+// Aviso de SIMULACION: se activa si el dispositivo o sus datos son simulados. Nunca se presenta
+// una lectura simulada como si fuera del sensor real.
+let simDispositivo = false, simDatos = false;
+function setSimulacion() {
+  const sim = simDispositivo || simDatos;
+  $("sim-badge").hidden = !sim;
+  $("sim-banner").hidden = !sim;
+  document.title = `${sim ? "SIMULACIÓN · " : ""}EcoAir AI · Calidad del aire`;
+}
+
+// Selector de estacion: cambia ?device= y recarga la pagina.
+async function loadDevices() {
+  const sel = $("device-select");
   $("device-name").textContent = DEVICE;
+  $("device-name").value = DEVICE;
   try {
-    const d = (await getJSON("/devices")).find((x) => x.device_id === DEVICE);
-    if (d && d.name) $("device-name").textContent = `${d.name} (${DEVICE})`;
+    const lista = await getJSON("/devices");
+    const opciones = lista.map((d) => {
+      const nombre = `${d.name ? `${d.name} (${d.device_id})` : d.device_id}${d.is_simulated ? " · SIMULACIÓN" : ""}`;
+      const o = el("option", { value: d.device_id }, nombre);
+      if (d.device_id === DEVICE) { o.selected = true; simDispositivo = !!d.is_simulated; }
+      return o;
+    });
+    if (!lista.some((d) => d.device_id === DEVICE)) opciones.unshift(el("option", { value: DEVICE, selected: "" }, DEVICE));
+    sel.replaceChildren(...opciones);
+    setSimulacion();
   } catch { /* se queda el identificador */ }
+  sel.addEventListener("change", () => {
+    const url = new URL(location.href);
+    url.searchParams.set("device", sel.value);
+    location.assign(url);
+  });
 }
 
 function start() {
@@ -603,11 +666,13 @@ function start() {
   initScaleToggle();
   initSubscriptionForm();
   loadConsent();
-  loadDeviceName();
+  loadDevices();
   refresh();
   refreshHistory();
+  refreshForecast();
   setInterval(refresh, REFRESH_MS);
   setInterval(refreshHistory, HISTORY_REFRESH_MS);
+  setInterval(refreshForecast, HISTORY_REFRESH_MS);
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => lastHistory && renderChart(lastHistory), 120); }).observe($("chart"));
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); refreshHistory(); } });

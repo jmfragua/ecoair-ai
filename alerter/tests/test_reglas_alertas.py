@@ -165,3 +165,16 @@ def test_salto_reciente_alerta_y_salto_viejo_no():
 def test_ventana_de_congelado_debe_cubrir_30_min():
     with pytest.raises(ValueError):
         condiciones_sensor(_df_min(range(60)), AHORA, {**VENTANAS, "sensor_congelado": 20})
+
+
+# ---- Simulacion ----
+
+from reglas_alertas import Condicion, etiquetar_simulacion  # noqa: E402
+
+
+def test_alerta_de_datos_simulados_lleva_la_etiqueta():
+    c = Condicion("ica_1h", "threshold", "aviso", "ICA 121 (Dañina...)", {"x": 1})
+    s = etiquetar_simulacion(c, True)
+    assert s.message == "[SIMULACIÓN] ICA 121 (Dañina...)" and s.details == {"x": 1, "simulado": True}
+    assert etiquetar_simulacion(s, True).message.count("[SIMULACIÓN]") == 1   # no se duplica
+    assert etiquetar_simulacion(c, False) is c                                 # datos reales: igual

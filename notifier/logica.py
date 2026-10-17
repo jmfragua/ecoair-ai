@@ -36,3 +36,15 @@ def error_seguro(exc, limite=200):
 def destinatarios(alerta_severity, suscriptores):
     """Suscriptores cuya severidad minima se cumple con la severidad de la alerta."""
     return [s for s in suscriptores if severidad_cumple(s["min_severity"], alerta_severity)]
+
+
+def limitar_anomalias(filas):
+    """Una anomalia por (dispositivo, suscriptor) en la tanda (la mas antigua). La consulta ya
+    excluye a quien recibio una en las ultimas ANOMALIAS_CORREO_CADA_H horas."""
+    vistos, out = set(), []
+    for f in filas:
+        clave = (f["device_id"], f["subscriber_id"])
+        if clave not in vistos:
+            vistos.add(clave)
+            out.append(f)
+    return out

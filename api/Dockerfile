@@ -15,6 +15,8 @@ RUN pip install -r requirements.txt
 COPY shared/ ./shared/
 # Todos los modulos de la API (main, ica, calidad_aire, recomendaciones...). Los tests no se copian.
 COPY api/*.py ./
+# Modelo de prediccion experimental (JSON versionado en modelos/)
+COPY modelos/prediccion_pm25_v1.json ./modelos/
 # Dashboard publico (HTML, CSS, JS y fuente local; sin recursos de internet)
 COPY api/static/ ./static/
 

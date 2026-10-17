@@ -70,3 +70,30 @@ def test_historial_parcial_y_completo():
 def test_historial_vacio():
     h = construir_historial("x", [], AHORA, 24, 5, False)
     assert h["puntos"] == [] and h["parcial"] is True and h["horas_con_datos"] == 0
+
+
+# ---------- Prediccion experimental (paso 3) ----------
+
+def test_forecast_responde_sin_inventar_valores(monkeypatch):
+    import main
+    from datetime import datetime, timedelta, timezone
+
+    ahora = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+
+    async def device_ok(device_id):
+        return None
+
+    async def query_falsa(sql, params=()):
+        assert sql is main.SQL_SERIE_PM25 and params["device_id"] == "ecoair-sim-01"
+        return [{"t": ahora - timedelta(minutes=i), "pm25": 20.0} for i in range(200)]
+
+    monkeypatch.setattr(main, "require_device", device_ok)
+    monkeypatch.setattr(main, "query", query_falsa)
+    main._cache_prediccion.clear()
+    r = TestClient(main.app).get("/devices/ecoair-sim-01/forecast").json()
+    assert r["experimental"] is True and r["device_id"] == "ecoair-sim-01"
+    assert r["fuentes"] == "Modelo entrenado con datos simulados. Experimental." and "simulados" in r["aviso"]
+    por_h = {h["minutos"]: h for h in r["horizontes"]}
+    # en el modelo versionado, 1 h no supero a la persistencia: no hay valor; 3 h si
+    assert por_h[60] == {"minutos": 60, "pm25": None, "disponible": False}
+    assert por_h[180]["disponible"] and por_h[180]["pm25"] is not None

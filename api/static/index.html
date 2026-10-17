@@ -23,17 +23,27 @@
       </svg>
       <div>
         <h1 class="brand__name">EcoAir <span>AI</span></h1>
-        <p class="brand__device">Estación <strong id="device-name">—</strong></p>
+        <p class="brand__device">
+          <label for="device-select">Estación</label>
+          <select id="device-select" class="device-select" aria-label="Cambiar de estación">
+            <option id="device-name">—</option>
+          </select>
+        </p>
       </div>
     </div>
     <div class="top__status">
-      <span id="sim-badge" class="sim-badge" hidden>DATOS SIMULADOS</span>
+      <span id="sim-badge" class="sim-badge" hidden>SIMULACIÓN</span>
       <p id="status" class="status status--loading" role="status" aria-live="polite">
         <span class="status__dot" aria-hidden="true"></span>
         <span id="status-text">Conectando…</span>
       </p>
     </div>
   </header>
+
+  <div id="sim-banner" class="sim-banner" role="note" hidden>
+    <strong>SIMULACIÓN</strong> · Esta estación usa datos inventados para demostración.
+    No son mediciones de un sensor real.
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
@@ -183,8 +193,20 @@
       <ol class="timeline" id="alerts"></ol>
       <p class="empty" id="alerts-empty" hidden>Sin alertas registradas.</p>
     </section>
+    <!-- Prediccion experimental -->
+    <section class="card card--pred" aria-labelledby="pred-title" style="--i:7">
+      <header class="card__head">
+        <h2 id="pred-title" class="card__title">Predicción experimental · PM2.5</h2>
+        <span class="chip chip--model">modelo, experimental</span>
+      </header>
+      <ul class="pred__list" id="pred-list" aria-live="polite"></ul>
+      <p class="pred__msg" id="pred-msg">Cargando…</p>
+      <p class="pred__src" id="pred-fuentes"></p>
+      <p class="pred__warn" id="pred-aviso" hidden></p>
+    </section>
+
     <!-- Suscripcion por correo -->
-    <section class="card card--subs" aria-labelledby="subs-title" style="--i:7">
+    <section class="card card--subs" aria-labelledby="subs-title" style="--i:8">
       <header class="card__head">
         <h2 id="subs-title" class="card__title">Recibir alertas por correo</h2>
         <span class="chip chip--muted">doble confirmación</span>

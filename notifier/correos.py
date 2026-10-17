@@ -8,6 +8,8 @@ from urllib.parse import quote
 
 COLOMBIA = timezone(timedelta(hours=-5))  # Colombia no tiene horario de verano
 ADVERTENCIA = "Estación de bajo costo, no sustituye mediciones oficiales."
+AVISO_SIMULACION = ("SIMULACIÓN: esta estación usa datos inventados para demostración; "
+                    "no son mediciones de un sensor real.")
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 SEVERIDAD = {"critica": "Crítica", "aviso": "Aviso", "info": "Información"}
 REGLAS = {
@@ -18,6 +20,7 @@ REGLAS = {
     "salto_temperatura": "Salto de temperatura",
     "fuera_de_rango_fisico": "Valor fuera de rango",
     "dispositivo_caido": "Dispositivo caído",
+    "isolation_forest": "Anomalía (modelo, experimental)",
 }
 
 
@@ -89,30 +92,45 @@ def correo_confirmacion(remitente, destino, device_id, links):
     return _mensaje(remitente, destino, asunto, texto, cuerpo, links["baja"])
 
 
-def correo_alerta(remitente, destino, alerta, kind, links):
-    """kind: 'open' (alerta abierta) o 'close' (alerta cerrada, con duracion)."""
+def correo_alerta(remitente, destino, alerta, kind, links, simulado=False):
+    """kind: 'open' (alerta abierta) o 'close' (alerta cerrada, con duracion).
+
+    simulado: alerta sobre datos simulados -> [SIMULACIÓN] en el asunto y aviso en el cuerpo.
+    """
+    pre = "[SIMULACIÓN] " if simulado else ""
     regla = REGLAS.get(alerta["rule_code"], alerta["rule_code"] or alerta["kind"])
     nivel = SEVERIDAD.get(alerta["severity"], alerta["severity"] or "Información")
     device = alerta["device_id"]
     inicio = hora_colombia(alerta["started_at"])
-    if kind == "close":
-        asunto = f"[EcoAir AI] Alerta cerrada: {regla} · {device}"
+    anomalia = alerta.get("kind") == "anomaly"
+    nota = ("Detección EXPERIMENTAL de un modelo (Isolation Forest), no es una regla de la norma. "
+            "Puede haber falsas alarmas.") if anomalia else None
+    if anomalia:
+        asunto = f"{pre}[EcoAir AI] Anomalía experimental (modelo) · {device}"
+        estado = f"Se detectó a las {inicio}."
+    elif kind == "close":
+        asunto = f"{pre}[EcoAir AI] Alerta cerrada: {regla} · {device}"
         estado = (f"Se cerró a las {hora_colombia(alerta['ended_at'])}. "
                   f"Duración: {duracion(alerta['started_at'], alerta['ended_at'])}.")
     else:
-        asunto = f"[EcoAir AI] Alerta {nivel.lower()}: {regla} · {device}"
+        asunto = f"{pre}[EcoAir AI] Alerta {nivel.lower()}: {regla} · {device}"
         estado = f"Se abrió a las {inicio}."
     texto = (
-        f"Estación: {device}\nNivel: {nivel}\nRegla: {regla}\nInicio: {inicio}\n{estado}\n\n"
-        f"{alerta['message']}\n\nVer el panel: {links['dashboard']}\n\n"
+        (f"{AVISO_SIMULACION}\n\n" if simulado else "")
+        + f"Estación: {device}\nNivel: {nivel}\nRegla: {regla}\nInicio: {inicio}\n{estado}\n\n"
+        + (f"{nota}\n\n" if nota else "")
+        + f"{alerta['message']}\n\nVer el panel: {links['dashboard']}\n\n"
         f"Darte de baja: {links['baja']}\n{ADVERTENCIA}\n"
     )
     cuerpo = _html(
-        f"{'Alerta cerrada' if kind == 'close' else 'Alerta ' + nivel.lower()}: {html.escape(regla)}",
+        (f"{pre}Anomalía experimental (modelo)" if anomalia else
+         f"{pre}{'Alerta cerrada' if kind == 'close' else 'Alerta ' + nivel.lower()}: {html.escape(regla)}"),
+        ([f'<b style="color:#b45309">{html.escape(AVISO_SIMULACION)}</b>'] if simulado else []) +
         [f"<b>Estación:</b> {html.escape(device)}<br><b>Nivel:</b> {html.escape(nivel)}<br>"
          f"<b>Regla:</b> {html.escape(regla)}<br><b>Inicio:</b> {inicio}",
-         html.escape(estado),
-         html.escape(alerta["message"])],
+         html.escape(estado)]
+        + ([f"<b>{html.escape(nota)}</b>"] if nota else [])
+        + [html.escape(alerta["message"])],
         boton=("Ver el panel", links["dashboard"]),
         pie=[f'<a href="{html.escape(links["baja"])}">Darme de baja</a>', ADVERTENCIA],
     )
@@ -137,3 +155,60 @@ def payload_brevo(msg):
     if cabeceras:
         payload["headers"] = cabeceras
     return payload
+
+
+AVISO_INDICATIVO = "Datos indicativos, sensor de bajo costo. No sustituye mediciones oficiales."
+PREDICCION_NO_DISPONIBLE = "No disponible todavía."
+
+
+def _bloque_ica(resp):
+    """(lineas de texto, parrafos html) con el ICA actual y la recomendacion de texto fijo."""
+    if not resp or resp.get("estado") != "ok":
+        t = "Ahora no hay datos recientes del sensor: no se puede calcular el ICA en este momento."
+        return [t], [html.escape(t)]
+    g, rec = resp["ica"]["general"], resp["recomendacion"]
+    contaminante = {"pm25": "PM2.5", "pm10": "PM10"}.get(g["definido_por"], g["definido_por"])
+    ica = (f"ICA actual: {g['ica']} ({g['category_name']}), definido por {contaminante}. "
+           "Base: media de la última hora (indicativo; la Res. 2254/2017 usa promedios de 24 h).")
+    fuentes = "; ".join(f"{f['documento']}, pág. {f['pagina']}" for f in rec["fuente"])
+    texto = [ica, "", f"Efectos: {rec['efectos']}", f"Qué hacer: {rec['recomendacion']}",
+             f"Fuente: {fuentes}. (Texto fijo de la norma, no IA.)"]
+    cuerpo = [html.escape(ica),
+              f"<b>Efectos:</b> {html.escape(rec['efectos'])}",
+              f"<b>Qué hacer:</b> {html.escape(rec['recomendacion'])}",
+              f'<span style="color:#777;font-size:12px">Fuente: {html.escape(fuentes)}. '
+              "Texto fijo de la norma, no IA.</span>"]
+    return texto, cuerpo
+
+
+def correo_bienvenida(remitente, destino, device_id, resp, links, prediccion=None, simulado=False):
+    """Correo unico al confirmar la suscripcion.
+
+    resp: salida de calidad_aire.construir_respuesta (la misma del dashboard).
+    prediccion: None -> "no disponible"; o dict con 'texto' (y opcional 'aviso') desde el paso 3.
+    simulado: True si la estacion usa datos simulados -> [SIMULACIÓN] en asunto y cuerpo.
+    """
+    pre = "[SIMULACIÓN] " if simulado else ""
+    asunto = f"{pre}[EcoAir AI] Suscripción confirmada · estación {device_id}"
+    ica_txt, ica_html = _bloque_ica(resp)
+    pred_txt = PREDICCION_NO_DISPONIBLE if not prediccion else prediccion["texto"]
+    pred_aviso = (prediccion or {}).get("aviso")
+    texto = "\n".join(
+        ([AVISO_SIMULACION, ""] if simulado else [])
+        + [f"Tu suscripción a las alertas de la estación {device_id} está confirmada.", ""]
+        + ica_txt
+        + ["", "Predicción experimental:", pred_txt] + ([pred_aviso] if pred_aviso else [])
+        + ["", AVISO_INDICATIVO, f"Ver el panel: {links['dashboard']}", "",
+           f"Darte de baja: {links['baja']}", ADVERTENCIA, ""]
+    )
+    parrafos = (
+        ([f'<b style="color:#b45309">{html.escape(AVISO_SIMULACION)}</b>'] if simulado else [])
+        + [f"Tu suscripción a las alertas de la estación <b>{html.escape(device_id)}</b> está confirmada."]
+        + ica_html
+        + [f"<b>Predicción experimental:</b> {html.escape(pred_txt)}"
+           + (f"<br><i>{html.escape(pred_aviso)}</i>" if pred_aviso else ""),
+           html.escape(AVISO_INDICATIVO)]
+    )
+    cuerpo = _html(f"{pre}Suscripción confirmada", parrafos, boton=("Ver el panel", links["dashboard"]),
+                   pie=[f'<a href="{html.escape(links["baja"])}">Darme de baja</a>', ADVERTENCIA])
+    return _mensaje(remitente, destino, asunto, texto, cuerpo, links["baja"])

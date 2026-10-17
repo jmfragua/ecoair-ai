@@ -224,3 +224,22 @@ def test_confirmar_con_token_vacio_no_consulta(client, monkeypatch):
     monkeypatch.setattr(main, "query", query_falsa)
     r = client.get("/subscriptions/confirm?token=")
     assert r.status_code == 200 and "no es válido" in r.text
+
+
+# ---------- /devices con marca de simulacion (paso 2) ----------
+
+def test_devices_indica_si_es_simulado(monkeypatch):
+    async def query_falsa(sql, params=()):
+        assert sql is main.SQL_DEVICES
+        return [{"device_id": "ecoair-node-01", "name": "Nodo 01", "location": None, "created_at": AHORA, "is_simulated": False},
+                {"device_id": "ecoair-sim-01", "name": "Estación simulada", "location": "Simulado", "created_at": AHORA, "is_simulated": True}]
+
+    monkeypatch.setattr(main, "query", query_falsa)
+    r = TestClient(main.app).get("/devices").json()
+    assert [(d["device_id"], d["is_simulated"]) for d in r] == [("ecoair-node-01", False), ("ecoair-sim-01", True)]
+
+
+def test_lecturas_ignoran_filas_futuras():
+    import inspect
+    fuente = inspect.getsource(main.latest_measurement) + inspect.getsource(main.list_measurements) + main.SQL_DEVICES
+    assert fuente.count("received_at <= now()") == 3

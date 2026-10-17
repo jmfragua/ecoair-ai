@@ -26,6 +26,7 @@ from reglas_alertas import (
     condicion_caido,
     condiciones_sensor,
     condiciones_umbral,
+    etiquetar_simulacion,
     max_severidad,
 )
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila  # noqa: E402
@@ -95,7 +96,49 @@ def dispositivos(conn):
     ).fetchall()
 
 
-def evaluar_dispositivo(conn, device_id, ahora):
+_detector = None
+_detector_fallo = False
+
+
+def obtener_detector():
+    """Detector de anomalias si ANOMALIAS_ACTIVAS; None si esta apagado o no se pudo cargar."""
+    global _detector, _detector_fallo
+    if not config.ANOMALIAS_ACTIVAS or _detector_fallo:
+        return None
+    if _detector is None:
+        try:
+            from anomalias import DetectorAnomalias
+            _detector = DetectorAnomalias(config.ANOMALIAS_MODELO_PATH)
+            log.info("Anomalias (EXPERIMENTAL) activas: modelo %s, solo simulados=%s",
+                     _detector.procedencia.get("nombre"), _detector.solo_simulados)
+        except Exception as e:  # noqa: BLE001 - sin modelo, las reglas siguen funcionando
+            _detector_fallo = True
+            log.error("No se pudo cargar el modelo de anomalias (%s): %s. Se desactiva la capa.",
+                      type(e).__name__, e)
+            return None
+    return _detector
+
+
+def condicion_anomalia_de(conn, device_id, ahora, es_simulado, detector):
+    """Evalua el modelo sobre los ultimos minutos. Nunca rompe la evaluacion de las reglas."""
+    if detector is None or not detector.aplica_a(es_simulado):
+        return None
+    try:
+        rows = conn.execute(
+            "SELECT received_at AS timestamp, temperature, humidity, pm25, pm10 FROM measurements "
+            "WHERE device_id = %s AND received_at > %s - make_interval(mins => %s) AND received_at <= %s "
+            "ORDER BY received_at",
+            (device_id, ahora, config.ANOMALIAS_VENTANA_MIN, ahora),
+        ).fetchall()
+        return detector.evaluar(rows, ahora)
+    except psycopg.Error:
+        raise
+    except Exception as e:  # noqa: BLE001
+        log.error("Error del modelo de anomalias en %s: %s", device_id, e)
+        return None
+
+
+def evaluar_dispositivo(conn, device_id, ahora, es_simulado=False):
     params = {"device_id": device_id, "ahora": ahora}
     ventanas = conn.execute(SQL_VENTANAS, params).fetchone()
     ultima = conn.execute(SQL_ULTIMA, params).fetchone()
@@ -115,6 +158,9 @@ def evaluar_dispositivo(conn, device_id, ahora):
     caido = condicion_caido(ultima["received_at"] if ultima else None, ahora)
     if caido:
         condiciones.append(caido)
+    anomalia = condicion_anomalia_de(conn, device_id, ahora, es_simulado, obtener_detector())
+    if anomalia:
+        condiciones.append(anomalia)
     return {c.rule_code: c for c in condiciones}
 
 
@@ -131,6 +177,8 @@ def aplicar(conn, device_id, is_simulated, condiciones, ahora):
     for regla in REGLAS:
         estado = estados[(device_id, regla)]
         cond = condiciones.get(regla)
+        if cond is not None:
+            cond = etiquetar_simulacion(cond, is_simulated)
         accion = actualizar(estado, cond is not None, ahora,
                             config.REVISIONES_ABRIR, config.REVISIONES_CERRAR)
         if accion == "abrir":
@@ -170,7 +218,7 @@ def revisar():
     ahora = datetime.now(timezone.utc)
     for d in dispositivos(conn):
         try:
-            condiciones = evaluar_dispositivo(conn, d["device_id"], ahora)
+            condiciones = evaluar_dispositivo(conn, d["device_id"], ahora, bool(d["is_simulated"]))
             aplicar(conn, d["device_id"], d["is_simulated"], condiciones, ahora)
         except psycopg.OperationalError:
             raise  # conexion rota: se reconecta en la siguiente revision
@@ -179,9 +227,9 @@ def revisar():
 
 
 def main():
-    log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s",
+    log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s, anomalias=%s",
              config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
-             config.INCLUIR_SIMULADOS)
+             config.INCLUIR_SIMULADOS, config.ANOMALIAS_ACTIVAS)
     while True:
         inicio = time.monotonic()
         try:

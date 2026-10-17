@@ -22,6 +22,7 @@ if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
     sys.path.insert(0, str(_RAIZ))
 
 from shared.settings import dsn_desde_entorno  # noqa: E402
+from shared.prediccion import SQL_SERIE_PM25, cargar_modelo, prediccion, serie_por_minuto  # noqa: E402
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
 from subscriptions import (
     LIMITE_IP,
@@ -85,6 +86,8 @@ class Device(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
     created_at: datetime
+    # True si sus datos son simulados (segun la medicion mas reciente). El dashboard muestra SIMULACION.
+    is_simulated: bool = False
 
 
 class Measurement(BaseModel):
@@ -128,9 +131,20 @@ async def health():
     return {"status": "ok"}
 
 
+# Filas con hora futura (estacion simulada con episodio programado, tools/simular_estacion.py)
+# no se muestran hasta que llega su hora: todas las lecturas filtran received_at <= now().
+SQL_DEVICES = (
+    "SELECT d.device_id, d.name, d.location, d.created_at, "
+    "COALESCE((SELECT m.is_simulated FROM measurements m WHERE m.device_id = d.device_id "
+    "          AND m.received_at <= now() ORDER BY m.received_at DESC LIMIT 1), "
+    "         d.location = 'Simulado') AS is_simulated "
+    "FROM devices d ORDER BY d.device_id"
+)
+
+
 @app.get("/devices", response_model=list[Device])
 async def list_devices():
-    return await query("SELECT device_id, name, location, created_at FROM devices ORDER BY device_id")
+    return await query(SQL_DEVICES)
 
 
 @app.get("/devices/{device_id}/measurements/latest", response_model=Measurement)
@@ -138,7 +152,8 @@ async def latest_measurement(device_id: str):
     await require_device(device_id)
     rows = await query(
         "SELECT id, device_id, received_at, temperature, humidity, pm25, pm10 "
-        "FROM measurements WHERE device_id = %s ORDER BY received_at DESC LIMIT 1",
+        "FROM measurements WHERE device_id = %s AND received_at <= now() "
+        "ORDER BY received_at DESC LIMIT 1",
         (device_id,),
     )
     if not rows:
@@ -156,7 +171,7 @@ async def list_measurements(
     return await query(
         "SELECT id, device_id, received_at, temperature, humidity, pm25, pm10 "
         "FROM measurements WHERE device_id = %s AND (%s::timestamptz IS NULL OR received_at >= %s) "
-        "ORDER BY received_at DESC LIMIT %s",
+        "AND received_at <= now() ORDER BY received_at DESC LIMIT %s",
         (device_id, since, since, limit),
     )
 
@@ -379,6 +394,27 @@ async def unsubscribe(token: str = ""):
     except psycopg.errors.UndefinedTable:
         raise HTTPException(status_code=503, detail=FALTA_005)
     return _pagina("Baja procesada", "Si el enlace era válido, ya no recibirás más alertas por correo de esta estación.")
+
+
+# ---------- Prediccion EXPERIMENTAL de PM2.5 (shared/prediccion.py, modelo en modelos/) ----------
+# Solo se muestran los horizontes en que el modelo supero a la persistencia en la evaluacion.
+PREDICCION_CACHE_S = 60
+_cache_prediccion = {}
+
+
+@app.get("/devices/{device_id}/forecast")
+async def forecast(device_id: str):
+    await _con_timeout(require_device(device_id))
+    ahora = datetime.now(timezone.utc)
+    guardado = _cache_prediccion.get(device_id)
+    if guardado and (ahora - guardado[0]).total_seconds() < PREDICCION_CACHE_S:
+        return guardado[1]
+    filas = await _con_timeout(query(SQL_SERIE_PM25, {"device_id": device_id, "ahora": ahora}))
+    serie = serie_por_minuto([(f["t"], f["pm25"]) for f in filas])
+    r = prediccion(cargar_modelo(os.getenv("MODELO_PREDICCION_PATH")), serie, ahora)
+    r = {**r, "device_id": device_id, "calculado_utc": ahora.isoformat(timespec="seconds")}
+    _cache_prediccion[device_id] = (ahora, r)
+    return r
 
 
 # Dashboard publico en "/". Se monta AL FINAL para que no tape las rutas de la API.

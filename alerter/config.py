@@ -26,6 +26,12 @@ REVISIONES_CERRAR = _int("ALERTER_REVISIONES_CERRAR", 3)
 VENTANA_DISPOSITIVOS_H = _int("ALERTER_VENTANA_DISPOSITIVOS_H", 24)
 INCLUIR_SIMULADOS = _bool("ALERTER_INCLUIR_SIMULADOS", False)
 
+# Capa EXPERIMENTAL de anomalias (Isolation Forest). Apagada por defecto. Solo se aplica a
+# dispositivos simulados porque el modelo se entreno con datos simulados (ver su procedencia).
+ANOMALIAS_ACTIVAS = _bool("ANOMALIAS_ACTIVAS", False)
+ANOMALIAS_MODELO_PATH = os.getenv("ANOMALIAS_MODELO_PATH") or None
+ANOMALIAS_VENTANA_MIN = _int("ANOMALIAS_VENTANA_MIN", 60)
+
 # Ventana de datos por regla de sensor, para que la alerta refleje el estado actual.
 VENTANA_SENSOR_MIN = {
     "sensor_congelado": _int("ALERTER_VENTANA_CONGELADO_MIN", 45),

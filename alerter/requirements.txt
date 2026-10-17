@@ -1,3 +1,7 @@
 numpy==2.5.4
 pandas==3.0.6
 psycopg[binary]==3.3.6
+# Capa experimental de anomalias (solo se importa con ANOMALIAS_ACTIVAS=true).
+# Misma version con la que se entreno el modelo de modelos/.
+scikit-learn==1.9.1
+joblib==1.6.0

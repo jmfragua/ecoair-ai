@@ -250,3 +250,53 @@ def test_dry_run_arranca_sin_variables_smtp(monkeypatch):
     monkeypatch.delenv("BASE_URL")
     monkeypatch.delenv("SUBSCRIPTION_SECRET")
     assert set(importlib.reload(config).faltantes()) == {"BASE_URL", "SUBSCRIPTION_SECRET"}
+
+
+# ---------- Alertas sobre datos simulados ----------
+
+def test_correo_de_alerta_simulada_lo_dice_en_asunto_y_cuerpo():
+    from correos import AVISO_SIMULACION
+    links = enlaces(BASE, "ecoair-sim-01", token_baja=TOKEN_BAJA)
+    msg = correo_alerta("x@y.co", EMAIL, _alerta(device_id="ecoair-sim-01"), "open", links, simulado=True)
+    assert msg["Subject"] == "[SIMULACIÓN] [EcoAir AI] Alerta crítica: Dispositivo caído · ecoair-sim-01"
+    assert _texto(msg).startswith(AVISO_SIMULACION) and "SIMULACIÓN" in _texto(msg, "html")
+    real = correo_alerta("x@y.co", EMAIL, _alerta(), "open", links)
+    assert "SIMULACIÓN" not in real["Subject"] and "SIMULACIÓN" not in _texto(real)
+
+
+# ---------- Anomalias (paso 4) ----------
+
+from logica import limitar_anomalias  # noqa: E402
+
+
+def test_correo_de_anomalia_dice_que_es_experimental():
+    links = enlaces(BASE, "ecoair-sim-01", token_baja=TOKEN_BAJA)
+    a = _alerta(device_id="ecoair-sim-01", kind="anomaly", rule_code="isolation_forest", severity="info",
+                message="[SIMULACIÓN] Lectura inusual según el modelo...")
+    msg = correo_alerta("x@y.co", EMAIL, a, "open", links, simulado=True)
+    assert msg["Subject"] == "[SIMULACIÓN] [EcoAir AI] Anomalía experimental (modelo) · ecoair-sim-01"
+    t = _texto(msg)
+    assert "Detección EXPERIMENTAL de un modelo (Isolation Forest), no es una regla de la norma" in t
+    assert "Regla: Anomalía (modelo, experimental)" in t and "Puede haber falsas alarmas" in t
+
+
+def test_limitar_anomalias_una_por_dispositivo_y_suscriptor():
+    filas = [{"alert_id": 1, "device_id": "sim", "subscriber_id": 7},
+             {"alert_id": 2, "device_id": "sim", "subscriber_id": 7},
+             {"alert_id": 2, "device_id": "sim", "subscriber_id": 8}]
+    assert [(f["alert_id"], f["subscriber_id"]) for f in limitar_anomalias(filas)] == [(1, 7), (2, 8)]
+
+
+def test_sql_de_anomalias_limita_a_6_horas_y_las_reglas_las_excluyen():
+    assert "make_interval(hours => %(cada_h)s)" in notifier.SQL_ANOMALIAS_A_ENCOLAR
+    import inspect
+    assert "a.kind <> 'anomaly'" in inspect.getsource(notifier.encolar)
+
+
+def test_correo_de_anomalias_apagado_por_defecto(monkeypatch):
+    import importlib
+
+    import config
+    monkeypatch.delenv("ANOMALIAS_CORREO", raising=False)
+    assert importlib.reload(config).ANOMALIAS_CORREO is False
+    assert importlib.reload(config).ANOMALIAS_CORREO_CADA_H == 6

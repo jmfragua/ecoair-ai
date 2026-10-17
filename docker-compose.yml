@@ -79,6 +79,10 @@ services:
       DB_HOST: postgres
       DB_PORT: "5432"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # true para la demo: evalua tambien ecoair-sim-01 (sus alertas quedan marcadas [SIMULACIÓN])
+      ALERTER_INCLUIR_SIMULADOS: ${ALERTER_INCLUIR_SIMULADOS:-false}
+      # Capa EXPERIMENTAL de anomalias (Isolation Forest). Solo aplica a dispositivos simulados.
+      ANOMALIAS_ACTIVAS: ${ANOMALIAS_ACTIVAS:-false}
     depends_on:
       - postgres
     restart: unless-stopped
@@ -105,6 +109,10 @@ services:
       SUBSCRIPTION_SECRET: ${SUBSCRIPTION_SECRET:-}
       NOTIFIER_DRY_RUN: ${NOTIFIER_DRY_RUN:-true}
       NOTIFY_ON_CLOSE: ${NOTIFY_ON_CLOSE:-false}
+      # true para la demo: tambien envia correos de alertas simuladas (asunto con [SIMULACIÓN])
+      NOTIFIER_INCLUIR_SIMULADOS: ${NOTIFIER_INCLUIR_SIMULADOS:-false}
+      # Correos de anomalias experimentales: apagados; si se activan, max. 1 por dispositivo cada 6 h
+      ANOMALIAS_CORREO: ${ANOMALIAS_CORREO:-false}
     depends_on:
       - postgres
     restart: unless-stopped

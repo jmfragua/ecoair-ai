@@ -36,7 +36,8 @@ SEVERIDAD_ICA = {
 SEVERIDAD_TABLA4 = {"prevencion": "aviso", "alerta": "critica", "emergencia": "critica"}
 RANGO_SEVERIDAD = ["info", "aviso", "critica"]
 REGLAS_SENSOR = ["sensor_congelado", "salto_temperatura", "fuera_de_rango_fisico"]
-REGLAS = ["ica_1h", "tabla4_pm25", "tabla4_pm10", *REGLAS_SENSOR, "dispositivo_caido"]
+# isolation_forest: capa experimental opcional (alerter/anomalias.py, ANOMALIAS_ACTIVAS)
+REGLAS = ["ica_1h", "tabla4_pm25", "tabla4_pm10", *REGLAS_SENSOR, "dispositivo_caido", "isolation_forest"]
 NOMBRE_PM = {"pm25": "PM2.5", "pm10": "PM10"}
 NOMBRE_NIVEL = {"prevencion": "prevención", "alerta": "alerta", "emergencia": "emergencia"}
 FUENTE_SENSOR = "regla de salud del sensor del proyecto EcoAir (no es una norma)"
@@ -159,6 +160,20 @@ def condicion_caido(ultima_ts, ahora):
                  f"Última medición: {_hora(ultima_ts)}. Fuente: {FUENTE_SENSOR}."),
         details={"ultima_medicion": str(pd.Timestamp(ultima_ts)), "minutos_sin_datos": minutos},
     )
+
+
+ETIQUETA_SIMULACION = "[SIMULACIÓN] "
+
+
+def etiquetar_simulacion(cond, simulado):
+    """Si los datos del dispositivo son simulados, lo dice en el mensaje y en details.
+
+    Nunca se presenta una lectura simulada como si fuera del sensor real.
+    """
+    if not simulado:
+        return cond
+    msg = cond.message if cond.message.startswith(ETIQUETA_SIMULACION) else ETIQUETA_SIMULACION + cond.message
+    return Condicion(cond.rule_code, cond.kind, cond.severity, msg, {**cond.details, "simulado": True})
 
 
 @dataclass
