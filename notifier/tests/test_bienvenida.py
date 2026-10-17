@@ -50,7 +50,7 @@ def test_bienvenida_con_ica_recomendacion_y_fuente():
     assert "Res. 2254/2017, Art. 19, Tabla 5, pág. 8 (PDF)" in t and "no IA" in t
     assert f"Predicción experimental:\n{PREDICCION_NO_DISPONIBLE}" in t
     assert AVISO_INDICATIVO in t and ADVERTENCIA in t
-    assert f"{BASE}/?device=ecoair-node-01" in t and "unsubscribe?token=TOKENBAJA" in t
+    assert f"{BASE}/panel?device=ecoair-node-01" in t and "unsubscribe?token=TOKENBAJA" in t
     assert "SIMULACIÓN" not in t and "SIMULACIÓN" not in msg["Subject"]
     assert msg["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
 

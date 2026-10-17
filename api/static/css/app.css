@@ -89,6 +89,8 @@ ol, ul { padding: 0; list-style: none; }
 }
 .brand__name { font-size: 1.35rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; }
 .brand__name span { color: var(--text-2); font-weight: 500; }
+.brand__home { color: inherit; text-decoration: none; }
+#suscripcion { scroll-margin-top: 16px; }
 .brand__device { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
 .brand__device strong { color: var(--text-2); font-weight: 600; }
 

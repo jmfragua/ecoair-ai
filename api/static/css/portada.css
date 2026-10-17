@@ -1,0 +1,72 @@
+/* Portada de EcoAir AI. Reutiliza los tokens, la fuente y los componentes de app.css
+   (card, chip, status, sim-badge, foot); aqui solo el diseno propio de la portada. */
+
+body.portada { padding-top: 0; }
+
+.hero { max-width: 720px; margin: 0 auto; padding: 28px 0 8px; display: grid; gap: 14px; }
+.hero__tag {
+  justify-self: start; font-size: .75rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-2); background: var(--surface); border: 1px solid var(--border);
+  padding: 5px 11px; border-radius: 999px;
+}
+.hero__title { font-size: clamp(2.3rem, 9vw, 3.6rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+.hero__title span { color: var(--text-2); font-weight: 600; }
+.hero__lead { font-size: 1.05rem; color: var(--text-2); max-width: 34ch; }
+
+.live { animation: none; }
+.live .status { margin-bottom: 12px; }
+.live__ica { display: flex; align-items: center; gap: 14px; }
+.live__num {
+  min-width: 2.6ch; font-size: 3rem; font-weight: 780; letter-spacing: -0.04em; line-height: 1;
+  color: var(--text); padding-left: 12px; border-left: 6px solid var(--cat); transition: border-color .6s ease;
+}
+.live__label { font-size: .72rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.live__cat { font-size: 1.05rem; font-weight: 700; }
+.live__base { font-size: .75rem; color: var(--muted); margin-top: 10px; }
+.live__base:empty { display: none; }
+
+.hero__cta { display: grid; gap: 10px; }
+.btn--primary, .btn--ghost {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 20px;
+  border-radius: 999px; font-weight: 700; text-decoration: none; font-size: 1rem;
+}
+.btn--primary { background: var(--text); color: var(--page); }
+.btn--ghost { color: var(--text); border: 1px solid rgba(255, 255, 255, .22); background: var(--surface); }
+.btn--primary:hover { opacity: .9; }
+.btn--ghost:hover { border-color: rgba(255, 255, 255, .4); }
+
+.info { max-width: 720px; margin: 18px auto 0; }
+.info__title { font-size: .8rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin-bottom: 8px; }
+.info__text { color: var(--text-2); }
+
+.ods { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ods__item {
+  display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 12px; border-radius: 10px;
+  font-size: .82rem; color: #fff; background: var(--ods);
+}
+.ods__item strong { font-weight: 800; }
+
+.pasos { display: grid; gap: 10px; counter-reset: paso; }
+.pasos li {
+  counter-increment: paso; position: relative; padding: 12px 14px 12px 52px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  display: grid; gap: 2px;
+}
+.pasos li::before {
+  content: counter(paso); position: absolute; left: 14px; top: 12px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: .85rem; color: var(--page); background: var(--text-2);
+}
+.pasos strong { font-size: .95rem; }
+.pasos span { color: var(--text-2); font-size: .88rem; }
+
+.portada .foot { max-width: 720px; }
+
+@media (min-width: 720px) {
+  .hero { padding-top: 56px; gap: 18px; }
+  .hero__cta { grid-template-columns: auto auto; justify-content: start; }
+  .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) {
+  .hero, .info, .portada .foot { max-width: 960px; }
+  .pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

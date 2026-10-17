@@ -39,7 +39,8 @@ def duracion(desde, hasta):
 
 
 def enlaces(base_url, device_id, token_confirmacion=None, token_baja=None):
-    out = {"dashboard": f"{base_url}/?device={quote(device_id, safe='')}"}
+    # El panel vive en /panel (los enlaces antiguos /?device=... redirigen alli).
+    out = {"dashboard": f"{base_url}/panel?device={quote(device_id, safe='')}"}
     if token_confirmacion:
         out["confirmar"] = f"{base_url}/subscriptions/confirm?token={quote(token_confirmacion, safe='')}"
     if token_baja:

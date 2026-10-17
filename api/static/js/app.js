@@ -688,7 +688,9 @@ function start() {
   initSubscriptionForm();
   loadConsent();
   loadDevices();
-  refresh();
+  // /panel#suscripcion: al cargar los datos cambia la altura de las tarjetas; se vuelve a llevar
+  // la vista al ancla cuando termina la primera actualizacion.
+  refresh().finally(() => { if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });
   refreshHistory();
   refreshForecast();
   setInterval(refresh, REFRESH_MS);

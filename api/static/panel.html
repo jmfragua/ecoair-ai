@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="description" content="Calidad del aire en tiempo real medida por la estación EcoAir AI.">
+  <title>EcoAir AI · Calidad del aire</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <a class="skip" href="#principal">Saltar al contenido</a>
+
+  <header class="top">
+    <div class="brand">
+      <svg class="brand__logo" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M5 20c4-1 6-4 10-4s6 3 12 2" />
+        <path d="M5 13c4-1 6-4 10-4s6 3 12 2" />
+        <path d="M5 27c4-1 6-4 10-4s6 3 12 2" opacity=".5" />
+      </svg>
+      <div>
+        <h1 class="brand__name"><a class="brand__home" href="/" title="Ir a la portada">EcoAir <span>AI</span></a></h1>
+        <p class="brand__device">
+          <label for="device-select">Estación</label>
+          <select id="device-select" class="device-select" aria-label="Cambiar de estación">
+            <option id="device-name">—</option>
+          </select>
+        </p>
+      </div>
+    </div>
+    <div class="top__status">
+      <span id="sim-badge" class="sim-badge" hidden>SIMULACIÓN</span>
+      <p id="status" class="status status--loading" role="status" aria-live="polite">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span id="status-text">Conectando…</span>
+      </p>
+    </div>
+  </header>
+
+  <div id="sim-banner" class="sim-banner" role="note" hidden>
+    <strong>SIMULACIÓN</strong> · Esta estación usa datos inventados para demostración.
+    No son mediciones de un sensor real.
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <main id="principal" class="grid">
+    <!-- ICA -->
+    <section class="card card--ica" aria-labelledby="ica-title" style="--i:0">
+      <header class="card__head">
+        <h2 id="ica-title" class="card__title"><span class="t-long">Índice de Calidad del Aire</span><span class="t-short">ICA</span></h2>
+        <span class="chip">Res. 2254/2017</span>
+      </header>
+      <div class="gauge" id="gauge">
+        <svg viewBox="0 0 240 140" class="gauge__svg" role="img" aria-labelledby="gauge-label">
+          <title id="gauge-label">Medidor del ICA</title>
+          <g id="gauge-bands"></g>
+          <path id="gauge-track" class="gauge__track" d="" />
+          <path id="gauge-arc" class="gauge__arc" d="" />
+          <circle id="gauge-dot" class="gauge__dot" r="7" cx="0" cy="0" />
+        </svg>
+        <div class="gauge__center">
+          <p class="gauge__value" id="ica-value" aria-live="polite">—</p>
+          <p class="gauge__cat" id="ica-cat">Cargando…</p>
+        </div>
+      </div>
+      <p class="ica__by" id="ica-by">&nbsp;</p>
+      <p class="ica__base">base: media de 1 h (indicativo)</p>
+      <ol class="scale" id="ica-scale" aria-label="Categorías del ICA"></ol>
+    </section>
+
+    <!-- Recomendacion -->
+    <section class="card card--rec" aria-labelledby="rec-title" style="--i:1">
+      <header class="card__head">
+        <h2 id="rec-title" class="card__title">Recomendación</h2>
+        <span class="chip chip--muted">texto fijo, no IA</span>
+      </header>
+      <p class="rec__cat" id="rec-cat">—</p>
+      <p class="rec__label" id="rec-titulo-efectos">Qué significa</p>
+      <p class="rec__text" id="rec-efectos">—</p>
+      <p class="rec__resumen" id="rec-resumen"></p>
+      <details class="rec__more" id="rec-detalle" hidden>
+        <summary>Ver recomendaciones completas</summary>
+        <div id="rec-completo"></div>
+      </details>
+      <ul class="rec__src" id="rec-fuente" aria-label="Fuentes"></ul>
+      <p class="rec__tag" id="rec-etiqueta"></p>
+    </section>
+
+    <!-- Metricas -->
+    <section class="card card--pm" aria-labelledby="pm25-title" style="--i:2">
+      <header class="card__head">
+        <h2 id="pm25-title" class="card__title">PM2.5</h2>
+        <span class="unit">µg/m³</span>
+      </header>
+      <p class="metric__value" id="pm25-now">—</p>
+      <p class="metric__sub"><span class="t-long">actual · media 1 h </span><span class="t-short">media 1 h </span><strong id="pm25-1h">—</strong></p>
+      <div class="limit" id="pm25-limit">
+        <div class="limit__row"><span><span class="t-long">Media 24 h vs. límite diario</span><span class="t-short">24 h / límite</span></span><strong id="pm25-24h">—</strong></div>
+        <div class="bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="PM2.5: media de 24 h respecto al límite diario de 37 µg/m³" id="pm25-bar">
+          <span class="bar__fill"></span><span class="bar__mark" aria-hidden="true"></span>
+        </div>
+        <p class="limit__note" id="pm25-note">Límite diario: 37 µg/m³</p>
+      </div>
+    </section>
+
+    <section class="card card--pm" aria-labelledby="pm10-title" style="--i:3">
+      <header class="card__head">
+        <h2 id="pm10-title" class="card__title">PM10</h2>
+        <span class="unit">µg/m³</span>
+      </header>
+      <p class="metric__value" id="pm10-now">—</p>
+      <p class="metric__sub"><span class="t-long">actual · media 1 h </span><span class="t-short">media 1 h </span><strong id="pm10-1h">—</strong></p>
+      <div class="limit" id="pm10-limit">
+        <div class="limit__row"><span><span class="t-long">Media 24 h vs. límite diario</span><span class="t-short">24 h / límite</span></span><strong id="pm10-24h">—</strong></div>
+        <div class="bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="PM10: media de 24 h respecto al límite diario de 75 µg/m³" id="pm10-bar">
+          <span class="bar__fill"></span><span class="bar__mark" aria-hidden="true"></span>
+        </div>
+        <p class="limit__note" id="pm10-note">Límite diario: 75 µg/m³</p>
+      </div>
+    </section>
+
+    <section class="card card--env" aria-label="Temperatura y humedad" style="--i:4">
+      <div class="env">
+        <svg class="env__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg>
+        <div class="env__body">
+          <h2 class="card__title">Temperatura</h2>
+          <p class="env__value"><span id="temp">—</span><span class="unit"> °C</span></p>
+          <div class="range" id="temp-range" data-min="0" data-max="40" data-lo="18" data-hi="26" aria-hidden="true">
+            <span class="range__band"></span><span class="range__dot"></span>
+          </div>
+          <p class="range__legend"><span>0</span><span>ref. 18–26 °C</span><span>40</span></p>
+          <p class="range__state" id="temp-state">&nbsp;</p>
+        </div>
+      </div>
+      <div class="env">
+        <svg class="env__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></svg>
+        <div class="env__body">
+          <h2 class="card__title">Humedad</h2>
+          <p class="env__value"><span id="hum">—</span><span class="unit"> %</span></p>
+          <div class="range" id="hum-range" data-min="0" data-max="100" data-lo="40" data-hi="60" aria-hidden="true">
+            <span class="range__band"></span><span class="range__dot"></span>
+          </div>
+          <p class="range__legend"><span>0</span><span>ref. 40–60 %</span><span>100</span></p>
+          <p class="range__state" id="hum-state">&nbsp;</p>
+        </div>
+      </div>
+      <div class="env__foot">
+        <p class="env__time" id="env-time">&nbsp;</p>
+        <p class="env__ref">La franja es una referencia de confort orientativa, no un límite normativo.</p>
+      </div>
+    </section>
+
+    <!-- Tendencia -->
+    <section class="card card--chart" aria-labelledby="chart-title" style="--i:5">
+      <header class="card__head card__head--wrap">
+        <div>
+          <h2 id="chart-title" class="card__title">Tendencia de las últimas 24 h</h2>
+          <p class="card__sub">Promedios cada 5 min · hora de Colombia</p>
+        </div>
+        <div class="chart__controls">
+          <ul class="legend" aria-label="Leyenda">
+            <li><span class="key key--pm25" aria-hidden="true"></span>PM2.5</li>
+            <li><span class="key key--pm10" aria-hidden="true"></span>PM10</li>
+            <li><span class="key key--ref" aria-hidden="true"></span>Límite diario</li>
+          </ul>
+          <button type="button" class="toggle" id="chart-scale" aria-pressed="false">Ver contra límites</button>
+        </div>
+      </header>
+      <div class="chart" id="chart" tabindex="0" role="img"
+           aria-label="Gráfica de PM2.5 y PM10 de las últimas 24 horas. Use las flechas para recorrer los valores.">
+        <svg id="chart-svg" class="chart__svg" aria-hidden="true"></svg>
+        <div id="chart-tip" class="tip" hidden></div>
+      </div>
+      <p class="chart__note" id="chart-note" hidden></p>
+      <details class="table-view">
+        <summary>Ver los datos en tabla</summary>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">Promedios cada 5 minutos de las últimas 24 horas</caption>
+            <thead><tr><th scope="col">Hora</th><th scope="col">PM2.5</th><th scope="col">PM10</th><th scope="col">Temp. °C</th><th scope="col">Humedad %</th></tr></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Alertas -->
+    <section class="card card--alerts" aria-labelledby="alerts-title" style="--i:6">
+      <header class="card__head">
+        <h2 id="alerts-title" class="card__title">Alertas recientes</h2>
+        <span class="chip chip--muted" id="alerts-count">—</span>
+      </header>
+      <ol class="timeline" id="alerts"></ol>
+      <p class="empty" id="alerts-empty" hidden>Sin alertas registradas.</p>
+    </section>
+    <!-- Prediccion experimental -->
+    <section class="card card--pred" aria-labelledby="pred-title" style="--i:7">
+      <header class="card__head">
+        <h2 id="pred-title" class="card__title">Predicción experimental · PM2.5</h2>
+        <span class="chip chip--model">modelo, experimental</span>
+      </header>
+      <ul class="pred__list" id="pred-list" aria-live="polite"></ul>
+      <p class="pred__msg" id="pred-msg">Cargando…</p>
+      <p class="pred__src" id="pred-tendencia"></p>
+      <p class="pred__warn" id="pred-ultima"></p>
+      <p class="pred__src" id="pred-fuentes"></p>
+      <p class="pred__warn" id="pred-aviso" hidden></p>
+    </section>
+
+    <!-- Suscripcion por correo -->
+    <section class="card card--subs" id="suscripcion" aria-labelledby="subs-title" style="--i:8">
+      <header class="card__head">
+        <h2 id="subs-title" class="card__title">Recibir alertas por correo</h2>
+        <span class="chip chip--muted">doble confirmación</span>
+      </header>
+      <form id="subs-form" class="subs" novalidate>
+        <div class="subs__row">
+          <div class="field">
+            <label for="subs-email">Correo electrónico</label>
+            <input id="subs-email" name="email" type="email" inputmode="email" autocomplete="email"
+                   maxlength="254" required placeholder="nombre@correo.com">
+          </div>
+          <div class="field field--sev">
+            <label for="subs-sev">Avisarme desde</label>
+            <select id="subs-sev" name="min_severity">
+              <option value="aviso">Aviso o crítica</option>
+              <option value="critica">Solo crítica</option>
+            </select>
+          </div>
+        </div>
+        <label class="consent">
+          <input id="subs-ok" type="checkbox" required>
+          <span id="subs-consent">Cargando el texto de autorización…</span>
+        </label>
+        <div class="subs__actions">
+          <button id="subs-btn" class="btn" type="submit">Suscribirme</button>
+          <p id="subs-msg" class="subs__msg" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="foot__warn"><strong>Estación de bajo costo, no sustituye mediciones oficiales.</strong></p>
+    <p>Normas: Resolución 2254 de 2017 (MinAmbiente, Colombia) · Recomendaciones: EPA AQI Technical Assistance Document (orientativo).</p>
+    <p>Actualización automática cada 10 s · Última actualización: <span id="updated">—</span></p>
+  </footer>
+
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>

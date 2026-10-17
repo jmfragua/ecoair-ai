@@ -21,8 +21,8 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   alerta dispositivo_caido vista abierta y luego cerrada).
 - [TESTS] Casos límite del cálculo del ICA (api/ica.py) y de api/calidad_aire.py (ventana
   parcial, bordes de 5 min, Tabla 4 con media de 24 h): solo tests, sin prueba real registrada.
-- [E2E] Dashboard público (api/static/, servido en "/"): probado en el navegador del Mac y en
-  un celular conectado a la misma Wi-Fi.
+- [E2E] Dashboard público (api/static/panel.html; se probó cuando se servía en "/", hoy está en
+  "/panel"): probado en el navegador del Mac y en un celular conectado a la misma Wi-Fi.
 - [E2E] GET /devices/{id}/air-quality/history: lo consume el dashboard en esas mismas pruebas.
 - [E2E] Suscripción por correo, probada hoy en modo DRY_RUN: suscribirse desde el panel,
   confirmar con el enlace del correo, alerta simulada de dispositivo caído enviada al
@@ -120,7 +120,13 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     - GET /subscriptions/unsubscribe?token= solo muestra un botón; el POST da de baja (también
       sirve para la baja con un clic de List-Unsubscribe). Token de baja = HMAC con SUBSCRIPTION_SECRET.
   - Todas devuelven 404 si el dispositivo no existe.
-- Dashboard (api/static/, servido por la API en "/" con StaticFiles montado al final):
+- Portada (api/static/index.html, servida en "/"): presentación del proyecto, tarjeta de estado
+  en vivo de ecoair-node-01 (en línea/fuera de línea + ICA; "Sin datos recientes" si falla),
+  ODS 3/11/13 y botones a /panel y /panel#suscripcion. Lógica pura en js/portada-vista.js.
+  "/?device=..." redirige con 302 a "/panel?..." conservando todos los parámetros (QR y
+  enlaces antiguos). [TESTS] + render revisado con datos mock; sin prueba real registrada.
+- Dashboard (api/static/panel.html, servido en "/panel"; el resto de api/static/ con
+  StaticFiles montado al final, todo con Cache-Control: no-cache):
   - HTML, CSS y JavaScript sin framework. Dispositivo por defecto ecoair-node-01; se cambia
     con ?device=... Se actualiza cada 10 s (la gráfica cada 60 s); si la API falla, muestra un
     aviso y conserva los últimos valores.

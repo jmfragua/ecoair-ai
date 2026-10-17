@@ -43,7 +43,7 @@ def test_correo_de_alerta_abierta():
     texto, cuerpo = _texto(msg), _texto(msg, "html")
     assert msg["Subject"] == "[EcoAir AI] Alerta crítica: Dispositivo caído · ecoair-node-01"
     for esperado in ("Nivel: Crítica", "Regla: Dispositivo caído", "07:00 (hora de Colombia)",
-                     f"{BASE}/?device=ecoair-node-01", f"{BASE}/subscriptions/unsubscribe?token={TOKEN_BAJA}",
+                     f"{BASE}/panel?device=ecoair-node-01", f"{BASE}/subscriptions/unsubscribe?token={TOKEN_BAJA}",
                      ADVERTENCIA):
         assert esperado in texto
     assert msg["List-Unsubscribe"] == f"<{BASE}/subscriptions/unsubscribe?token={TOKEN_BAJA}>"

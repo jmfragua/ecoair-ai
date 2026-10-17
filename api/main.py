@@ -9,7 +9,7 @@ from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import psycopg
 from psycopg.rows import dict_row
@@ -354,7 +354,7 @@ font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}}main{{ma
 border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:24px}}h1{{font-size:1.25rem;margin:0 0 8px}}
 p{{color:#c3c2b7;line-height:1.5}}a{{color:#f0efec}}button{{font:inherit;font-weight:600;padding:10px 16px;
 border-radius:999px;border:0;background:#f0efec;color:#0d0d0d;cursor:pointer}}</style></head>
-<body><main><h1>{titulo}</h1><p>{texto}</p>{extra}<p><a href="/">Volver al panel</a></p></main></body></html>""")
+<body><main><h1>{titulo}</h1><p>{texto}</p>{extra}<p><a href="/panel">Volver al panel</a></p></main></body></html>""")
 
 
 @app.get("/subscriptions/confirm", response_class=HTMLResponse)
@@ -421,6 +421,24 @@ async def forecast(device_id: str):
          "minutos_desde_ultima_medicion": int((ahora - ult).total_seconds() // 60) if ult else None}
     _cache_prediccion[device_id] = (ahora, r)
     return r
+
+
+# ---------- Portada ("/") y panel ("/panel") ----------
+# Compatibilidad: los QR y correos antiguos apuntan a "/?device=..." -> 302 a "/panel?device=..."
+# conservando todos los parametros. "/" sin device muestra la portada.
+SIN_CACHE = {"Cache-Control": "no-cache"}
+
+
+@app.get("/", include_in_schema=False)
+async def portada(request: Request):
+    if "device" in request.query_params:
+        return RedirectResponse(f"/panel?{request.url.query}", status_code=302)
+    return FileResponse(STATIC_DIR / "index.html", media_type="text/html", headers=SIN_CACHE)
+
+
+@app.get("/panel", include_in_schema=False)
+async def panel():
+    return FileResponse(STATIC_DIR / "panel.html", media_type="text/html", headers=SIN_CACHE)
 
 
 class StaticSinCache(StaticFiles):
