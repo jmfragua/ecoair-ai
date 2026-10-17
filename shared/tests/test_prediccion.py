@@ -207,3 +207,28 @@ def test_prediccion_relativa_es_multiplicativa_y_no_negativa():
     assert pr.predecir_horizonte(_modelo_relativo(intercepto=-5.0), x0, 60) == 0.0
     r = pr.prediccion(m, _serie(lambda i: 3.0), AHORA)
     assert r["estado"] == "ok" and [h["minutos"] for h in r["horizontes"]] == [60, 180, 360]
+
+
+# ---------- Ruta del modelo inexistente o JSON invalido: sin_modelo + WARNING ----------
+
+def test_modelo_inexistente_deja_warning_y_queda_sin_modelo(tmp_path, caplog):
+    ruta = tmp_path / "no_existe.json"
+    with caplog.at_level("WARNING", logger="prediccion"):
+        assert pr.cargar_modelo(str(ruta)) is None
+    assert str(ruta) in caplog.text and "no encontrado" in caplog.text
+    assert pr.prediccion(pr.cargar_modelo(str(ruta)), _serie(), AHORA)["estado"] == "sin_modelo"
+
+
+@pytest.mark.parametrize("contenido", ["{no es json", "[1, 2]", '{"nombre": "x"}', b"\xff\xfe"])
+def test_json_invalido_deja_warning_y_queda_sin_modelo(tmp_path, caplog, contenido):
+    ruta = tmp_path / "malo.json"
+    ruta.write_bytes(contenido if isinstance(contenido, bytes) else contenido.encode())
+    with caplog.at_level("WARNING", logger="prediccion"):
+        assert pr.cargar_modelo(str(ruta)) is None
+    assert str(ruta) in caplog.text and "invalido" in caplog.text
+
+
+def test_modelo_valido_no_deja_warning(caplog):
+    with caplog.at_level("WARNING", logger="prediccion"):
+        assert pr.cargar_modelo(os.path.join(RAIZ, "modelos", "prediccion_pm25_v3.json"))["nombre"] == "prediccion_pm25_v3"
+    assert caplog.text == ""

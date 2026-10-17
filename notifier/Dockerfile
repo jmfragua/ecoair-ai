@@ -16,8 +16,10 @@ COPY shared/ ./shared/
 # Modulos reutilizados (puros): suscripciones y calidad del aire para el correo de bienvenida
 COPY api/subscriptions.py api/calidad_aire.py api/ica.py api/recomendaciones.py ./
 COPY notifier/*.py ./
-# Modelo de prediccion experimental (JSON versionado en modelos/)
+# Modelos de prediccion experimental (JSON versionados en modelos/). v1 es el valor por defecto;
+# v3 se activa con MODELO_PREDICCION_PATH=/app/modelos/prediccion_pm25_v3.json. v2 no se copia.
 COPY modelos/prediccion_pm25_v1.json ./modelos/
+COPY modelos/prediccion_pm25_v3.json ./modelos/
 
 RUN useradd --create-home --uid 1000 ecoair
 USER ecoair

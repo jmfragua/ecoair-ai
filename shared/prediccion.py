@@ -42,6 +42,7 @@ Textos y presentacion SIEMPRE desde el JSON del modelo activo (sin frases fijas 
 """
 
 import json
+import logging
 import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -65,6 +66,7 @@ SQL_SERIE_PM25 = (
 )
 
 _cache = {}
+log = logging.getLogger("prediccion")
 
 
 # ---------- Serie por minuto ----------
@@ -172,12 +174,33 @@ def ruta_modelo_por_defecto():
     return Path(__file__).resolve().parent.parent / "modelos" / "prediccion_pm25_v1.json"
 
 
+def _leer_modelo(ruta):
+    """JSON del modelo o None. Si no existe o no es valido, deja un WARNING con la ruta en el log."""
+    if not ruta.is_file():
+        log.warning("Modelo de prediccion no encontrado en %s (revise MODELO_PREDICCION_PATH): "
+                    "la prediccion queda 'sin_modelo'", ruta)
+        return None
+    try:
+        modelo = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        log.warning("Modelo de prediccion invalido en %s (%s): la prediccion queda 'sin_modelo'",
+                    ruta, type(e).__name__)
+        return None
+    if not isinstance(modelo, dict) or not isinstance(modelo.get("horizontes"), dict):
+        log.warning("Modelo de prediccion invalido en %s (falta 'horizontes'): la prediccion queda 'sin_modelo'", ruta)
+        return None
+    return modelo
+
+
 def cargar_modelo(ruta=None):
-    """Lee el JSON del modelo (con cache). None si no existe."""
+    """Lee el JSON del modelo (con cache). None si no existe o no es valido (con WARNING en el log).
+
+    El resultado se guarda en cache por proceso: tras corregir la ruta o el archivo hay que reiniciar.
+    """
     ruta = Path(ruta or ruta_modelo_por_defecto())
     clave = str(ruta)
     if clave not in _cache:
-        _cache[clave] = json.loads(ruta.read_text(encoding="utf-8")) if ruta.is_file() else None
+        _cache[clave] = _leer_modelo(ruta)
     return _cache[clave]
 
 

@@ -46,7 +46,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
 - [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
-  notifier, 13 del ingestor, 53 de ai/ y 88 de db/ + shared/ + tools/.
+  notifier, 13 del ingestor, 53 de ai/ y 94 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -229,6 +229,10 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     EMAIL_FROM (verificado en Brevo), NOTIFIER_DRY_RUN, NOTIFIER_INCLUIR_SIMULADOS, ANOMALIAS_CORREO.
 - Correo por la API HTTP de Brevo (EMAIL_PROVIDER=brevo) porque Railway bloquea la salida SMTP.
   SMTP sigue disponible como opción para uso local.
+- Predicción: las imágenes de api y notifier copian v1 (por defecto) y v3 (no v2). Para activar
+  v3: MODELO_PREDICCION_PATH=/app/modelos/prediccion_pm25_v3.json en api y notifier. Si la ruta
+  no existe o el JSON no es válido, el servicio sigue, la predicción queda "sin_modelo" (NO cae a
+  v1) y queda un WARNING con la ruta en el log; se guarda en caché: corregir y reiniciar.
 - Migraciones: a mano con db/migrate.py contra la URL pública del Postgres (no en el despliegue).
 - MQTT: el nodo publica a través del TCP Proxy de Railway (host y puerto asignados por Railway).
   Límite aceptado: MQTT SIN TLS (usuario/clave y datos viajan sin cifrar); se mitiga con un

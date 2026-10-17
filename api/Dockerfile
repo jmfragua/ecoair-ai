@@ -15,8 +15,10 @@ RUN pip install -r requirements.txt
 COPY shared/ ./shared/
 # Todos los modulos de la API (main, ica, calidad_aire, recomendaciones...). Los tests no se copian.
 COPY api/*.py ./
-# Modelo de prediccion experimental (JSON versionado en modelos/)
+# Modelos de prediccion experimental (JSON versionados en modelos/). v1 es el valor por defecto;
+# v3 se activa con MODELO_PREDICCION_PATH=/app/modelos/prediccion_pm25_v3.json. v2 no se copia.
 COPY modelos/prediccion_pm25_v1.json ./modelos/
+COPY modelos/prediccion_pm25_v3.json ./modelos/
 # Dashboard publico (HTML, CSS, JS y fuente local; sin recursos de internet)
 COPY api/static/ ./static/
 
