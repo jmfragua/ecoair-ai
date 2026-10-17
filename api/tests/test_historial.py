@@ -84,7 +84,10 @@ def test_forecast_responde_sin_inventar_valores(monkeypatch):
         return None
 
     async def query_falsa(sql, params=()):
-        assert sql is main.SQL_SERIE_PM25 and params["device_id"] == "ecoair-sim-01"
+        assert params["device_id"] == "ecoair-sim-01"
+        if sql is main.SQL_ULTIMA:
+            return [{"received_at": ahora, "temperature": 22.0, "humidity": 60.0}]
+        assert sql is main.SQL_SERIE_PM25
         return [{"t": ahora - timedelta(minutes=i), "pm25": 20.0} for i in range(200)]
 
     monkeypatch.setattr(main, "require_device", device_ok)
@@ -97,3 +100,63 @@ def test_forecast_responde_sin_inventar_valores(monkeypatch):
     # en el modelo versionado, 1 h no supero a la persistencia: no hay valor; 3 h si
     assert por_h[60] == {"minutos": 60, "pm25": None, "disponible": False}
     assert por_h[180]["disponible"] and por_h[180]["pm25"] is not None
+
+
+
+def test_forecast_sin_datos_informa_la_antiguedad_real(monkeypatch):
+    """Nodo apagado hace 47 min: sin_datos, horizontes vacios y minutos reales desde la ultima medicion."""
+    import main
+    from datetime import datetime, timedelta, timezone
+
+    ahora = datetime.now(timezone.utc)
+
+    async def device_ok(device_id):
+        return None
+
+    async def query_falsa(sql, params=()):
+        if sql is main.SQL_ULTIMA:
+            return [{"received_at": ahora - timedelta(minutes=47, seconds=10), "temperature": 22.0, "humidity": 60.0}]
+        return []   # sin datos en las ultimas 3 h
+
+    monkeypatch.setattr(main, "require_device", device_ok)
+    monkeypatch.setattr(main, "query", query_falsa)
+    main._cache_prediccion.clear()
+    r = TestClient(main.app).get("/devices/ecoair-node-01/forecast").json()
+    assert r["estado"] == "sin_datos" and r["horizontes"] == []
+    assert r["minutos_desde_ultima_medicion"] == 47 and r["ultima_medicion_utc"]
+    assert "sin datos suficientes" in r["tendencia"]
+
+
+def test_forecast_de_dispositivo_sin_mediciones_no_inventa_antiguedad(monkeypatch):
+    import main
+
+    async def device_ok(device_id):
+        return None
+
+    async def query_falsa(sql, params=()):
+        return []
+
+    monkeypatch.setattr(main, "require_device", device_ok)
+    monkeypatch.setattr(main, "query", query_falsa)
+    main._cache_prediccion.clear()
+    r = TestClient(main.app).get("/devices/nuevo/forecast").json()
+    assert r["minutos_desde_ultima_medicion"] is None and r["ultima_medicion_utc"] is None
+
+
+def test_dashboard_se_sirve_sin_cache():
+    for ruta in ("/", "/js/app.js", "/js/prediccion-vista.js"):
+        r = client.get(ruta)
+        assert r.status_code == 200 and r.headers["cache-control"] == "no-cache", ruta
+
+
+def test_vista_de_prediccion_en_js_con_node():
+    """Ejecuta los tests de JS (node --test) de la tarjeta de prediccion."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    if shutil.which("node") is None:
+        pytest.skip("node no esta instalado")
+    archivo = Path(__file__).parent / "js" / "test_prediccion_vista.mjs"
+    r = subprocess.run(["node", "--test", str(archivo)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr

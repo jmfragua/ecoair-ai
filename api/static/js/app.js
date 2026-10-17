@@ -1,4 +1,5 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
+import { vistaPrediccion } from "./prediccion-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const DEVICE = new URLSearchParams(location.search).get("device") || "ecoair-node-01";
@@ -554,32 +555,38 @@ async function refreshHistory() {
 // Solo se muestran los horizontes que superaron a la persistencia en la evaluacion; los demas dicen
 // "no disponible". La persistencia nunca se presenta como prediccion.
 const fmtErr = (v) => (v == null ? "—" : Number(v).toLocaleString("es-CO", { maximumFractionDigits: 2 }));
+let prediccionCargada = false;
+
 function renderForecast(r) {
-  const lista = $("pred-list");
-  const items = (r.horizontes || []).map((h) => {
-    const etiqueta = el("span", { class: "pred__h" }, `En ${h.minutos / 60} h`);
+  const v = vistaPrediccion(r);   // estados explicitos en js/prediccion-vista.js
+  $("pred-list").replaceChildren(...v.horizontes.map((h) => {
+    const etiqueta = el("span", { class: "pred__h" }, h.etiqueta);
     if (!h.disponible) {
       return el("li", { class: "pred__item" }, etiqueta,
         el("span", { class: "pred__na" }, "No disponible: el modelo no superó la línea base"));
     }
     return el("li", { class: "pred__item" }, etiqueta,
-      el("span", { class: "pred__v" }, `${fmtNum(h.pm25)}`), el("span", { class: "unit" }, "µg/m³"),
+      el("span", { class: "pred__v" }, fmtNum(h.pm25)), el("span", { class: "unit" }, "µg/m³"),
       el("span", { class: "pred__err" },
         `Error medio en la evaluación: ${fmtErr(h.mae_modelo)} µg/m³ (línea base: ${fmtErr(h.mae_persistencia)})`));
-  });
-  lista.replaceChildren(...items);
-  $("pred-msg").textContent = r.estado === "ok" ? "" : r.texto;
-  $("pred-fuentes").textContent = r.fuentes || "";
-  $("pred-aviso").hidden = !r.aviso;
-  $("pred-aviso").textContent = r.aviso || "";
+  }));
+  $("pred-msg").textContent = v.mensaje;
+  $("pred-tendencia").textContent = v.tendencia;
+  $("pred-ultima").textContent = v.ultima;
+  $("pred-fuentes").textContent = v.fuentes;
+  $("pred-aviso").hidden = !v.aviso;
+  $("pred-aviso").textContent = v.aviso;
 }
 
 async function refreshForecast() {
   if (deviceMissing) return;
   try {
-    renderForecast(await getJSON(`/devices/${dev}/forecast`));
+    renderForecast(await getJSON(`/devices/${dev}/forecast`));   // getJSON lanza si HTTP != 200
+    prediccionCargada = true;
   } catch {
-    if (!$("pred-list").children.length) $("pred-msg").textContent = "Predicción no disponible en este momento.";
+    // Nunca se queda en "Cargando…": si aun no hubo respuesta valida, se dice; si ya la hubo,
+    // se conserva la ultima (como el resto del panel) y el aviso general lo da refresh().
+    if (!prediccionCargada) renderForecast(null);
   }
 }
 

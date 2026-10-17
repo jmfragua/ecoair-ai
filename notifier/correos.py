@@ -159,6 +159,21 @@ def payload_brevo(msg):
 
 AVISO_INDICATIVO = "Datos indicativos, sensor de bajo costo. No sustituye mediciones oficiales."
 PREDICCION_NO_DISPONIBLE = "No disponible todavía."
+MIN_SIN_DATOS_AVISO = 10
+
+
+def aviso_ultima_medicion(resp):
+    """'Última medición hace X min (el nodo puede estar apagado)' si pasaron mas de 10 min.
+
+    Usa la antiguedad real de la respuesta de calidad del aire; sin mediciones no dice nada.
+    """
+    ultima = (resp or {}).get("ultima_medicion")
+    if not ultima or ultima.get("antiguedad_s") is None:
+        return None
+    minutos = int(ultima["antiguedad_s"] // 60)
+    if minutos <= MIN_SIN_DATOS_AVISO:
+        return None
+    return f"Última medición hace {minutos} min (el nodo puede estar apagado)"
 
 
 def _bloque_ica(resp):
@@ -191,6 +206,9 @@ def correo_bienvenida(remitente, destino, device_id, resp, links, prediccion=Non
     pre = "[SIMULACIÓN] " if simulado else ""
     asunto = f"{pre}[EcoAir AI] Suscripción confirmada · estación {device_id}"
     ica_txt, ica_html = _bloque_ica(resp)
+    ultima = aviso_ultima_medicion(resp)
+    if ultima:
+        ica_txt, ica_html = ica_txt + [ultima], ica_html + [f"<i>{html.escape(ultima)}</i>"]
     pred_txt = PREDICCION_NO_DISPONIBLE if not prediccion else prediccion["texto"]
     pred_aviso = (prediccion or {}).get("aviso")
     texto = "\n".join(

@@ -219,3 +219,20 @@ def test_prediccion_que_no_supera_la_linea_base_da_la_tendencia():
 
 def test_sin_modelo_el_correo_dice_no_disponible():
     assert notifier.prediccion_para_correo({"estado": "sin_modelo"}) is None
+
+
+
+# ---------- Aviso de ultima medicion antigua ----------
+
+def test_bienvenida_avisa_si_la_ultima_medicion_tiene_mas_de_10_min():
+    t = _texto(correo_bienvenida("a@b.co", EMAIL, "ecoair-node-01", _resp(edad=timedelta(minutes=47, seconds=30)), LINKS))
+    assert "Última medición hace 47 min (el nodo puede estar apagado)" in t
+
+
+def test_bienvenida_no_avisa_con_10_min_o_menos_ni_sin_mediciones():
+    for edad in (timedelta(seconds=10), timedelta(minutes=10)):
+        t = _texto(correo_bienvenida("a@b.co", EMAIL, "ecoair-node-01", _resp(edad=edad), LINKS))
+        assert "Última medición hace" not in t
+    sin_mediciones = construir_respuesta("x", {"muestras": 0}, {"muestras": 0}, None, AHORA)
+    t = _texto(correo_bienvenida("a@b.co", EMAIL, "x", sin_mediciones, LINKS))
+    assert "Última medición hace" not in t   # no se inventa una antiguedad

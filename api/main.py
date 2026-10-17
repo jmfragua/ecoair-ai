@@ -409,13 +409,29 @@ async def forecast(device_id: str):
     guardado = _cache_prediccion.get(device_id)
     if guardado and (ahora - guardado[0]).total_seconds() < PREDICCION_CACHE_S:
         return guardado[1]
-    filas = await _con_timeout(query(SQL_SERIE_PM25, {"device_id": device_id, "ahora": ahora}))
+    params = {"device_id": device_id, "ahora": ahora}
+    filas = await _con_timeout(query(SQL_SERIE_PM25, params))
+    ultima = await _con_timeout(query(SQL_ULTIMA, params))
     serie = serie_por_minuto([(f["t"], f["pm25"]) for f in filas])
     r = prediccion(cargar_modelo(os.getenv("MODELO_PREDICCION_PATH")), serie, ahora)
-    r = {**r, "device_id": device_id, "calculado_utc": ahora.isoformat(timespec="seconds")}
+    # Antiguedad real de la ultima medicion (None si el dispositivo nunca envio datos)
+    ult = ultima[0]["received_at"] if ultima else None
+    r = {**r, "device_id": device_id, "calculado_utc": ahora.isoformat(timespec="seconds"),
+         "ultima_medicion_utc": ult.isoformat(timespec="seconds") if ult else None,
+         "minutos_desde_ultima_medicion": int((ahora - ult).total_seconds() // 60) if ult else None}
     _cache_prediccion[device_id] = (ahora, r)
     return r
 
 
+class StaticSinCache(StaticFiles):
+    """Archivos del dashboard con Cache-Control: no-cache: el navegador revalida (ETag) en cada
+    carga y nunca mezcla un index.html nuevo con un app.js viejo guardado en cache."""
+
+    async def get_response(self, path, scope):
+        respuesta = await super().get_response(path, scope)
+        respuesta.headers["Cache-Control"] = "no-cache"
+        return respuesta
+
+
 # Dashboard publico en "/". Se monta AL FINAL para que no tape las rutas de la API.
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+app.mount("/", StaticSinCache(directory=STATIC_DIR, html=True), name="static")

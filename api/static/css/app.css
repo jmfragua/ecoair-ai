@@ -383,7 +383,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .pred__na { color: var(--muted); font-size: .9rem; }
 .pred__err { width: 100%; font-size: .72rem; color: var(--muted); }
 .pred__msg { color: var(--text-2); font-size: .92rem; margin-top: 4px; }
-.pred__msg:empty { display: none; }
+.pred__msg:empty, .pred__src:empty, .pred__warn:empty { display: none; }
 .pred__src { font-size: .78rem; color: var(--muted); margin-top: 10px; }
 .pred__warn { font-size: .78rem; color: #ffe2a6; margin-top: 4px; }
 
