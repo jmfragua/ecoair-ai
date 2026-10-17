@@ -297,8 +297,12 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     respeta el desfase tal cual y se pasa a UTC. Evidencia indirecta a favor: el pico medio de
     PM2.5 cae a las 12:00 de la hora etiquetada = 13:00 UTC = 08:00 en Colombia (hora pico de la
     mañana). No está confirmado con la documentación de OpenAQ.
-  - Licencia: PENDIENTE DE VERIFICAR (valor por defecto de --licencia). Verificarla y citarla
-    antes de cargar o usar estos datos. NO cargados en ninguna base todavía.
+  - Atribución (citarla tal cual donde se usen estos datos):
+    "Datos de la estación MED-UNNV (Universidad Nacional, sede El Volador), proveedor Medellín, obtenidos de OpenAQ (openaq.org); no se redistribuyen"
+  - Licencia:
+    "No especificada en OpenAQ (proveedor Medellín, entidad gubernamental); uso académico con atribución"
+    (En el CSV y en los JSON de v2/v3 va la misma frase sin tildes, como se pasó a --licencia.)
+  - Uso: solo con fines académicos no comerciales. NO cargados en ninguna base todavía.
 
 ## Normas de calidad del aire (docs/normas/)
 - No leer los PDF de docs/normas/ (son pesados).
