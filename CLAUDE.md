@@ -46,7 +46,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
 - [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 47 del
-  notifier, 13 del ingestor, 41 de ai/ y 79 de db/ + shared/ + tools/.
+  notifier, 13 del ingestor, 48 de ai/ y 82 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -165,6 +165,21 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     "Predicción no disponible: el modelo no superó la línea base" y, en el correo, la tendencia
     de las últimas 3 h marcada como observación. La persistencia NUNCA se muestra como predicción.
   - Siempre "Modelo entrenado con <fuentes>. Experimental." y aviso si incluye simulados.
+- prediccion_pm25_v2.json (7 KB): NO ACTIVO (la API y el notifier siguen con v1; se activa con
+  MODELO_PREDICCION_PATH, decisión pendiente del equipo). Entrenado SOLO con PM2.5 horario externo
+  (OpenAQ, MED-UNNV El Volador, CSV local con su SHA-256; ninguna base) con
+  ai/entrenar_prediccion_v2.py. Modelo de resolución horaria: shared/prediccion.py lo reconoce por
+  "resolucion": "hora" (variables pm25_h1/h2/h3, media_3h, pendiente_h1_h3, hora sin/cos,
+  calculadas de la serie por minuto de 3 h; cada hora con >= 40 min de datos); v1 no cambia.
+  - Sin temperatura ni humedad (la estación externa solo trae PM2.5). Diseño declarado antes de
+    ver resultados: entrenamiento 2018-11..2019-09, validación 2019-10..2019-11 (solo alpha),
+    prueba 2019-12..2020-02 evaluada una vez; alphas 0.01..10000.
+  - Prueba (MAE modelo / persistencia / media horaria): 1 h 3,985 / 4,078 / 6,960 (-2,3 %);
+    3 h 5,884 / 6,619 / 6,991 (-11,1 %); 6 h 6,668 / 8,457 / 7,049 (-21,2 %). Los tres superan a
+    la persistencia. alpha: 1 h = 10000 y 6 h = 0.01 son extremos de la rejilla (no se amplió).
+  - Aviso público: "Entrenado con datos externos históricos de Medellín (2018-2020); no representa
+    la precisión con el sensor propio." Supuesto: el valor de OpenAQ en T es la media de la hora
+    que termina en T. Con el sensor propio solo hay ~6 h reales (358 min): sin evaluación real.
 - anomalias_sim_if_v2_A.joblib (1,97 MB) + .json de procedencia (SHA-256, evaluación, límites):
   Isolation Forest (scikit-learn 1.9.1; la imagen usa la misma versión). Exportado con
   ai/exportar_modelo_anomalias.py, sin reentrenar.

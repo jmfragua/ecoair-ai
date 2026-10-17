@@ -19,6 +19,14 @@ Variables (todas de PM2.5 promediado por minuto; hora de Colombia, UTC-5 fijo):
     media_15/60/180
     pendiente_15_60  media_15 - media_60
     hora_sin/hora_cos
+
+Modelos de resolucion HORARIA (p. ej. prediccion_pm25_v2, entrenado con medias horarias externas):
+el JSON trae "resolucion": "hora", su propia lista de horizontes y "persistencia": "pm25_h1". Las
+variables se calculan de la MISMA serie por minuto de las ultimas 3 h (no hace falta otra consulta):
+    pm25_h1/h2/h3  medias de los minutos (ahora-60, ahora], (ahora-120, ahora-60], (ahora-180, ahora-120]
+                   (cada una con al menos 40 min con datos)
+    media_3h, pendiente_h1_h3 (pm25_h1 - pm25_h3), hora_sin/hora_cos
+Un JSON sin "resolucion" se trata como v1 (por minuto, horizontes 60 y 180): v1 no cambia.
 """
 
 import json
@@ -27,6 +35,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 VARIABLES = ["ult", "media_15", "media_60", "media_180", "pendiente_15_60", "hora_sin", "hora_cos"]
+VARIABLES_HORARIAS = ["pm25_h1", "pm25_h2", "pm25_h3", "media_3h", "pendiente_h1_h3", "hora_sin", "hora_cos"]
 HORIZONTES = (60, 180)          # minutos
 COLOMBIA = timezone(timedelta(hours=-5))
 # Datos minimos (minutos con datos) en cada ventana para poder calcular las variables
@@ -83,6 +92,41 @@ def variables_en(serie, m):
     }
 
 
+def hora_ciclica(m):
+    """(sin, cos) de la hora de Colombia en el minuto m."""
+    hora = datetime.fromtimestamp(m * 60, tz=COLOMBIA)
+    h = hora.hour + hora.minute / 60
+    return math.sin(2 * math.pi * h / 24), math.cos(2 * math.pi * h / 24)
+
+
+def variables_horarias_desde(h1, h2, h3, m):
+    """Variables de un modelo horario a partir de las 3 medias horarias (mas reciente primero)."""
+    s, c = hora_ciclica(m)
+    return {"pm25_h1": h1, "pm25_h2": h2, "pm25_h3": h3, "media_3h": (h1 + h2 + h3) / 3,
+            "pendiente_h1_h3": h1 - h3, "hora_sin": s, "hora_cos": c}
+
+
+def variables_horarias_en(serie, m):
+    """Variables de un modelo horario en el minuto m (serie por minuto), o None si falta una hora."""
+    medias = [_media(serie, m - 60 * k, 60) for k in range(3)]
+    if any(v is None for v in medias):
+        return None
+    return variables_horarias_desde(*medias, m)
+
+
+def es_horario(modelo):
+    return modelo.get("resolucion") == "hora"
+
+
+def horizontes_de(modelo):
+    """Horizontes (minutos) del modelo; v1 no los declara aparte: (60, 180)."""
+    return tuple(sorted(int(h) for h in modelo["horizontes"])) if es_horario(modelo) else HORIZONTES
+
+
+def variables_para(modelo, serie, m):
+    return variables_horarias_en(serie, m) if es_horario(modelo) else variables_en(serie, m)
+
+
 def objetivo_en(serie, m, horizonte):
     """Media de PM2.5 en los 5 min que terminan en m + horizonte (para entrenar/evaluar)."""
     fin = m + horizonte
@@ -111,7 +155,7 @@ def predecir_horizonte(modelo, x, horizonte):
     h = modelo["horizontes"][str(horizonte)]
     z = [(x[v] - mu) / (s or 1.0) for v, mu, s in zip(modelo["variables"], modelo["media"], modelo["escala"])]
     delta = h["intercepto"] + sum(c * zi for c, zi in zip(h["coef"], z))
-    return max(0.0, x["ult"] + delta)
+    return max(0.0, x[modelo.get("persistencia", "ult")] + delta)
 
 
 def texto_fuentes(modelo):
@@ -124,7 +168,7 @@ def aviso_simulados(modelo):
     if any(f["tipo"] == "simulados" for f in modelo.get("fuentes", [])):
         return ("Atención: el modelo se entrenó con datos simulados; su error medido no representa "
                 "la precisión con el sensor real.")
-    return None
+    return modelo.get("aviso_publico")   # p. ej. v2: entrenado con datos externos historicos
 
 
 def tendencia_3h(serie, ahora_min):
@@ -151,17 +195,18 @@ def prediccion(modelo, serie, ahora):
     m = minuto(ahora)
     base = {"modelo": modelo.get("nombre"), "fuentes": texto_fuentes(modelo), "aviso": aviso_simulados(modelo),
             "experimental": True}
-    disponibles = [h for h in HORIZONTES if modelo["horizontes"][str(h)].get("supera_persistencia")]
+    todos = horizontes_de(modelo)
+    disponibles = [h for h in todos if modelo["horizontes"][str(h)].get("supera_persistencia")]
     if not disponibles:
         return {**base, "estado": "no_supera_linea_base", "texto": NO_DISPONIBLE, "horizontes": [],
                 "tendencia": tendencia_3h(serie, m)}
-    x = variables_en(serie, m)
+    x = variables_para(modelo, serie, m)
     if x is None:
         return {**base, "estado": "sin_datos", "horizontes": [],
                 "texto": "Predicción no disponible: faltan datos de las últimas 3 horas.",
                 "tendencia": tendencia_3h(serie, m)}
     horizontes, partes = [], []
-    for h in HORIZONTES:
+    for h in todos:
         info = modelo["horizontes"][str(h)]
         if h in disponibles:
             v = round(predecir_horizonte(modelo, x, h), 1)

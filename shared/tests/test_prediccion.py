@@ -86,3 +86,41 @@ def test_modelo_versionado_es_coherente():
     for h in ("60", "180"):
         met = m["horizontes"][h]["metricas"]
         assert m["horizontes"][h]["supera_persistencia"] == (met["mae_modelo"] < met["mae_persistencia"])
+
+
+# ---------- Modelos horarios (v2): misma interfaz, v1 sin cambios ----------
+
+def _modelo_horario(supera=(True, False, True), intercepto=1.0):
+    h = lambda s: {"intercepto": intercepto, "coef": [0.0] * 7, "alpha": 1.0,  # noqa: E731
+                   "metricas": {"mae_modelo": 1.0, "mae_persistencia": 2.0}, "supera_persistencia": s}
+    return {"nombre": "v2", "resolucion": "hora", "persistencia": "pm25_h1", "variables": pr.VARIABLES_HORARIAS,
+            "media": [0.0] * 7, "escala": [1.0] * 7,
+            "horizontes": {"60": h(supera[0]), "180": h(supera[1]), "360": h(supera[2])},
+            "fuentes": [{"tipo": "externos"}], "aviso_publico": "Entrenado con datos externos históricos."}
+
+
+def test_variables_horarias_desde_la_serie_por_minuto():
+    # ultima hora 30, la anterior 20, la de antes 10 (i = minutos antes de AHORA)
+    s = _serie(lambda i: 30.0 if i < 60 else 20.0 if i < 120 else 10.0)
+    x = pr.variables_horarias_en(s, pr.minuto(AHORA))
+    assert (x["pm25_h1"], x["pm25_h2"], x["pm25_h3"], x["media_3h"], x["pendiente_h1_h3"]) == (30.0, 20.0, 10.0, 20.0, 20.0)
+    assert x == pr.variables_horarias_desde(30.0, 20.0, 10.0, pr.minuto(AHORA))
+    # una hora con menos de 40 min con datos -> sin variables
+    assert pr.variables_horarias_en(_serie(faltan=range(130, 160)), pr.minuto(AHORA)) is None
+
+
+def test_prediccion_con_modelo_horario_usa_sus_horizontes_y_su_persistencia():
+    s = _serie(lambda i: 30.0 if i < 60 else 20.0 if i < 120 else 10.0)
+    r = pr.prediccion(_modelo_horario(), s, AHORA)
+    assert r["estado"] == "ok" and r["fuentes"] == "Modelo entrenado con datos externos. Experimental."
+    assert r["aviso"] == "Entrenado con datos externos históricos."
+    assert [(h["minutos"], h["pm25"], h["disponible"]) for h in r["horizontes"]] == [(60, 31.0, True), (180, None, False), (360, 31.0, True)]
+    assert "en 6 h: 31.0" in r["texto"] and "a 3 h: no disponible" in r["texto"]
+    assert pr.prediccion(_modelo_horario(), _serie(minutos=100), AHORA)["estado"] == "sin_datos"
+    assert pr.prediccion(_modelo_horario(supera=(False,) * 3), s, AHORA)["estado"] == "no_supera_linea_base"
+
+
+def test_modelo_sin_resolucion_sigue_siendo_v1():
+    m = _modelo()
+    assert pr.horizontes_de(m) == (60, 180) and not pr.es_horario(m)
+    assert pr.aviso_simulados(_modelo(fuentes=("reales",))) is None
