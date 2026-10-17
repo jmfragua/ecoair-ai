@@ -11,3 +11,6 @@ docs/normas/*.pdf
 .claude/
 # QR generado en local
 qr_ecoair_local.png
+
+# Datos externos descargados (no se versionan)
+datos_externos/
