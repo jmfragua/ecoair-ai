@@ -26,6 +26,11 @@ variables se calculan de la MISMA serie por minuto de las ultimas 3 h (no hace f
     pm25_h1/h2/h3  medias de los minutos (ahora-60, ahora], (ahora-120, ahora-60], (ahora-180, ahora-120]
                    (cada una con al menos 40 min con datos)
     media_3h, pendiente_h1_h3 (pm25_h1 - pm25_h3), hora_sin/hora_cos
+Modelos con "transformacion": "relativa" y "c" (p. ej. v3): variables RELATIVAS al nivel, para no
+regresar hacia la media del entrenamiento. Con h1, h2, h3 y media_3h como arriba:
+    lr_h2_h1 = log((h2+c)/(h1+c)), lr_h3_h1 = log((h3+c)/(h1+c)), lr_m3_h1 = log((media_3h+c)/(h1+c)),
+    pend_rel = (h1 - h3) / (media_3h + c), hora_sin/hora_cos
+    f = intercepto + coef . variables_estandarizadas;  prediccion = (h1 + c) * exp(f) - c  (>= 0)
 Un JSON sin "resolucion" se trata como v1 (por minuto, horizontes 60 y 180): v1 no cambia.
 
 Textos y presentacion SIEMPRE desde el JSON del modelo activo (sin frases fijas por modelo):
@@ -43,6 +48,7 @@ from pathlib import Path
 
 VARIABLES = ["ult", "media_15", "media_60", "media_180", "pendiente_15_60", "hora_sin", "hora_cos"]
 VARIABLES_HORARIAS = ["pm25_h1", "pm25_h2", "pm25_h3", "media_3h", "pendiente_h1_h3", "hora_sin", "hora_cos"]
+VARIABLES_RELATIVAS = ["lr_h2_h1", "lr_h3_h1", "lr_m3_h1", "pend_rel", "hora_sin", "hora_cos"]
 HORIZONTES = (60, 180)          # minutos
 COLOMBIA = timezone(timedelta(hours=-5))
 # Datos minimos (minutos con datos) en cada ventana para poder calcular las variables
@@ -130,8 +136,26 @@ def horizontes_de(modelo):
     return tuple(sorted(int(h) for h in modelo["horizontes"])) if es_horario(modelo) else HORIZONTES
 
 
+def es_relativo(modelo):
+    return modelo.get("transformacion") == "relativa"
+
+
+def variables_relativas_desde(h1, h2, h3, m, c):
+    """Variables de un modelo relativo (incluye pm25_h1, la base de la prediccion)."""
+    x = variables_horarias_desde(h1, h2, h3, m)
+    b = h1 + c
+    x.update({"lr_h2_h1": math.log((h2 + c) / b), "lr_h3_h1": math.log((h3 + c) / b),
+              "lr_m3_h1": math.log((x["media_3h"] + c) / b), "pend_rel": (h1 - h3) / (x["media_3h"] + c)})
+    return x
+
+
 def variables_para(modelo, serie, m):
-    return variables_horarias_en(serie, m) if es_horario(modelo) else variables_en(serie, m)
+    if not es_horario(modelo):
+        return variables_en(serie, m)
+    x = variables_horarias_en(serie, m)
+    if x is None or not es_relativo(modelo):
+        return x
+    return variables_relativas_desde(x["pm25_h1"], x["pm25_h2"], x["pm25_h3"], m, float(modelo["c"]))
 
 
 def objetivo_en(serie, m, horizonte):
@@ -162,7 +186,11 @@ def predecir_horizonte(modelo, x, horizonte):
     h = modelo["horizontes"][str(horizonte)]
     z = [(x[v] - mu) / (s or 1.0) for v, mu, s in zip(modelo["variables"], modelo["media"], modelo["escala"])]
     delta = h["intercepto"] + sum(c * zi for c, zi in zip(h["coef"], z))
-    return max(0.0, x[modelo.get("persistencia", "ult")] + delta)
+    base = x[modelo.get("persistencia", "ult")]
+    if es_relativo(modelo):
+        c = float(modelo["c"])
+        return max(0.0, (base + c) * math.exp(delta) - c)
+    return max(0.0, base + delta)
 
 
 def texto_fuentes(modelo):

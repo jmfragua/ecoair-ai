@@ -46,7 +46,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
 - [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
-  notifier, 13 del ingestor, 48 de ai/ y 86 de db/ + shared/ + tools/.
+  notifier, 13 del ingestor, 53 de ai/ y 88 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -190,6 +190,18 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     regresan hacia la media del entrenamiento (~20 µg/m³ en MED-UNNV), y a 6 h también la hora del
     día. v1 tiene el mismo efecto hacia su media simulada (~12). Pendiente decidir la solución
     ANTES de activar v2 (los datos propios rondan 3-4 µg/m³).
+- prediccion_pm25_v3.json: NO ACTIVO. Variables RELATIVAS al nivel ("transformacion": "relativa",
+  c = 2,0 fija): log((h2+c)/(h1+c)), log((h3+c)/(h1+c)), log((media_3h+c)/(h1+c)),
+  pend_rel = (h1-h3)/(media_3h+c), hora sin/cos; objetivo log((y+c)/(h1+c)); predicción
+  (h1+c)·exp(f) - c. Mismo CSV, muestras y división que v2 (ai/entrenar_prediccion_v3.py).
+  - La prueba NO es virgen: ya se había mirado una vez con v2 (anotado también en el JSON).
+  - Prueba, MAE v3 / v2 / persistencia / media horaria: 1 h 4,041 / 3,985 / 4,078 / 6,960 (-0,9 %);
+    3 h 6,380 / 5,884 / 6,619 / 6,991 (-3,6 %); 6 h 7,384 / 6,668 / 8,457 / 7,049 (-12,7 %).
+    v3 es peor que v2 en los tres horizontes y a 6 h peor que la media por hora del día.
+    alpha 3 h = 10000 (extremo de la rejilla; no se amplió).
+  - Sesgo con series constantes (criterio declarado antes: niveles 3 y 6, <= 1,0 a 1 y 3 h,
+    <= 1,5 a 6 h): CUMPLE en los tres (máx |pred - valor| 0,28 / 0,27 / 1,30) e invariancia de
+    escala exacta. horizontes_visibles = [360] (único con mejora >= 5 % y sesgo cumplido).
 - anomalias_sim_if_v2_A.joblib (1,97 MB) + .json de procedencia (SHA-256, evaluación, límites):
   Isolation Forest (scikit-learn 1.9.1; la imagen usa la misma versión). Exportado con
   ai/exportar_modelo_anomalias.py, sin reentrenar.

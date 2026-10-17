@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -175,3 +176,34 @@ def test_v1_real_sigue_igual():
     assert r["fuentes"] == "Modelo entrenado con datos simulados. Experimental."
     assert r["aviso"].startswith("Atención: el modelo se entrenó con datos simulados")
     assert [h["minutos"] for h in r["horizontes"]] == [60, 180]
+
+
+# ---------- Modelos relativos (v3): "transformacion": "relativa" ----------
+
+def _modelo_relativo(intercepto=0.1, coef=None, c=2.0):
+    h = lambda: {"intercepto": intercepto, "coef": coef or [0.0] * 6, "alpha": 1.0,  # noqa: E731
+                 "metricas": {"mae_modelo": 1.0, "mae_persistencia": 2.0}, "supera_persistencia": True}
+    return {"nombre": "v3", "resolucion": "hora", "transformacion": "relativa", "c": c, "persistencia": "pm25_h1",
+            "variables": pr.VARIABLES_RELATIVAS, "media": [0.0] * 6, "escala": [1.0] * 6,
+            "horizontes": {"60": h(), "180": h(), "360": h()}, "fuentes": [{"tipo": "externos"}]}
+
+
+def test_variables_relativas():
+    x = pr.variables_relativas_desde(8.0, 18.0, 3.0, pr.minuto(AHORA), 2.0)
+    assert x["pm25_h1"] == 8.0
+    assert math.isclose(x["lr_h2_h1"], math.log(20 / 10)) and math.isclose(x["lr_h3_h1"], math.log(5 / 10))
+    assert math.isclose(x["lr_m3_h1"], math.log((29 / 3 + 2) / 10))
+    assert math.isclose(x["pend_rel"], 5 / (29 / 3 + 2))
+
+
+def test_prediccion_relativa_es_multiplicativa_y_no_negativa():
+    m = _modelo_relativo(intercepto=0.1)
+    for nivel in (3.0, 25.0):
+        s = _serie(lambda i, n=nivel: n)
+        x = pr.variables_para(m, s, pr.minuto(AHORA))
+        assert x["lr_h2_h1"] == 0.0 and x["pend_rel"] == 0.0
+        assert math.isclose(pr.predecir_horizonte(m, x, 60), (nivel + 2) * math.exp(0.1) - 2)
+    x0 = pr.variables_para(_modelo_relativo(intercepto=-5.0), _serie(lambda i: 0.0), pr.minuto(AHORA))
+    assert pr.predecir_horizonte(_modelo_relativo(intercepto=-5.0), x0, 60) == 0.0
+    r = pr.prediccion(m, _serie(lambda i: 3.0), AHORA)
+    assert r["estado"] == "ok" and [h["minutos"] for h in r["horizontes"]] == [60, 180, 360]
