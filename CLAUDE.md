@@ -46,7 +46,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
 - [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 47 del
-  notifier, 13 del ingestor, 41 de ai/ y 71 de db/ + shared/ + tools/.
+  notifier, 13 del ingestor, 41 de ai/ y 79 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -244,6 +244,20 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   fuente y licencia, o simulados) en los metadatos del modelo, igual que ya hace el JSON de los
   modelos sim_*.
 - Respetar la licencia de cada fuente y citarla donde se usen sus datos.
+- OpenAQ, estación MED-UNNV (Universidad Nacional, sede El Volador, Medellín; location_id 10641):
+  - Archivo crudo en datos_externos/openaq_10641/ (CSV.gz diarios, ignorado por git; trae pm25,
+    o3 y no2). Conversión con tools/convertir_openaq.py (solo biblioteca estándar, no toca la
+    base) -> datos_externos/openaq_10641_pm25_utc.csv con source "OpenAQ archive", station
+    "MED-UNNV El Volador (OpenAQ 10641)", city "Medellín".
+  - Periodo útil: 2018-11-05 02:00 a 2020-02-25 13:00 UTC, solo PM2.5 por hora: 10.103 filas
+    finales de 20.987 de pm25 (10.884 con -9999 = sin dato; desde 2020-03 todo es -9999).
+    0 fuera de rango y 0 duplicados. load_external.procesar_csv acepta las 10.103 (validación sin base).
+  - Zona horaria: TODAS las horas vienen con desfase -01:00 (Colombia es -05:00). Supuesto: se
+    respeta el desfase tal cual y se pasa a UTC. Evidencia indirecta a favor: el pico medio de
+    PM2.5 cae a las 12:00 de la hora etiquetada = 13:00 UTC = 08:00 en Colombia (hora pico de la
+    mañana). No está confirmado con la documentación de OpenAQ.
+  - Licencia: PENDIENTE DE VERIFICAR (valor por defecto de --licencia). Verificarla y citarla
+    antes de cargar o usar estos datos. NO cargados en ninguna base todavía.
 
 ## Normas de calidad del aire (docs/normas/)
 - No leer los PDF de docs/normas/ (son pesados).
