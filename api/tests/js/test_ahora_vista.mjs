@@ -66,3 +66,16 @@ test("hace cuanto: minutos, horas y dias; reloj adelantado no da negativos", () 
     ["hace menos de 1 min", "hace 1 min", "hace 59 min", "hace 1 h", "hace 1 h 1 min", "hace 1 d", "hace 1 d 1 h"]);
   assert.match(vistaAhora({ ...M, received_at: "2026-10-17T15:03:00Z" }, AHORA).ultima, /hace menos de 1 min/);
 });
+
+test("etiqueta de PM2.5/PM10: 'actual' con datos recientes; fuera de linea, 'última lectura' y su hora", async () => {
+  const { etiquetaMetrica } = await import("../../static/js/ahora-vista.js");
+  assert.deepEqual(etiquetaMetrica(vistaAhora(M, AHORA)), { largo: "actual · media 1 h ", corto: "media 1 h " });
+  // 10 min justos: todavia no es fuera de linea (misma condicion que el aviso)
+  assert.equal(etiquetaMetrica(vistaAhora({ ...M, received_at: "2026-10-17T14:50:00Z" }, AHORA)).largo, "actual · media 1 h ");
+  const fuera = etiquetaMetrica(vistaAhora({ ...M, received_at: "2026-10-17T14:35:00Z" }, AHORA));
+  assert.equal(fuera.largo, "última lectura 09:35 · media 1 h ");
+  assert.match(fuera.corto, /última lectura 09:35/);
+  assert.ok(!/actual/.test(fuera.largo + fuera.corto));
+  // sin medicion: no inventa una hora
+  assert.equal(etiquetaMetrica(vistaAhora(null, AHORA, { fallo: true })).largo, "actual · media 1 h ");
+});

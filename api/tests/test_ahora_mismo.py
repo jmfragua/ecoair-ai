@@ -64,3 +64,24 @@ def test_ahora_vista_con_node():
     r = subprocess.run(["node", "--test", str(Path(__file__).parent / "js" / "test_ahora_vista.mjs")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_panel_tiene_las_piezas_del_estado_fuera_de_linea():
+    html = client.get("/panel").text
+    assert 'id="rec-vacio"' in html
+    for p in ("pm25", "pm10"):
+        assert f'id="{p}-lbl-l">actual · media 1 h </span>' in html and f'id="{p}-lbl-s">media 1 h </span>' in html
+    app = (STATIC / "js" / "app.js").read_text()
+    assert "renderRec(null, null, SIN_DATOS_RECIENTES)" in app and "etiquetaMetrica(v)" in app
+
+
+def test_portada_rotulo_y_linea_honesta_sobre_ia():
+    html = client.get("/").text
+    assert 'id="mini-titulo" hidden' in html
+    paso3 = html[html.index("<strong>Se analizan</strong>"):]
+    paso3 = paso3[:paso3.index("</li>")]
+    assert "reglas fijas evalúan las alertas" in paso3
+    ia = ("Además, un modelo experimental estima el PM2.5 a 6 horas (entrenado con datos externos históricos "
+          "de Medellín) y, en pruebas con datos simulados, un modelo busca lecturas anómalas.")
+    assert ia in paso3
+    assert "alerta" not in ia.lower()   # la linea de IA no dice que las alertas usen IA

@@ -86,6 +86,7 @@
         <h2 id="rec-title" class="card__title">Recomendación</h2>
         <span class="chip chip--muted">texto fijo, no IA</span>
       </header>
+      <p class="rec__vacio" id="rec-vacio" hidden></p>
       <p class="rec__cat" id="rec-cat">—</p>
       <p class="rec__label" id="rec-titulo-efectos">Qué significa</p>
       <p class="rec__text" id="rec-efectos">—</p>
@@ -105,7 +106,7 @@
         <span class="unit">µg/m³</span>
       </header>
       <p class="metric__value" id="pm25-now">—</p>
-      <p class="metric__sub"><span class="t-long">actual · media 1 h </span><span class="t-short">media 1 h </span><strong id="pm25-1h">—</strong></p>
+      <p class="metric__sub"><span class="t-long" id="pm25-lbl-l">actual · media 1 h </span><span class="t-short" id="pm25-lbl-s">media 1 h </span><strong id="pm25-1h">—</strong></p>
       <div class="limit" id="pm25-limit">
         <div class="limit__row"><span><span class="t-long">Media 24 h vs. límite diario</span><span class="t-short">24 h / límite</span></span><strong id="pm25-24h">—</strong></div>
         <div class="bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="PM2.5: media de 24 h respecto al límite diario de 37 µg/m³" id="pm25-bar">
@@ -121,7 +122,7 @@
         <span class="unit">µg/m³</span>
       </header>
       <p class="metric__value" id="pm10-now">—</p>
-      <p class="metric__sub"><span class="t-long">actual · media 1 h </span><span class="t-short">media 1 h </span><strong id="pm10-1h">—</strong></p>
+      <p class="metric__sub"><span class="t-long" id="pm10-lbl-l">actual · media 1 h </span><span class="t-short" id="pm10-lbl-s">media 1 h </span><strong id="pm10-1h">—</strong></p>
       <div class="limit" id="pm10-limit">
         <div class="limit__row"><span><span class="t-long">Media 24 h vs. límite diario</span><span class="t-short">24 h / límite</span></span><strong id="pm10-24h">—</strong></div>
         <div class="bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="PM10: media de 24 h respecto al límite diario de 75 µg/m³" id="pm10-bar">

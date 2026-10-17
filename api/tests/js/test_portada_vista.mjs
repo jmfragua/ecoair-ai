@@ -31,3 +31,18 @@ test("dispositivo simulado lleva la marca SIMULACION", () => {
   assert.equal(vistaEstado(OK, { device_id: "ecoair-sim-01", is_simulated: true }).simulado, true);
   assert.equal(vistaEstado(null, { is_simulated: true }).simulado, true);
 });
+
+test("miniatura fuera de linea: los cuatro valores se rotulan 'Última lectura'", async () => {
+  const { rotuloUltimaLectura } = await import("../../static/js/portada-vista.js");
+  const { vistaAhora } = await import("../../static/js/ahora-vista.js");
+  const AHORA = Date.parse("2026-10-17T15:00:00Z");
+  const M = { received_at: "2026-10-17T14:35:00Z", pm25: 5, pm10: 8, temperature: 20, humidity: 70 };
+  const fuera = vistaEstado({ estado: "sin_datos" }, null);
+  assert.equal(rotuloUltimaLectura(fuera, vistaAhora(M, AHORA)), "Última lectura · 09:35 (hora de Colombia)");
+  // en linea con medicion reciente: sin rotulo
+  assert.equal(rotuloUltimaLectura(vistaEstado(OK, null), vistaAhora({ ...M, received_at: "2026-10-17T14:58:00Z" }, AHORA)), "");
+  // fallo de red con valores conservados de mas de 10 min: tambien es la ultima lectura
+  assert.match(rotuloUltimaLectura(vistaEstado(null, null), vistaAhora(M, AHORA, { fallo: true })), /^Última lectura/);
+  // fuera de linea sin ninguna medicion: no hay lectura que rotular
+  assert.equal(rotuloUltimaLectura(fuera, vistaAhora(null, AHORA)), "");
+});

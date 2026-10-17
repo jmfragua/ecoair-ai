@@ -30,6 +30,8 @@ body.portada { padding-top: 0; }
 .mini dt { font-size: .64rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
 .mini dd { margin: 2px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .mini dd .unit { font-size: .7rem; }
+.mini__titulo { font-size: .72rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: #ffe2a6; margin-top: 12px; }
+.mini__titulo + .mini { margin-top: 6px; }
 .mini__warn { font-size: .78rem; color: #ffe2a6; margin-top: 8px; }
 .mini__warn span { display: block; color: var(--muted); font-weight: 400; }
 
@@ -66,6 +68,7 @@ body.portada { padding-top: 0; }
 }
 .pasos strong { font-size: .95rem; }
 .pasos span { color: var(--text-2); font-size: .88rem; }
+.pasos .pasos__ia { color: var(--muted); font-size: .8rem; margin-top: 4px; }
 
 .portada .foot { max-width: 720px; }
 

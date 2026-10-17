@@ -244,6 +244,8 @@ ol, ul { padding: 0; list-style: none; }
 /* ---------- Recomendacion ---------- */
 .rec__cat { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .rec__cat::before { content: ""; width: 12px; height: 12px; border-radius: 4px; background: var(--cat); flex: none; }
+.rec__vacio { color: var(--text-2); font-size: .95rem; }
+.rec__cat[hidden], .rec__src:empty { display: none; }
 .rec__label { font-size: .72rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-top: 12px; }
 .rec__text { color: var(--text-2); font-size: .92rem; margin-top: 4px; }
 .rec__src { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }

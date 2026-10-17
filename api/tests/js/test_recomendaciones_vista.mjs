@@ -37,3 +37,13 @@ test("sin recomendacion (sin datos o fallo) se dice y no hay desplegable", () =>
   }
   assert.equal(vistaRecomendacion(null, "Sin datos recientes").mensaje, "Sin datos recientes");
 });
+
+test("sin datos recientes: texto breve, sin recomendaciones inventadas", async () => {
+  const { SIN_DATOS_RECIENTES } = await import("../../static/js/recomendaciones-vista.js");
+  assert.equal(SIN_DATOS_RECIENTES,
+    "Sin datos recientes: las recomendaciones aparecerán cuando el nodo vuelva a enviar mediciones.");
+  const v = vistaRecomendacion(null, SIN_DATOS_RECIENTES);
+  assert.equal(v.disponible, false);
+  assert.equal(v.mensaje, SIN_DATOS_RECIENTES);
+  assert.deepEqual([v.efectos, v.resumen, v.secciones, v.fuentes, v.etiqueta], ["", "", [], [], ""]);
+});

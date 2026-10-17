@@ -45,7 +45,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
+- [TESTS] 86 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
   notifier, 13 del ingestor, 53 de ai/ y 94 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).

@@ -37,6 +37,15 @@ function horaColombia(fecha, ahora) {
   return fmtDia.format(fecha) === fmtDia.format(ahora) ? hora : `${fmtDia.format(fecha)} ${hora}`;
 }
 
+// Etiqueta de las tarjetas PM2.5/PM10 del panel: "actual" con datos recientes; con la estacion
+// fuera de linea (mas de 10 min, la misma condicion del aviso), "última lectura" y su hora.
+export function etiquetaMetrica(v) {
+  if (v && v.antigua && v.hora) {
+    return { largo: `última lectura ${v.hora} · media 1 h `, corto: `última lectura ${v.hora} · media 1 h ` };
+  }
+  return { largo: "actual · media 1 h ", corto: "media 1 h " };
+}
+
 // m: respuesta de /measurements/latest o null. ahora: Date o milisegundos.
 // opciones.fallo: true si la ultima consulta fallo (red, 5xx); sin m, lo dice.
 export function vistaAhora(m, ahora = Date.now(), { fallo = false } = {}) {
@@ -50,7 +59,7 @@ export function vistaAhora(m, ahora = Date.now(), { fallo = false } = {}) {
   const t = valida && typeof m.received_at === "string" ? new Date(m.received_at) : null;
   if (!t || Number.isNaN(t.getTime())) {
     return { ...valores, ultima: valida ? "Hora de la última medición desconocida" : fallo ? NO_SE_PUDO : SIN_MEDICIONES,
-             aviso: "", antigua: false, minutos: null };
+             aviso: "", antigua: false, minutos: null, hora: "" };
   }
   const ref = new Date(ahora);
   const minutos = Math.max(0, Math.floor((ref - t) / 60_000));
@@ -61,5 +70,6 @@ export function vistaAhora(m, ahora = Date.now(), { fallo = false } = {}) {
     aviso: antigua ? AVISO_APAGADO : "",
     antigua,
     minutos,
+    hora: horaColombia(t, ref),
   };
 }

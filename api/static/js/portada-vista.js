@@ -4,6 +4,15 @@
 
 export const SIN_DATOS = "Sin datos recientes";
 
+// Rotulo de la miniatura: con la estacion fuera de linea (estado "fuera" o ultima medicion de mas
+// de 10 min) los cuatro valores son la ultima lectura, no valores actuales.
+// estado: resultado de vistaEstado; ahora: resultado de vistaAhora (ahora-vista.js).
+export function rotuloUltimaLectura(estado, ahora) {
+  const fuera = (estado && estado.conexion === "fuera") || (ahora && ahora.antigua);
+  if (!fuera || !ahora || !ahora.hora) return "";
+  return `Última lectura · ${ahora.hora} (hora de Colombia)`;
+}
+
 // aq: respuesta de /air-quality/current o null si fallo la consulta.
 // dispositivo: entrada de /devices (con is_simulated) o null.
 export function vistaEstado(aq, dispositivo) {

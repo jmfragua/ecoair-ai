@@ -3,6 +3,8 @@
 // Texto fijo de la norma, no IA.
 
 export const NO_DISPONIBLES = "Recomendaciones no disponibles por ahora";
+export const SIN_DATOS_RECIENTES =
+  "Sin datos recientes: las recomendaciones aparecerán cuando el nodo vuelva a enviar mediciones.";
 
 // rec: objeto "recomendacion" de /air-quality/current, o null (sin datos / fallo).
 // motivo: texto a mostrar cuando no hay recomendacion (p. ej. "Sin datos recientes").

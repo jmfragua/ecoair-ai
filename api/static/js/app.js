@@ -1,7 +1,7 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
 import { vistaPrediccion } from "./prediccion-vista.js";
-import { vistaRecomendacion } from "./recomendaciones-vista.js";
-import { vistaAhora } from "./ahora-vista.js";
+import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
+import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const DEVICE = new URLSearchParams(location.search).get("device") || "ecoair-node-01";
@@ -185,7 +185,7 @@ function renderCurrent(aq) {
     $("gauge-label").textContent = "Medidor del ICA: sin datos recientes";
     for (const li of $("ica-scale").children) li.removeAttribute("aria-current");
     setActiveBand(null);
-    renderRec(null, null, "Sin datos recientes");
+    renderRec(null, null, SIN_DATOS_RECIENTES);
     for (const p of ["pm25", "pm10"]) { $(`${p}-1h`).textContent = "—"; renderLimit(p, null, null); }
     return;
   }
@@ -244,9 +244,13 @@ function renderLimit(p, media, v24) {
 let recCargada = false;
 function renderRec(rec, catName, motivo) {
   const v = vistaRecomendacion(rec, motivo);
-  $("rec-cat").textContent = v.disponible ? catName : v.mensaje;
+  // Sin recomendacion: solo un texto breve (nunca un cuadro vacio con "—" ni recomendaciones inventadas)
+  for (const id of ["rec-cat", "rec-titulo-efectos", "rec-efectos"]) $(id).hidden = !v.disponible;
+  $("rec-vacio").hidden = v.disponible;
+  $("rec-vacio").textContent = v.disponible ? "" : v.mensaje;
+  $("rec-cat").textContent = v.disponible ? catName : "";
   $("rec-titulo-efectos").textContent = v.tituloEfectos || "Qué significa";
-  $("rec-efectos").textContent = v.disponible ? v.efectos : "—";
+  $("rec-efectos").textContent = v.disponible ? v.efectos : "";
   $("rec-resumen").textContent = v.resumen;
   $("rec-completo").replaceChildren(...v.secciones.map((s) => el("section", { class: "rec__sec" },
     el("h3", {}, s.titulo),
@@ -283,6 +287,8 @@ function renderAhora(fallo) {
   $("now-ultima").textContent = v.ultima;
   $("now-aviso").textContent = v.aviso;
   $("now-aviso").hidden = !v.aviso;
+  const lbl = etiquetaMetrica(v);
+  for (const p of ["pm25", "pm10"]) { $(`${p}-lbl-l`).textContent = lbl.largo; $(`${p}-lbl-s`).textContent = lbl.corto; }
 }
 
 // Franja de confort orientativa (no normativa) para temperatura y humedad.

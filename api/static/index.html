@@ -34,6 +34,7 @@
         </div>
       </div>
       <p class="live__base" id="ica-base"></p>
+      <p class="mini__titulo" id="mini-titulo" hidden></p>
       <dl class="mini" aria-label="Valores de la última medición">
         <div class="mini__item"><dt>PM2.5</dt><dd><span id="mini-pm25">—</span> <span class="unit">µg/m³</span></dd></div>
         <div class="mini__item"><dt>PM10</dt><dd><span id="mini-pm10">—</span> <span class="unit">µg/m³</span></dd></div>
@@ -65,7 +66,7 @@
     <ol class="pasos">
       <li><strong>El sensor mide</strong><span>PM2.5, PM10, temperatura y humedad, cada pocos segundos.</span></li>
       <li><strong>Envía a la nube</strong><span>Por Wi-Fi las mediciones llegan al servidor y se guardan.</span></li>
-      <li><strong>Se analizan</strong><span>Se calcula el ICA con la Res. 2254/2017 y reglas fijas evalúan las alertas.</span></li>
+      <li><strong>Se analizan</strong><span>Se calcula el ICA con la Res. 2254/2017 y reglas fijas evalúan las alertas.</span><span class="pasos__ia">Además, un modelo experimental estima el PM2.5 a 6 horas (entrenado con datos externos históricos de Medellín) y, en pruebas con datos simulados, un modelo busca lecturas anómalas.</span></li>
       <li><strong>Recibes el aviso</strong><span>Si te suscribes, te llega un correo cuando se abre una alerta.</span></li>
     </ol>
   </section>
