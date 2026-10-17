@@ -10,7 +10,8 @@ def test_orden_y_exclusion_del_borrador():
     nombres = [n for n, _ in migrate.archivos()]
     assert nombres[0] == "schema.sql"
     assert "003_air_levels_borrador.sql" not in nombres
-    assert nombres == ["schema.sql", "002_simulated.sql", "004_alerts.sql", "005_subscriptions.sql"]
+    assert nombres == ["schema.sql", "002_simulated.sql", "004_alerts.sql", "005_subscriptions.sql",
+                       "006_external_measurements.sql", "007_welcome_email.sql"]
 
 
 def test_archivos_ignora_excluidos_en_cualquier_carpeta(tmp_path):

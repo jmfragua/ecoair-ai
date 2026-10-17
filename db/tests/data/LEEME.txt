@@ -1,0 +1,1 @@
+# Datos INVENTADOS solo para las pruebas de db/load_external.py (no son mediciones reales).
