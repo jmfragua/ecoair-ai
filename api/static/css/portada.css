@@ -20,11 +20,12 @@ body.portada { padding-top: 0; }
   min-width: 2.6ch; font-size: 3rem; font-weight: 780; letter-spacing: -0.04em; line-height: 1;
   color: var(--text); padding-left: 12px; border-left: 6px solid var(--cat); transition: border-color .6s ease;
 }
+.live__escala { text-transform: none; letter-spacing: 0; font-weight: 500; }
 .live__label { font-size: .72rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .live__cat { font-size: 1.05rem; font-weight: 700; }
 .live__base { font-size: .75rem; color: var(--muted); margin-top: 10px; }
 .live__base:empty { display: none; }
-.mini { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .mini__item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 9px; min-width: 0; }
 .mini dt { font-size: .64rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
 .mini dd { margin: 2px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -69,6 +70,7 @@ body.portada { padding-top: 0; }
 .portada .foot { max-width: 720px; }
 
 @media (min-width: 720px) {
+  .mini { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .hero { padding-top: 56px; gap: 18px; }
   .hero__cta { grid-template-columns: auto auto; justify-content: start; }
   .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }

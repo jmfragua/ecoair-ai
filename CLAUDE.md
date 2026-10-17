@@ -136,7 +136,8 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - Tarjeta del ICA: cuadrícula 2x2 con el último registro (/measurements/latest: PM2.5,
     PM10, temperatura, humedad; sin PM1.0), "Última medición: hace X min · hora de Colombia"
     y aviso "el nodo puede estar apagado" con más de 10 min. Valor que falta = "—". Lógica pura
-    en js/ahora-vista.js (la portada la usa para su miniatura PM2.5/temperatura/humedad).
+    en js/ahora-vista.js (la portada la usa para su miniatura PM2.5/PM10/temperatura/humedad,
+    2x2 en móvil y 4 columnas desde 720 px; junto al ICA, "(0–500; 0–50 = Buena)").
   - Muestra: ICA con medidor (base media de 1 h, indicativo), PM2.5/PM10 frente al límite
     diario, temperatura/humedad, gráfica de 24 h (escala ajustada a los datos o "Ver contra
     límites"), recomendación de texto fijo con su fuente, alertas en hora de Colombia, la

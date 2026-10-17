@@ -33,12 +33,13 @@ function render(v) {
   $("sim").hidden = !v.simulado;
 }
 
-// Miniatura PM2.5 / temperatura / humedad. Si falla la consulta se conservan los ultimos valores;
+// Miniatura PM2.5 / PM10 / temperatura / humedad. Si falla la consulta se conservan los ultimos valores;
 // con mas de 10 min sin medir se avisa que el nodo puede estar apagado.
 let ultimaMedicion = null;
 function renderMini(fallo) {
   const v = vistaAhora(ultimaMedicion, Date.now(), { fallo });
   $("mini-pm25").textContent = v.pm25;
+  $("mini-pm10").textContent = v.pm10;
   $("mini-temp").textContent = v.temperatura;
   $("mini-hum").textContent = v.humedad;
   const aviso = $("mini-aviso");

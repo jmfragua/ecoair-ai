@@ -34,12 +34,17 @@ def test_panel_tiene_la_cuadricula_2x2_en_la_tarjeta_del_ica():
     assert 'id="sim-badge"' in html  # la marca SIMULACION se mantiene
 
 
-def test_portada_tiene_la_miniatura_sin_pm10_ni_pm1():
+def test_portada_tiene_la_miniatura_con_pm10_y_sin_pm1():
     html = client.get("/").text
     tarjeta = html[html.index('class="card live"'):html.index("</section>")]
-    for id_ in ("mini-pm25", "mini-temp", "mini-hum", "mini-aviso"):
-        assert f'id="{id_}"' in tarjeta
-    assert "PM10" not in tarjeta and 'id="sim"' in tarjeta
+    for id_, etiqueta, unidad in (("mini-pm25", "PM2.5", "µg/m³"), ("mini-pm10", "PM10", "µg/m³"),
+                                  ("mini-temp", "Temperatura", "°C"), ("mini-hum", "Humedad", "%")):
+        assert f'<dt>{etiqueta}</dt><dd><span id="{id_}">—</span> <span class="unit">{unidad}</span>' in tarjeta
+    assert 'id="mini-aviso"' in tarjeta and 'id="sim"' in tarjeta
+    assert not re.search(r"PM\s?1(\.0)?\b", _texto_visible(tarjeta))
+    assert "(0–500; 0–50 = Buena)" in tarjeta
+    codigo = re.sub(r"//[^\n]*", "", (STATIC / "js" / "portada.js").read_text())
+    assert '$("mini-pm10").textContent = v.pm10' in codigo
 
 
 def test_ninguna_pagina_muestra_pm1_ni_valores_basura():
