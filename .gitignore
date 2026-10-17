@@ -1,7 +1,13 @@
 .env
-secrets.h
+# Secretos del firmware y sus copias (secrets.h, secrets.h.bak...); la plantilla si se versiona
+secrets.h*
+!secrets.h.example
 .venv/
 __pycache__/
 ai/data/
 ai/models/
 docs/normas/*.pdf
+# Carpeta local de herramientas (configuracion del editor/asistente)
+.claude/
+# QR generado en local
+qr_ecoair_local.png
