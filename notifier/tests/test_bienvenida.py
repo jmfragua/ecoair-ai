@@ -272,3 +272,19 @@ def test_alertas_sin_categoria_ica_no_llevan_recomendaciones_de_salud():
               "severity": "critica", "message": "Sin datos durante 6 min.", "started_at": AHORA, "ended_at": None}
     t = _texto(correo_alerta("a@b.co", EMAIL, alerta, "open", LINKS))
     assert "QUÉ HACER" not in t and "Texto fijo de la norma" not in t
+
+
+def test_bienvenida_con_v2_toma_fuente_y_aviso_del_json():
+    from pathlib import Path
+
+    from shared import prediccion as pr
+    raiz = Path(__file__).resolve().parents[2]
+    v2 = pr.cargar_modelo(raiz / "modelos" / "prediccion_pm25_v2.json")
+    serie = pr.serie_por_minuto([(AHORA - timedelta(minutes=i), 20.0) for i in range(185)])
+    p = notifier.prediccion_para_correo(pr.prediccion(v2, serie, AHORA))
+    assert "datos externos históricos de Medellín (2018-2020)" in p["aviso"]
+    assert "simulados" not in p["aviso"] and "en 1 h" not in p["texto"]
+    for tipo in ("plain", "html"):
+        t = _texto(correo_bienvenida("a@b.co", EMAIL, "ecoair-node-01", _resp(), LINKS, prediccion=p), tipo)
+        assert "datos externos históricos de Medellín (2018-2020)" in t
+        assert "Modelo entrenado con datos simulados" not in t

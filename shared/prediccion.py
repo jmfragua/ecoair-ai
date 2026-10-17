@@ -27,6 +27,13 @@ variables se calculan de la MISMA serie por minuto de las ultimas 3 h (no hace f
                    (cada una con al menos 40 min con datos)
     media_3h, pendiente_h1_h3 (pm25_h1 - pm25_h3), hora_sin/hora_cos
 Un JSON sin "resolucion" se trata como v1 (por minuto, horizontes 60 y 180): v1 no cambia.
+
+Textos y presentacion SIEMPRE desde el JSON del modelo activo (sin frases fijas por modelo):
+    texto_fuentes      p. ej. "Modelo entrenado con datos externos (...). Experimental."; si falta, se
+                       arma con los tipos de "fuentes" del JSON (v1: "...con datos simulados...").
+    aviso_publico      aviso que acompana a la prediccion; si falta y hay simulados, el aviso de simulados.
+    horizontes_visibles  lista de minutos que se muestran (p. ej. [180, 360] para ocultar 1 h sin
+                       tocar codigo); si falta, todos. Un horizonte oculto no aparece ni como "no disponible".
 """
 
 import json
@@ -159,6 +166,8 @@ def predecir_horizonte(modelo, x, horizonte):
 
 
 def texto_fuentes(modelo):
+    if modelo.get("texto_fuentes"):
+        return modelo["texto_fuentes"]
     tipos = [f["tipo"] for f in modelo.get("fuentes", [])]
     nombres = [NOMBRE_FUENTE.get(t, t) for t in dict.fromkeys(tipos)]
     return "Modelo entrenado con " + (" y ".join(nombres) if nombres else "fuentes no registradas") + ". Experimental."
@@ -168,7 +177,21 @@ def aviso_simulados(modelo):
     if any(f["tipo"] == "simulados" for f in modelo.get("fuentes", [])):
         return ("Atención: el modelo se entrenó con datos simulados; su error medido no representa "
                 "la precisión con el sensor real.")
-    return modelo.get("aviso_publico")   # p. ej. v2: entrenado con datos externos historicos
+    return None
+
+
+def aviso_modelo(modelo):
+    """Aviso del JSON (aviso_publico); si no lo trae, el de simulados cuando corresponde."""
+    return modelo.get("aviso_publico") or aviso_simulados(modelo)
+
+
+def horizontes_visibles(modelo):
+    """Horizontes que se presentan: los de "horizontes_visibles" del JSON (si esta), en orden."""
+    todos = horizontes_de(modelo)
+    visibles = modelo.get("horizontes_visibles")
+    if visibles is None:
+        return todos
+    return tuple(h for h in todos if h in {int(v) for v in visibles})
 
 
 def tendencia_3h(serie, ahora_min):
@@ -193,9 +216,9 @@ def prediccion(modelo, serie, ahora):
         return {"estado": "sin_modelo", "texto": "Predicción no disponible: no hay modelo cargado.",
                 "fuentes": None, "aviso": None, "horizontes": []}
     m = minuto(ahora)
-    base = {"modelo": modelo.get("nombre"), "fuentes": texto_fuentes(modelo), "aviso": aviso_simulados(modelo),
+    base = {"modelo": modelo.get("nombre"), "fuentes": texto_fuentes(modelo), "aviso": aviso_modelo(modelo),
             "experimental": True}
-    todos = horizontes_de(modelo)
+    todos = horizontes_visibles(modelo)
     disponibles = [h for h in todos if modelo["horizontes"][str(h)].get("supera_persistencia")]
     if not disponibles:
         return {**base, "estado": "no_supera_linea_base", "texto": NO_DISPONIBLE, "horizontes": [],

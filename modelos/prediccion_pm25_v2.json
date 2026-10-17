@@ -7,6 +7,7 @@
   "creado_utc": "2026-10-17T12:43:48+00:00",
   "advertencia": "Prediccion experimental. Entrenado con datos externos históricos de Medellín (2018-2020); no representa la precisión con el sensor propio.",
   "aviso_publico": "Entrenado con datos externos históricos de Medellín (2018-2020); no representa la precisión con el sensor propio.",
+  "texto_fuentes": "Modelo entrenado con datos externos (OpenAQ, estación MED-UNNV El Volador, Medellín). Experimental.",
   "variables": [
     "pm25_h1",
     "pm25_h2",
@@ -141,6 +142,11 @@
       "supera_persistencia": true
     }
   },
+  "horizontes_visibles": [
+    180,
+    360
+  ],
+  "nota_horizontes_visibles": "1 h: mejora marginal (2,3 %), no se muestra",
   "linea_base": "persistencia: media de PM2.5 de la ultima hora (pm25_h1)",
   "rival_adicional": "media por hora del dia (hora de Colombia), solo con el entrenamiento",
   "media_por_hora_entrenamiento": {

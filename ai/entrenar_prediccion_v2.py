@@ -55,6 +55,11 @@ CONJUNTOS = {   # meses UTC (inclusive)
 }
 AVISO = ("Entrenado con datos externos históricos de Medellín (2018-2020); "
          "no representa la precisión con el sensor propio.")
+TEXTO_FUENTES = "Modelo entrenado con datos externos (OpenAQ, estación MED-UNNV El Volador, Medellín). Experimental."
+# Presentacion (decidida DESPUES de ver la prueba; no cambia el modelo ni sus metricas): 1 h supera a la
+# persistencia solo por 2,3 % en MAE, asi que no se muestra. Se lee de "horizontes_visibles" del JSON.
+HORIZONTES_VISIBLES = [180, 360]
+NOTA_HORIZONTES_VISIBLES = "1 h: mejora marginal (2,3 %), no se muestra"
 SUPUESTOS = [
     "El valor de OpenAQ en la hora T es la media de PM2.5 de la hora que termina en T.",
     "Hora del dia en hora de Colombia (UTC-5 fijo).",
@@ -209,10 +214,13 @@ def construir_modelo(serie, info, ruta_entrada, huella):
         "creado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "advertencia": "Prediccion experimental. " + AVISO,
         "aviso_publico": AVISO,
+        "texto_fuentes": TEXTO_FUENTES,
         "variables": VARIABLES_HORARIAS,
         "media": [float(v) for v in media],
         "escala": [float(v) for v in escala],
         "horizontes": horizontes,
+        "horizontes_visibles": HORIZONTES_VISIBLES,
+        "nota_horizontes_visibles": NOTA_HORIZONTES_VISIBLES,
         "linea_base": "persistencia: media de PM2.5 de la ultima hora (pm25_h1)",
         "rival_adicional": "media por hora del dia (hora de Colombia), solo con el entrenamiento",
         "media_por_hora_entrenamiento": {str(k): round(v, 3) for k, v in tabla.items()},

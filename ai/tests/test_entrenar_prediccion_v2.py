@@ -97,6 +97,7 @@ def test_de_punta_a_punta_escribe_v2_cargable_y_no_toca_v1(tmp_path):
     m = json.loads(salida.read_text(encoding="utf-8"))
     assert m["nombre"] == "prediccion_pm25_v2" and m["resolucion"] == "hora"
     assert set(m["horizontes"]) == {"60", "180", "360"}
+    assert m["horizontes_visibles"] == [180, 360] and m["texto_fuentes"] == e2.TEXTO_FUENTES
     assert m["aviso_publico"] == e2.AVISO and "no representa la precisión con el sensor propio" in m["aviso_publico"]
     f = m["fuentes"][0]
     assert (f["tipo"], f["licencia"], len(f["sha256"])) == ("externos", "Licencia X", 64)

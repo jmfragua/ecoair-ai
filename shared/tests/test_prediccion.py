@@ -124,3 +124,54 @@ def test_modelo_sin_resolucion_sigue_siendo_v1():
     m = _modelo()
     assert pr.horizontes_de(m) == (60, 180) and not pr.es_horario(m)
     assert pr.aviso_simulados(_modelo(fuentes=("reales",))) is None
+
+
+# ---------- Textos y horizontes visibles desde el JSON del modelo activo ----------
+
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "..")
+FRASE_V2 = "datos externos históricos de Medellín (2018-2020)"
+
+
+def _modelo_real(nombre):
+    return pr.cargar_modelo(os.path.join(RAIZ, "modelos", f"prediccion_pm25_{nombre}.json"))
+
+
+def test_textos_salen_del_json_y_no_de_frases_fijas():
+    m = _modelo_horario()
+    m["texto_fuentes"] = "Texto de fuentes del JSON."
+    r = pr.prediccion(m, _serie(lambda i: 20.0), AHORA)
+    assert (r["fuentes"], r["aviso"]) == ("Texto de fuentes del JSON.", "Entrenado con datos externos históricos.")
+    # sin texto_fuentes ni aviso_publico: se arma con los tipos de "fuentes" del mismo JSON
+    assert pr.texto_fuentes(_modelo(fuentes=("reales",))) == "Modelo entrenado con datos propios reales. Experimental."
+    assert pr.aviso_modelo(_modelo(fuentes=("reales",))) is None
+
+
+def test_horizontes_visibles_ocultan_sin_tocar_codigo():
+    m = _modelo_horario(supera=(True, True, True))
+    m["horizontes_visibles"] = [180, 360]
+    r = pr.prediccion(m, _serie(lambda i: 20.0), AHORA)
+    assert [h["minutos"] for h in r["horizontes"]] == [180, 360]
+    assert "en 1 h" not in r["texto"] and "a 1 h" not in r["texto"]
+    # si solo queda visible un horizonte que no supera la linea base: no disponible
+    m["horizontes_visibles"] = [180]
+    m["horizontes"]["180"]["supera_persistencia"] = False
+    assert pr.prediccion(m, _serie(lambda i: 20.0), AHORA)["estado"] == "no_supera_linea_base"
+    assert pr.horizontes_visibles(_modelo()) == (60, 180)
+
+
+def test_v2_real_dice_datos_externos_historicos_y_muestra_3_y_6_h():
+    v2 = _modelo_real("v2")
+    assert v2["horizontes_visibles"] == [180, 360]
+    assert v2["nota_horizontes_visibles"] == "1 h: mejora marginal (2,3 %), no se muestra"
+    r = pr.prediccion(v2, _serie(lambda i: 20.0), AHORA)
+    assert r["estado"] == "ok" and [h["minutos"] for h in r["horizontes"]] == [180, 360]
+    assert FRASE_V2 in r["aviso"] and "no representa la precisión con el sensor propio" in r["aviso"]
+    assert "datos externos" in r["fuentes"] and "simulados" not in r["fuentes"] + r["aviso"]
+
+
+def test_v1_real_sigue_igual():
+    v1 = _modelo_real("v1")
+    r = pr.prediccion(v1, _serie(lambda i: 20.0), AHORA)
+    assert r["fuentes"] == "Modelo entrenado con datos simulados. Experimental."
+    assert r["aviso"].startswith("Atención: el modelo se entrenó con datos simulados")
+    assert [h["minutos"] for h in r["horizontes"]] == [60, 180]

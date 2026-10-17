@@ -45,8 +45,8 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 47 del
-  notifier, 13 del ingestor, 48 de ai/ y 82 de db/ + shared/ + tools/.
+- [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
+  notifier, 13 del ingestor, 48 de ai/ y 86 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -180,6 +180,16 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - Aviso público: "Entrenado con datos externos históricos de Medellín (2018-2020); no representa
     la precisión con el sensor propio." Supuesto: el valor de OpenAQ en T es la media de la hora
     que termina en T. Con el sensor propio solo hay ~6 h reales (358 min): sin evaluación real.
+  - Presentación desde el JSON (sin tocar código): "texto_fuentes", "aviso_publico" y
+    "horizontes_visibles" (v2: [180, 360]; "1 h: mejora marginal (2,3 %), no se muestra"). Panel y
+    correo de bienvenida toman fuente y aviso del JSON del modelo activo. v1 no trae esos campos:
+    sus textos se arman igual que antes con sus "fuentes".
+  - Sesgo medido con series constantes (pred - valor): v2 se desvía más de 1 µg/m³ en niveles de
+    3 a 12 (p. ej. 3 µg/m³: +1,4 a +2,0 a 1 h; +3,7 a +7,0 a 3 h; +5,2 a +10,6 a 6 h, según la hora del día).
+    Causa: las variables de nivel absoluto (pm25_h1/h2/h3, media_3h) con coeficientes negativos
+    regresan hacia la media del entrenamiento (~20 µg/m³ en MED-UNNV), y a 6 h también la hora del
+    día. v1 tiene el mismo efecto hacia su media simulada (~12). Pendiente decidir la solución
+    ANTES de activar v2 (los datos propios rondan 3-4 µg/m³).
 - anomalias_sim_if_v2_A.joblib (1,97 MB) + .json de procedencia (SHA-256, evaluación, límites):
   Isolation Forest (scikit-learn 1.9.1; la imagen usa la misma versión). Exportado con
   ai/exportar_modelo_anomalias.py, sin reentrenar.
