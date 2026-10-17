@@ -45,8 +45,8 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 69 tests de la API, 38 del alerter, 42 del notifier, 13 del ingestor, 41 de ai/ y 61 de
-  db/ + shared/ + tools/.
+- [TESTS] 84 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 47 del
+  notifier, 13 del ingestor, 41 de ai/ y 71 de db/ + shared/ + tools/.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -133,6 +133,10 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - Sin recursos externos (el Wi-Fi de la feria puede fallar): sin CDN; fuente Inter variable
     local (api/static/fonts/, licencia SIL OFL 1.1 en OFL-Inter.txt). Comprobar con
     grep "http" en api/static/ (solo deben aparecer espacios de nombres SVG).
+  - Tarjeta del ICA: cuadrícula 2x2 con el último registro (/measurements/latest: PM2.5,
+    PM10, temperatura, humedad; sin PM1.0), "Última medición: hace X min · hora de Colombia"
+    y aviso "el nodo puede estar apagado" con más de 10 min. Valor que falta = "—". Lógica pura
+    en js/ahora-vista.js (la portada la usa para su miniatura PM2.5/temperatura/humedad).
   - Muestra: ICA con medidor (base media de 1 h, indicativo), PM2.5/PM10 frente al límite
     diario, temperatura/humedad, gráfica de 24 h (escala ajustada a los datos o "Ver contra
     límites"), recomendación de texto fijo con su fuente, alertas en hora de Colombia, la

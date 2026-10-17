@@ -217,6 +217,13 @@ ol, ul { padding: 0; list-style: none; }
 .ica__parts { display: block; color: var(--muted); font-size: .8rem; }
 .ica__base { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 2px; }
 
+/* Valores de la ultima medicion (2x2) dentro de la tarjeta del ICA */
+.now { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.now__item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.now dt { font-size: .7rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.now dd { margin: 2px 0 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.now__time { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 8px; }
+.now__warn { text-align: center; color: #ffe2a6; font-size: .8rem; font-weight: 600; margin-top: 2px; }
 .scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 16px; }
 .scale li {
   position: relative; text-align: center; font-size: .62rem; line-height: 1.2; color: var(--muted);

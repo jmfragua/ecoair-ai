@@ -1,5 +1,6 @@
 // Portada de EcoAir AI: estado en vivo de la estacion principal. Sin librerias externas.
 import { vistaEstado } from "./portada-vista.js";
+import { vistaAhora } from "./ahora-vista.js";
 
 const DEVICE = "ecoair-node-01";
 const TIMEOUT_MS = 8000;
@@ -14,7 +15,7 @@ async function getJSON(path) {
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const r = await fetch(path, { signal: ctrl.signal, headers: { Accept: "application/json" } });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status });
     return await r.json();
   } finally {
     clearTimeout(t);
@@ -32,15 +33,38 @@ function render(v) {
   $("sim").hidden = !v.simulado;
 }
 
+// Miniatura PM2.5 / temperatura / humedad. Si falla la consulta se conservan los ultimos valores;
+// con mas de 10 min sin medir se avisa que el nodo puede estar apagado.
+let ultimaMedicion = null;
+function renderMini(fallo) {
+  const v = vistaAhora(ultimaMedicion, Date.now(), { fallo });
+  $("mini-pm25").textContent = v.pm25;
+  $("mini-temp").textContent = v.temperatura;
+  $("mini-hum").textContent = v.humedad;
+  const aviso = $("mini-aviso");
+  aviso.replaceChildren();
+  if (v.aviso) aviso.append(v.aviso, Object.assign(document.createElement("span"), { textContent: v.ultima }));
+  aviso.hidden = !v.aviso;
+}
+
 async function actualizar() {
-  const [aq, devs] = await Promise.allSettled([
-    getJSON(`/devices/${encodeURIComponent(DEVICE)}/air-quality/current`),
+  const dev = encodeURIComponent(DEVICE);
+  const [aq, devs, latest] = await Promise.allSettled([
+    getJSON(`/devices/${dev}/air-quality/current`),
     getJSON("/devices"),
+    getJSON(`/devices/${dev}/measurements/latest`),
   ]);
   const dispositivo = devs.status === "fulfilled" && Array.isArray(devs.value)
     ? devs.value.find((d) => d.device_id === DEVICE) || null : null;
   render(vistaEstado(aq.status === "fulfilled" ? aq.value : null, dispositivo));
+  if (latest.status === "fulfilled") ultimaMedicion = latest.value;
+  else if (latest.reason?.status === 404) ultimaMedicion = null; // aun no hay mediciones
+  renderMini(latest.status === "rejected" && latest.reason?.status !== 404);
 }
 
-actualizar().catch(() => render(vistaEstado(null, null)));
-setInterval(() => actualizar().catch(() => render(vistaEstado(null, null))), REFRESH_MS);
+function fallo() {
+  render(vistaEstado(null, null));
+  renderMini(true);
+}
+actualizar().catch(fallo);
+setInterval(() => actualizar().catch(fallo), REFRESH_MS);

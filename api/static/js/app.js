@@ -1,6 +1,7 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
 import { vistaPrediccion } from "./prediccion-vista.js";
 import { vistaRecomendacion } from "./recomendaciones-vista.js";
+import { vistaAhora } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const DEVICE = new URLSearchParams(location.search).get("device") || "ecoair-node-01";
@@ -179,7 +180,8 @@ function renderCurrent(aq) {
     setGauge(null);
     $("ica-value").textContent = "—"; $("ica-value").dataset.v = "";
     $("ica-cat").textContent = "Sin datos recientes";
-    $("ica-by").textContent = u ? `Última medición: ${fechaHoraCol(u.received_at)} (hora de Colombia)` : "El dispositivo aún no tiene mediciones";
+    // La hora y la antiguedad de la ultima medicion ya las muestra la cuadricula (now-ultima).
+    $("ica-by").textContent = u ? "No se calcula el ICA: más de 5 min sin mediciones" : "El dispositivo aún no tiene mediciones";
     $("gauge-label").textContent = "Medidor del ICA: sin datos recientes";
     for (const li of $("ica-scale").children) li.removeAttribute("aria-current");
     setActiveBand(null);
@@ -265,7 +267,22 @@ function renderLatest(m) {
   setNumber($("hum"), m.humidity, 0);
   setRange("temp", m.temperature);
   setRange("hum", m.humidity);
-  $("env-time").textContent = `Medido a las ${fechaHoraCol(m.received_at)} (hora de Colombia)`;
+  const t = m.received_at ? new Date(m.received_at) : null;
+  $("env-time").textContent = t && !Number.isNaN(t.getTime()) ? `Medido a las ${fechaHoraCol(m.received_at)} (hora de Colombia)` : " ";
+}
+
+// Cuadricula 2x2 de la tarjeta del ICA: ultimo registro (ultimaMedicion) y su antiguedad.
+// Si la consulta falla se conservan los ultimos valores y la antiguedad sigue contando.
+let ultimaMedicion = null;
+function renderAhora(fallo) {
+  const v = vistaAhora(ultimaMedicion, Date.now(), { fallo });
+  $("now-pm25").textContent = v.pm25;
+  $("now-pm10").textContent = v.pm10;
+  $("now-temp").textContent = v.temperatura;
+  $("now-hum").textContent = v.humedad;
+  $("now-ultima").textContent = v.ultima;
+  $("now-aviso").textContent = v.aviso;
+  $("now-aviso").hidden = !v.aviso;
 }
 
 // Franja de confort orientativa (no normativa) para temperatura y humedad.
@@ -536,8 +553,9 @@ async function refresh() {
   let fallos = 0;
   if (aq.status === "fulfilled") renderCurrent(aq.value);
   else { fallos++; if (!recCargada) renderRec(null); }
-  if (latest.status === "fulfilled") renderLatest(latest.value);
-  else if (latest.reason?.status !== 404) fallos++; // 404 aqui = aun no hay mediciones
+  if (latest.status === "fulfilled") { ultimaMedicion = latest.value; renderAhora(false); renderLatest(latest.value); }
+  else if (latest.reason?.status === 404) { ultimaMedicion = null; renderAhora(false); } // 404 aqui = aun no hay mediciones
+  else { fallos++; renderAhora(true); }
   if (alerts.status === "fulfilled") renderAlerts(alerts.value);
   else if (alerts.reason?.status === 503) { $("alerts-empty").hidden = false; $("alerts-empty").textContent = "Las alertas no están disponibles en este momento."; }
   else fallos++;
