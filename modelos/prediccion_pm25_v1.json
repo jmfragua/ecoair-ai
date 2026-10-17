@@ -1,0 +1,94 @@
+{
+  "nombre": "prediccion_pm25_v1",
+  "tipo": "ridge_sobre_residuo_de_persistencia",
+  "experimental": true,
+  "creado_utc": "2026-10-17T04:04:40+00:00",
+  "advertencia": "Prediccion experimental. Entrenado con datos simulados: el error medido no representa la precision con el sensor real.",
+  "variables": [
+    "ult",
+    "media_15",
+    "media_60",
+    "media_180",
+    "pendiente_15_60",
+    "hora_sin",
+    "hora_cos"
+  ],
+  "media": [
+    12.087684879886975,
+    12.086577955723065,
+    12.058370806379413,
+    12.04126409006532,
+    0.02820714934358018,
+    0.007506965781796834,
+    -0.013345088895380072
+  ],
+  "escala": [
+    12.430696076882,
+    11.789172730733622,
+    10.641932463019733,
+    9.696620850591236,
+    5.199295913659855,
+    0.7089479773585821,
+    0.705094546473245
+  ],
+  "horizontes": {
+    "60": {
+      "intercepto": 0.008598092322173026,
+      "coef": [
+        -4.957367865638356,
+        0.3105449965040319,
+        1.1063203565625972,
+        -0.11848271472116394,
+        -1.5602723998148336,
+        0.03084055708264576,
+        -0.09181220088051481
+      ],
+      "alpha": 1000.0,
+      "metricas": {
+        "n_evaluacion": 8482,
+        "mae_modelo": 2.954,
+        "rmse_modelo": 10.174,
+        "mae_persistencia": 2.74,
+        "rmse_persistencia": 11.997,
+        "mejora_mae_pct": -7.8
+      },
+      "supera_persistencia": false
+    },
+    "180": {
+      "intercepto": 0.012807936881758504,
+      "coef": [
+        -5.851416720279093,
+        -0.2892040311889113,
+        0.38166765738150166,
+        -1.5740601340068963,
+        -1.4369556638728567,
+        0.13896259404079567,
+        -0.14987788966385637
+      ],
+      "alpha": 1000.0,
+      "metricas": {
+        "n_evaluacion": 8482,
+        "mae_modelo": 4.221,
+        "rmse_modelo": 11.634,
+        "mae_persistencia": 4.675,
+        "rmse_persistencia": 14.572,
+        "mejora_mae_pct": 9.7
+      },
+      "supera_persistencia": true
+    }
+  },
+  "linea_base": "persistencia: media de los ultimos 5 min",
+  "objetivo": "media de PM2.5 de 5 min en el horizonte",
+  "fuentes": [
+    {
+      "tipo": "simulados",
+      "detalle": "entrenamiento sim_measurements.csv (semilla 42), evaluacion sim_test_measurements.csv (semilla 43)",
+      "minutos_con_datos": 86186,
+      "muestras_entrenamiento": 8492,
+      "muestras_evaluacion": 8482
+    }
+  ],
+  "evaluacion": {
+    "nota": "Conjunto separado del entrenamiento; alpha elegido con validacion dentro del entrenamiento. Un horizonte solo se muestra si supera a la persistencia en MAE."
+  }
+}

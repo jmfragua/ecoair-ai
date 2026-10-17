@@ -1,0 +1,136 @@
+{
+  "nombre": "anomalias_sim_if_v2_A",
+  "archivo": "anomalias_sim_if_v2_A.joblib",
+  "sha256": "d6cefed5b8c449589d420cc0d94bfed480a17afc475cc1b5375ee25495897462",
+  "experimental": true,
+  "exportado_utc": "2026-10-17T04:08:32+00:00",
+  "modelo_original": "sim_isolation_forest_v2_A",
+  "creado_utc": "2026-10-15T03:48:51+00:00",
+  "algoritmo": {
+    "algoritmo": "IsolationForest",
+    "n_estimators": 200,
+    "contamination": 0.005,
+    "random_state": 42,
+    "escalado": "RobustScaler"
+  },
+  "librerias": {
+    "scikit-learn": "1.9.1"
+  },
+  "features": [
+    "temperature",
+    "humidity",
+    "pm25",
+    "pm10",
+    "pm25_cambio",
+    "pm25_media_15",
+    "pm25_std_15",
+    "temperature_std_10",
+    "humidity_std_10",
+    "pm25_std_10",
+    "pm10_std_10",
+    "ratio_pm10_pm25",
+    "hora_sin",
+    "hora_cos",
+    "pm25_vs_hora",
+    "humidity_vs_hora",
+    "temperature_vs_hora"
+  ],
+  "entrenado_con": [
+    {
+      "tipo": "simulados",
+      "detalle": "ai/data/sim_measurements.csv",
+      "semilla_datos": 42,
+      "etiquetas_usadas": false
+    }
+  ],
+  "solo_dispositivos_simulados": true,
+  "evaluacion": {
+    "conjunto": "ai/data/sim_test_measurements.csv",
+    "semilla_datos": 43,
+    "nota": "Métricas solo sobre la semilla 43. Filas normales: a más de 15 min de cualquier evento.",
+    "auc_por_tipo": {
+      "pico_corto": 1.0,
+      "episodio_largo": 1.0,
+      "anomalia_contextual": 0.9978142221214631,
+      "sensor_congelado": 0.9025614898040115,
+      "temperatura_imposible": 0.9970110913717771,
+      "todos": 0.9875246266208891
+    },
+    "pr_auc_todos": 0.8910159573934918,
+    "deteccion_por_tipo_contamination_0_005": {
+      "pico_corto": "6/6",
+      "episodio_largo": "2/2",
+      "anomalia_contextual": "0/4",
+      "sensor_congelado": "0/2",
+      "temperatura_imposible": "0/2",
+      "hueco_de_datos": "0/2"
+    },
+    "falsas_alarmas_filas_por_dia": 0.0,
+    "curva_operacion": [
+      {
+        "presupuesto_fa_por_dia": 1,
+        "umbral_score": 0.5211518130960487,
+        "fa_episodios_entrenamiento": 29,
+        "fa_por_dia_entrenamiento": 0.966980039827722,
+        "episodios_prueba": 46,
+        "filas_marcadas_prueba": 1049,
+        "fa_episodios_prueba": 31,
+        "fa_por_dia_prueba": 1.0333333333333334,
+        "detectados_por_tipo": {
+          "pico_corto": "6/6",
+          "episodio_largo": "2/2",
+          "anomalia_contextual": "4/4",
+          "sensor_congelado": "0/2",
+          "temperatura_imposible": "2/2",
+          "hueco_de_datos": "0/2"
+        },
+        "detectados_total": "14/18"
+      },
+      {
+        "presupuesto_fa_por_dia": 2,
+        "umbral_score": 0.5044952838254564,
+        "fa_episodios_entrenamiento": 59,
+        "fa_por_dia_entrenamiento": 1.9673042189598482,
+        "episodios_prueba": 89,
+        "filas_marcadas_prueba": 1281,
+        "fa_episodios_prueba": 73,
+        "fa_por_dia_prueba": 2.433333333333333,
+        "detectados_por_tipo": {
+          "pico_corto": "6/6",
+          "episodio_largo": "2/2",
+          "anomalia_contextual": "4/4",
+          "sensor_congelado": "0/2",
+          "temperatura_imposible": "2/2",
+          "hueco_de_datos": "0/2"
+        },
+        "detectados_total": "14/18"
+      },
+      {
+        "presupuesto_fa_por_dia": 5,
+        "umbral_score": 0.48479542390208874,
+        "fa_episodios_entrenamiento": 149,
+        "fa_por_dia_entrenamiento": 4.968276756356227,
+        "episodios_prueba": 198,
+        "filas_marcadas_prueba": 2237,
+        "fa_episodios_prueba": 181,
+        "fa_por_dia_prueba": 6.033333333333333,
+        "detectados_por_tipo": {
+          "pico_corto": "6/6",
+          "episodio_largo": "2/2",
+          "anomalia_contextual": "4/4",
+          "sensor_congelado": "2/2",
+          "temperatura_imposible": "2/2",
+          "hueco_de_datos": "0/2"
+        },
+        "detectados_total": "16/18"
+      }
+    ]
+  },
+  "advertencia": "DATOS SIMULADOS con eventos diseñados por nosotros: prueba de software, no demuestran precisión real",
+  "limites": [
+    "Entrenado SOLO con datos simulados (ecoair-sim-01, semilla 42): se aplica solo a la estacion simulada. Para el nodo real hay que reentrenar con datos reales antes de activarlo.",
+    "En la evaluacion (semilla 43) NO mejoro a las reglas en la anomalia contextual de PM: con el umbral de contamination 0.005 detecto 0 de 4; con umbrales mas bajos las 'detectaba' por los bordes bruscos que inventa el simulador, no por el contexto.",
+    "Falsas alarmas medidas en la evaluacion: entre 1 y 6 por dia segun el umbral (con datos simulados).",
+    "Es experimental: sus alertas son kind='anomaly', severidad info, y no sustituyen a las reglas."
+  ]
+}
