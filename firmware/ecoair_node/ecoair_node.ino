@@ -151,6 +151,22 @@ void conectarWifi() {
   }
 }
 
+// Texto del codigo de mqtt.state() (PubSubClient) para el monitor serie.
+const char* descripcionEstadoMqtt(int estado) {
+  switch (estado) {
+    case -4: return "sin respuesta del broker (timeout)";
+    case -3: return "conexion perdida";
+    case -2: return "no se pudo abrir la conexion TCP: revisa MQTT_HOST y MQTT_PORT";
+    case -1: return "desconectado";
+    case 1:  return "version de protocolo rechazada";
+    case 2:  return "client id rechazado";
+    case 3:  return "broker no disponible";
+    case 4:  return "usuario o clave incorrectos: revisa MQTT_USER y MQTT_PASSWORD";
+    case 5:  return "no autorizado: revisa MQTT_USER, MQTT_PASSWORD y el ACL del broker";
+    default: return "desconocido";
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
@@ -186,10 +202,11 @@ void loop() {
     if (millis() - lastRetry >= RETRY_MS) {
       lastRetry = millis();
       Serial.print("Conectando al broker MQTT... ");
-      if (mqtt.connect(DEVICE_ID)) {
+      if (mqtt.connect(DEVICE_ID, MQTT_USER, MQTT_PASSWORD)) {
         Serial.println("OK");
       } else {
-        Serial.printf("fallo, estado=%d\n", mqtt.state());
+        int estado = mqtt.state();
+        Serial.printf("fallo, estado=%d (%s)\n", estado, descripcionEstadoMqtt(estado));
       }
     }
     return;
