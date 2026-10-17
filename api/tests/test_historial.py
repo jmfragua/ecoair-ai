@@ -149,14 +149,27 @@ def test_dashboard_se_sirve_sin_cache():
         assert r.status_code == 200 and r.headers["cache-control"] == "no-cache", ruta
 
 
-def test_vista_de_prediccion_en_js_con_node():
-    """Ejecuta los tests de JS (node --test) de la tarjeta de prediccion."""
+def test_vistas_del_dashboard_en_js_con_node(tmp_path):
+    """Ejecuta los tests de JS (node --test) de las tarjetas de prediccion y de recomendaciones.
+
+    Las recomendaciones se prueban con el JSON REAL de shared/recomendaciones.py (6 niveles), el
+    mismo texto que usan los correos: una sola fuente de verdad.
+    """
+    import json
     import shutil
     import subprocess
     from pathlib import Path
 
+    from recomendaciones import ORDEN, recomendacion
+
     if shutil.which("node") is None:
         pytest.skip("node no esta instalado")
-    archivo = Path(__file__).parent / "js" / "test_prediccion_vista.mjs"
-    r = subprocess.run(["node", "--test", str(archivo)], capture_output=True, text=True)
+    fixture = tmp_path / "recomendaciones.json"
+    fixture.write_text(json.dumps({c: recomendacion(c) for c in ORDEN}, ensure_ascii=False))
+    carpeta = Path(__file__).parent / "js"
+    archivos = sorted(str(f) for f in carpeta.glob("test_*.mjs"))
+    assert len(archivos) >= 2
+    r = subprocess.run(["node", "--test", *archivos], capture_output=True, text=True,
+                       env={**os.environ, "RECOMENDACIONES_JSON": str(fixture)})
     assert r.returncode == 0, r.stdout + r.stderr
+    assert "# skipped 0" in r.stdout or "ℹ skipped 0" in r.stdout, r.stdout

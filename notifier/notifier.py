@@ -348,7 +348,7 @@ def enviar_pendientes(conn, mailer):
     filas = conn.execute(
         "SELECT n.id, n.kind, n.attempts, n.last_attempt_at, "
         "a.device_id, a.kind AS alert_kind, a.rule_code, a.severity, a.message, a.started_at, a.ended_at, "
-        "a.is_simulated, "
+        "a.is_simulated, a.details, "
         "s.id AS sid, s.email, s.created_at AS s_created_at, s.unsubscribed_at "
         "FROM notifications_sent n JOIN alerts a ON a.id = n.alert_id "
         "JOIN subscribers s ON s.id = n.subscriber_id "
@@ -365,7 +365,7 @@ def enviar_pendientes(conn, mailer):
         links = enlaces(config.BASE_URL, f["device_id"], token_baja=baja)
         alerta = {"device_id": f["device_id"], "kind": f["alert_kind"], "rule_code": f["rule_code"],
                   "severity": f["severity"], "message": f["message"],
-                  "started_at": f["started_at"], "ended_at": f["ended_at"]}
+                  "started_at": f["started_at"], "ended_at": f["ended_at"], "details": f["details"]}
         try:
             estado = mailer.enviar(correo_alerta(config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>",
                                                  f["email"], alerta, f["kind"], links,

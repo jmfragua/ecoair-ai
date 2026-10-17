@@ -44,7 +44,9 @@ def test_bienvenida_con_ica_recomendacion_y_fuente():
     assert msg["Subject"] == "[EcoAir AI] Suscripción confirmada · estación ecoair-node-01"
     assert "ICA actual: 76 (Aceptable), definido por PM2.5" in t
     assert "media de la última hora" in t
-    assert "Efectos: Posibles síntomas respiratorios" in t and "Qué hacer:" in t
+    for seccion in ("QUÉ SIGNIFICA", "PARA TODOS", "GRUPOS SENSIBLES", "QUÉ HACER", "SI SUBE"):
+        assert seccion in t, seccion
+    assert "Posibles síntomas respiratorios en grupos poblacionales sensibles." in t
     assert "Res. 2254/2017, Art. 19, Tabla 5, pág. 8 (PDF)" in t and "no IA" in t
     assert f"Predicción experimental:\n{PREDICCION_NO_DISPONIBLE}" in t
     assert AVISO_INDICATIVO in t and ADVERTENCIA in t
@@ -236,3 +238,37 @@ def test_bienvenida_no_avisa_con_10_min_o_menos_ni_sin_mediciones():
     sin_mediciones = construir_respuesta("x", {"muestras": 0}, {"muestras": 0}, None, AHORA)
     t = _texto(correo_bienvenida("a@b.co", EMAIL, "x", sin_mediciones, LINKS))
     assert "Última medición hace" not in t   # no se inventa una antiguedad
+
+
+
+# ---------- Recomendaciones completas (texto fijo de la norma) ----------
+
+def test_bienvenida_lleva_las_secciones_de_recomendaciones_en_html_legible():
+    msg = correo_bienvenida("a@b.co", EMAIL, "ecoair-node-01", _resp(pm25_1h=45.0), LINKS)   # ICA 121
+    t, h = _texto(msg), _texto(msg, "html")
+    for seccion in ("QUÉ SIGNIFICA", "PARA TODOS", "GRUPOS SENSIBLES", "QUÉ HACER", "CUÁNDO CONSULTAR", "SI SUBE"):
+        assert seccion in t, seccion
+    assert "- Vigila síntomas como tos o falta de aire." in t                 # vinetas en texto plano
+    assert "<ul" in h and h.count("<li") >= 3 and "<b>Qué hacer</b>" in h     # lista y titulos en negrita
+    assert "Texto fijo de la norma, no IA" in t and "Texto fijo de la norma, no IA" in h
+    assert "Tabla 4, grupos sensibles, pág. 7 impresa (PDF 12)" in t          # fuente al final
+    assert AVISO_INDICATIVO in t and ADVERTENCIA in t
+
+
+def test_correo_de_alerta_ica_lleva_las_recomendaciones_de_su_categoria():
+    from correos import correo_alerta
+    alerta = {"device_id": "ecoair-node-01", "kind": "threshold", "rule_code": "ica_1h", "severity": "critica",
+              "message": "ICA 160 (Dañina a la salud)...", "started_at": AHORA, "ended_at": None,
+              "details": {"ica": {"category_code": "danina"}}}
+    t = _texto(correo_alerta("a@b.co", EMAIL, alerta, "open", LINKS))
+    assert "Todos los individuos pueden comenzar a experimentar efectos" in t
+    assert "QUÉ HACER" in t and "Grupos sensibles: reprograma o pasa las actividades a un lugar cerrado." in t
+    assert "CUÁNDO CONSULTAR" in t and "Texto fijo de la norma, no IA" in t
+
+
+def test_alertas_sin_categoria_ica_no_llevan_recomendaciones_de_salud():
+    from correos import correo_alerta
+    alerta = {"device_id": "ecoair-node-01", "kind": "device_down", "rule_code": "dispositivo_caido",
+              "severity": "critica", "message": "Sin datos durante 6 min.", "started_at": AHORA, "ended_at": None}
+    t = _texto(correo_alerta("a@b.co", EMAIL, alerta, "open", LINKS))
+    assert "QUÉ HACER" not in t and "Texto fijo de la norma" not in t

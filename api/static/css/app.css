@@ -239,6 +239,18 @@ ol, ul { padding: 0; list-style: none; }
 .rec__text { color: var(--text-2); font-size: .92rem; margin-top: 4px; }
 .rec__src { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }
 .rec__src li + li { margin-top: 2px; }
+.rec__resumen { color: var(--text); font-size: .95rem; font-weight: 600; margin-top: 10px; }
+.rec__resumen:empty, .rec__tag:empty { display: none; }
+.rec__more { margin-top: 10px; }
+.rec__more summary { cursor: pointer; color: var(--text-2); font-size: .88rem; font-weight: 600; padding: 4px 0; }
+.rec__more summary:hover { color: var(--text); }
+.rec__sec { margin-top: 10px; }
+.rec__sec h3 { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rec__sec p { color: var(--text-2); font-size: .9rem; margin: 3px 0 0; }
+.rec__sec .rec__nota { color: var(--muted); font-size: .8rem; }
+.rec__sec ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; color: var(--text-2); font-size: .9rem; }
+.rec__sec li + li { margin-top: 3px; }
+.rec__tag { font-size: .72rem; color: var(--muted); margin-top: 6px; }
 
 /* ---------- Metricas ---------- */
 .metric__value { font-size: 2.6rem; font-weight: 750; letter-spacing: -0.03em; line-height: 1.05; }

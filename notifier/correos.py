@@ -64,7 +64,8 @@ def _mensaje(remitente, destino, asunto, texto, cuerpo_html, link_baja=None):
 
 def _html(titulo, parrafos, boton=None, pie=()):
     """HTML sencillo con estilos en linea (los clientes de correo ignoran <style> externos)."""
-    ps = "".join(f'<p style="margin:0 0 12px;color:#333">{p}</p>' for p in parrafos)
+    ps = "".join(p[1] if isinstance(p, tuple) else f'<p style="margin:0 0 12px;color:#333">{p}</p>'
+                 for p in parrafos)
     b = (f'<p style="margin:20px 0"><a href="{html.escape(boton[1])}" style="background:#1a7f37;color:#fff;'
          f'padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:600">{boton[0]}</a></p>') if boton else ""
     pies = "".join(f'<p style="margin:4px 0;color:#777;font-size:12px">{p}</p>' for p in pie)
@@ -92,6 +93,19 @@ def correo_confirmacion(remitente, destino, device_id, links):
     return _mensaje(remitente, destino, asunto, texto, cuerpo, links["baja"])
 
 
+def recomendacion_de_alerta(alerta):
+    """Recomendacion completa si la alerta trae la categoria del ICA (regla ica_1h); si no, None.
+
+    Las alertas de sensor, de dispositivo caido, de la Tabla 4 y de anomalias no tienen una
+    categoria del ICA asociada y no llevan recomendaciones de salud.
+    """
+    if alerta.get("kind") == "anomaly" or alerta.get("rule_code") != "ica_1h":
+        return None
+    codigo = ((alerta.get("details") or {}).get("ica") or {}).get("category_code")
+    from recomendaciones import RECOMENDACIONES, recomendacion  # puente a shared/recomendaciones.py
+    return recomendacion(codigo) if codigo in RECOMENDACIONES else None
+
+
 def correo_alerta(remitente, destino, alerta, kind, links, simulado=False):
     """kind: 'open' (alerta abierta) o 'close' (alerta cerrada, con duracion).
 
@@ -115,11 +129,15 @@ def correo_alerta(remitente, destino, alerta, kind, links, simulado=False):
     else:
         asunto = f"{pre}[EcoAir AI] Alerta {nivel.lower()}: {regla} · {device}"
         estado = f"Se abrió a las {inicio}."
+    rec = recomendacion_de_alerta(alerta)
+    rec_txt, rec_html = bloque_recomendaciones(rec) if rec else ([], [])
     texto = (
         (f"{AVISO_SIMULACION}\n\n" if simulado else "")
         + f"Estación: {device}\nNivel: {nivel}\nRegla: {regla}\nInicio: {inicio}\n{estado}\n\n"
         + (f"{nota}\n\n" if nota else "")
-        + f"{alerta['message']}\n\nVer el panel: {links['dashboard']}\n\n"
+        + f"{alerta['message']}\n\n"
+        + ("\n".join(rec_txt) + "\n\n" if rec_txt else "")
+        + f"Ver el panel: {links['dashboard']}\n\n"
         f"Darte de baja: {links['baja']}\n{ADVERTENCIA}\n"
     )
     cuerpo = _html(
@@ -130,7 +148,7 @@ def correo_alerta(remitente, destino, alerta, kind, links, simulado=False):
          f"<b>Regla:</b> {html.escape(regla)}<br><b>Inicio:</b> {inicio}",
          html.escape(estado)]
         + ([f"<b>{html.escape(nota)}</b>"] if nota else [])
-        + [html.escape(alerta["message"])],
+        + [html.escape(alerta["message"])] + rec_html,
         boton=("Ver el panel", links["dashboard"]),
         pie=[f'<a href="{html.escape(links["baja"])}">Darme de baja</a>', ADVERTENCIA],
     )
@@ -176,6 +194,46 @@ def aviso_ultima_medicion(resp):
     return f"Última medición hace {minutos} min (el nodo puede estar apagado)"
 
 
+def bloque_recomendaciones(rec):
+    """(lineas de texto, bloques html) con las recomendaciones completas de una categoria.
+
+    rec: salida de shared.recomendaciones.recomendacion (la misma que ve el dashboard).
+    Formato pensado para Gmail en el movil: titulos cortos en negrita, vinetas y fuente al final.
+    """
+    t = rec["titulos"]
+    g = rec["grupos_sensibles"]
+    fuentes = "; ".join(f"{f['documento']}, pág. {f['pagina']}" for f in rec["fuente"])
+    texto = [f"{t['efectos'].upper()}", rec["efectos"], "",
+             f"{t['poblacion_general'].upper()}", rec["poblacion_general"], "",
+             f"{t['grupos_sensibles'].upper()}", f"({g['quienes']})", g["recomendacion"], "",
+             f"{t['acciones'].upper()}"] + [f"- {a}" for a in rec["acciones"]]
+    if rec["cuando_consultar"]:
+        texto += ["", f"{t['cuando_consultar'].upper()}", rec["cuando_consultar"]]
+    if rec["si_sube"]:
+        texto += ["", f"{t['si_sube'].upper()}", rec["si_sube"]]
+    texto += ["", f"Fuente: {fuentes}. {rec['etiqueta']}."]
+
+    def seccion(titulo, cuerpo):
+        return ("raw", f'<p style="margin:0 0 12px;color:#333"><b>{html.escape(titulo)}</b><br>{cuerpo}</p>')
+
+    lista = "".join(f'<li style="margin:0 0 4px">{html.escape(a)}</li>' for a in rec["acciones"])
+    bloques = [
+        seccion(t["efectos"], html.escape(rec["efectos"])),
+        seccion(t["poblacion_general"], html.escape(rec["poblacion_general"])),
+        seccion(t["grupos_sensibles"], f'<span style="color:#666;font-size:13px">{html.escape(g["quienes"])}'
+                                       f'</span><br>{html.escape(g["recomendacion"])}'),
+        ("raw", f'<p style="margin:0 0 4px;color:#333"><b>{html.escape(t["acciones"])}</b></p>'
+                f'<ul style="margin:0 0 12px;padding-left:20px;color:#333">{lista}</ul>'),
+    ]
+    if rec["cuando_consultar"]:
+        bloques.append(seccion(t["cuando_consultar"], html.escape(rec["cuando_consultar"])))
+    if rec["si_sube"]:
+        bloques.append(seccion(t["si_sube"], html.escape(rec["si_sube"])))
+    bloques.append(("raw", f'<p style="margin:0 0 12px;color:#777;font-size:12px">Fuente: {html.escape(fuentes)}. '
+                           f'{html.escape(rec["etiqueta"])}.</p>'))
+    return texto, bloques
+
+
 def _bloque_ica(resp):
     """(lineas de texto, parrafos html) con el ICA actual y la recomendacion de texto fijo."""
     if not resp or resp.get("estado") != "ok":
@@ -185,15 +243,8 @@ def _bloque_ica(resp):
     contaminante = {"pm25": "PM2.5", "pm10": "PM10"}.get(g["definido_por"], g["definido_por"])
     ica = (f"ICA actual: {g['ica']} ({g['category_name']}), definido por {contaminante}. "
            "Base: media de la última hora (indicativo; la Res. 2254/2017 usa promedios de 24 h).")
-    fuentes = "; ".join(f"{f['documento']}, pág. {f['pagina']}" for f in rec["fuente"])
-    texto = [ica, "", f"Efectos: {rec['efectos']}", f"Qué hacer: {rec['recomendacion']}",
-             f"Fuente: {fuentes}. (Texto fijo de la norma, no IA.)"]
-    cuerpo = [html.escape(ica),
-              f"<b>Efectos:</b> {html.escape(rec['efectos'])}",
-              f"<b>Qué hacer:</b> {html.escape(rec['recomendacion'])}",
-              f'<span style="color:#777;font-size:12px">Fuente: {html.escape(fuentes)}. '
-              "Texto fijo de la norma, no IA.</span>"]
-    return texto, cuerpo
+    rec_txt, rec_html = bloque_recomendaciones(rec)
+    return [ica, ""] + rec_txt, [f"<b>{html.escape(ica)}</b>"] + rec_html
 
 
 def correo_bienvenida(remitente, destino, device_id, resp, links, prediccion=None, simulado=False):

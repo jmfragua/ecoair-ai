@@ -1,5 +1,6 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
 import { vistaPrediccion } from "./prediccion-vista.js";
+import { vistaRecomendacion } from "./recomendaciones-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const DEVICE = new URLSearchParams(location.search).get("device") || "ecoair-node-01";
@@ -182,7 +183,7 @@ function renderCurrent(aq) {
     $("gauge-label").textContent = "Medidor del ICA: sin datos recientes";
     for (const li of $("ica-scale").children) li.removeAttribute("aria-current");
     setActiveBand(null);
-    renderRec(null);
+    renderRec(null, null, "Sin datos recientes");
     for (const p of ["pm25", "pm10"]) { $(`${p}-1h`).textContent = "—"; renderLimit(p, null, null); }
     return;
   }
@@ -236,12 +237,24 @@ function renderLimit(p, media, v24) {
   $(`${p}-note`).replaceChildren(el("span", { class: "t-long" }, largo), el("span", { class: "t-short" }, corto));
 }
 
-function renderRec(rec, catName) {
-  $("rec-cat").textContent = rec ? catName : "Sin datos recientes";
-  $("rec-efectos").textContent = rec ? rec.efectos : "—";
-  $("rec-texto").textContent = rec ? rec.recomendacion : "—";
-  const ul = $("rec-fuente");
-  ul.replaceChildren(...(rec ? rec.fuente.map((f) => el("li", {}, `${f.documento} · pág. ${f.pagina}`)) : []));
+// Tarjeta de recomendaciones: resumen corto + desplegable con el detalle por grupos. Los textos
+// vienen de shared/recomendaciones.py (los mismos del correo). Sin recomendacion valida, se dice.
+let recCargada = false;
+function renderRec(rec, catName, motivo) {
+  const v = vistaRecomendacion(rec, motivo);
+  $("rec-cat").textContent = v.disponible ? catName : v.mensaje;
+  $("rec-titulo-efectos").textContent = v.tituloEfectos || "Qué significa";
+  $("rec-efectos").textContent = v.disponible ? v.efectos : "—";
+  $("rec-resumen").textContent = v.resumen;
+  $("rec-completo").replaceChildren(...v.secciones.map((s) => el("section", { class: "rec__sec" },
+    el("h3", {}, s.titulo),
+    s.nota ? el("p", { class: "rec__nota" }, s.nota) : null,
+    ...s.parrafos.map((p) => el("p", {}, p)),
+    s.lista.length ? el("ul", {}, ...s.lista.map((x) => el("li", {}, x))) : null)));
+  $("rec-detalle").hidden = !v.disponible;
+  $("rec-fuente").replaceChildren(...v.fuentes.map((f) => el("li", {}, f)));
+  $("rec-etiqueta").textContent = v.etiqueta;
+  if (v.disponible) recCargada = true;
 }
 
 // ---------- Ultima medicion ----------
@@ -521,7 +534,8 @@ async function refresh() {
     return;
   }
   let fallos = 0;
-  if (aq.status === "fulfilled") renderCurrent(aq.value); else fallos++;
+  if (aq.status === "fulfilled") renderCurrent(aq.value);
+  else { fallos++; if (!recCargada) renderRec(null); }
   if (latest.status === "fulfilled") renderLatest(latest.value);
   else if (latest.reason?.status !== 404) fallos++; // 404 aqui = aun no hay mediciones
   if (alerts.status === "fulfilled") renderAlerts(alerts.value);
