@@ -25,6 +25,10 @@
 #define LED_ROJO 27
 #define LED_CATODOS 33
 
+// Zumbador: + al GPIO 13 (con 330 ohm en serie); - al GPIO 32, que queda en LOW (hace de tierra).
+#define PITO 13
+#define PITO_TIERRA 32
+
 const char* DEVICE_ID = "ecoair-node-01";
 const char* TOPIC = "ecoair/ecoair-node-01/telemetry";
 const unsigned long PUBLISH_MS = 5000;
@@ -53,6 +57,18 @@ const unsigned long PASO_SIN_DATO_MS = 300;
 
 enum Semaforo { SEM_SIN_DATO, SEM_BUENA, SEM_ACEPTABLE, SEM_SENSIBLES, SEM_DANINA_O_PEOR };
 
+// ---------- Zumbador: un pitido corto cada cierto tiempo segun el estado del semaforo ----------
+const bool PITO_HABILITADO = true;      // false = zumbador apagado siempre
+const bool PITO_ACTIVO = false;          // true = zumbador ACTIVO (HIGH/LOW); false = PASIVO (tono LEDC)
+const uint32_t PITO_TONO_HZ = 2000;     // solo zumbador pasivo
+const uint8_t PITO_RESOLUCION_BITS = 10;
+const unsigned long PITO_MS = 80;       // duracion de cada pitido
+const unsigned long PITO_CADA_BUENA_MS = 10000;     // verde fijo
+const unsigned long PITO_CADA_ACEPTABLE_MS = 4000;  // amarillo fijo
+const unsigned long PITO_CADA_SENSIBLES_MS = 1500;  // rojo fijo
+const unsigned long PITO_CADA_DANINA_MS = 500;      // rojo parpadeando
+// Sin dato, arranque y autoprueba: silencio.
+
 DHT dht(DHTPIN, DHTTYPE);
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -67,6 +83,9 @@ unsigned long lastDht = 0;
 unsigned long lastDisplay = 0;
 unsigned long lastSdsOk = 0;      // millis() de la ultima trama valida del SDS011 (0 = ninguna)
 unsigned long lastMuestra = 0;
+Semaforo semaforoActual = SEM_SIN_DATO;   // ultimo estado calculado por actualizarSemaforo()
+bool pitoSonando = false;
+unsigned long pitoInicio = 0;             // millis() del inicio del ultimo pitido (0 = ninguno)
 
 struct Cubeta { uint32_t minuto; float suma; uint16_t n; };
 Cubeta cubetas[VENTANA_MIN];
@@ -178,7 +197,8 @@ Semaforo categoriaSemaforo() {
 void actualizarSemaforo() {
   muestrearPm25();
   unsigned long t = millis();
-  switch (categoriaSemaforo()) {
+  semaforoActual = categoriaSemaforo();
+  switch (semaforoActual) {
     case SEM_BUENA:     ponerLeds(true, false, false); break;
     case SEM_ACEPTABLE: ponerLeds(false, true, false); break;
     case SEM_SENSIBLES: ponerLeds(false, false, true); break;
@@ -190,6 +210,51 @@ void actualizarSemaforo() {
       ponerLeds(paso == 0, paso == 1, paso == 2);
       break;
     }
+  }
+}
+
+// ---------- Zumbador ----------
+
+void iniciarPito() {
+  pinMode(PITO_TIERRA, OUTPUT);
+  digitalWrite(PITO_TIERRA, LOW);       // tierra del zumbador: LOW todo el programa
+  pinMode(PITO, OUTPUT);
+  digitalWrite(PITO, LOW);
+  if (PITO_HABILITADO && !PITO_ACTIVO && !ledcAttach(PITO, PITO_TONO_HZ, PITO_RESOLUCION_BITS)) {
+    Serial.println("Zumbador: ledcAttach fallo en el GPIO 13");
+  }
+}
+
+void ponerPito(bool sonar) {
+  if (PITO_ACTIVO) digitalWrite(PITO, sonar ? HIGH : LOW);
+  else ledcWriteTone(PITO, sonar ? PITO_TONO_HZ : 0);
+  pitoSonando = sonar;
+}
+
+// Cada cuanto pita en cada estado (0 = silencio).
+unsigned long intervaloPito(Semaforo estado) {
+  switch (estado) {
+    case SEM_BUENA:         return PITO_CADA_BUENA_MS;
+    case SEM_ACEPTABLE:     return PITO_CADA_ACEPTABLE_MS;
+    case SEM_SENSIBLES:     return PITO_CADA_SENSIBLES_MS;
+    case SEM_DANINA_O_PEOR: return PITO_CADA_DANINA_MS;
+    default:                return 0;  // sin dato
+  }
+}
+
+// Sin delay(): solo millis(). Usa el estado que ya calculo actualizarSemaforo().
+void actualizarPito() {
+  unsigned long intervalo = intervaloPito(semaforoActual);
+  if (!PITO_HABILITADO || intervalo == 0) {
+    if (pitoSonando) ponerPito(false);
+    return;
+  }
+  unsigned long t = millis();
+  if (pitoSonando) {
+    if (t - pitoInicio >= PITO_MS) ponerPito(false);
+  } else if (pitoInicio == 0 || t - pitoInicio >= intervalo) {
+    pitoInicio = t;
+    ponerPito(true);
   }
 }
 
@@ -295,6 +360,7 @@ void setup() {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
   dht.begin();
   iniciarSemaforo();
+  iniciarPito();                        // en silencio durante el arranque y la autoprueba
   autopruebaSemaforo();
 
   Wire.begin(OLED_SDA, OLED_SCL);
@@ -312,6 +378,7 @@ void loop() {
   leerSDS011();
   leerDHT();
   actualizarSemaforo();
+  actualizarPito();
   actualizarPantalla();
 
   if (WiFi.status() != WL_CONNECTED) {
