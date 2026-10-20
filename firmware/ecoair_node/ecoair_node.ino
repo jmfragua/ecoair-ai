@@ -60,9 +60,9 @@ enum Semaforo { SEM_SIN_DATO, SEM_BUENA, SEM_ACEPTABLE, SEM_SENSIBLES, SEM_DANIN
 // ---------- Zumbador: un pitido corto cada cierto tiempo segun el estado del semaforo ----------
 const bool PITO_HABILITADO = true;      // false = zumbador apagado siempre
 const bool PITO_ACTIVO = false;          // true = zumbador ACTIVO (HIGH/LOW); false = PASIVO (tono LEDC)
-const uint32_t PITO_TONO_HZ = 2000;     // solo zumbador pasivo
+const uint32_t PITO_TONO_HZ = 2300;     // solo zumbador pasivo
 const uint8_t PITO_RESOLUCION_BITS = 10;
-const unsigned long PITO_MS = 80;       // duracion de cada pitido
+const unsigned long PITO_MS = 150;       // duracion de cada pitido
 const unsigned long PITO_CADA_BUENA_MS = 10000;     // verde fijo
 const unsigned long PITO_CADA_ACEPTABLE_MS = 4000;  // amarillo fijo
 const unsigned long PITO_CADA_SENSIBLES_MS = 1500;  // rojo fijo
