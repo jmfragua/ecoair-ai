@@ -163,3 +163,28 @@ def test_predicciones_vista_con_node():
     r = subprocess.run(["node", "--test", os.path.join(os.path.dirname(__file__), "js", "test_predicciones_vista.mjs")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+# ---------- ALERTA_DISPOSITIVO_CAIDO_ACTIVA: filtro en la API (no borra filas) ----------
+
+def test_alertas_filtran_dispositivo_caido_segun_la_bandera(monkeypatch):
+    llamadas = []
+
+    async def fake(sql, params=()):
+        if "FROM devices" in sql:
+            return [{"?column?": 1}]
+        llamadas.append((sql, params))
+        return []
+    monkeypatch.setattr(main, "query", fake)
+    for valor, esperado in (("false", False), ("true", True)):
+        monkeypatch.setenv("ALERTA_DISPOSITIVO_CAIDO_ACTIVA", valor)
+        assert client.get("/devices/ecoair-node-01/alerts?estado=todas").status_code == 200
+        sql, params = llamadas[-1]
+        assert main.FILTRO_CAIDO_API in sql and params["caido"] is esperado
+        assert sql.lstrip().upper().startswith("SELECT")                   # solo un filtro, nada se borra
+        assert client.get("/alerts?device_id=ecoair-node-01").status_code == 200
+        sql, params = llamadas[-1]
+        assert "NOT (kind = 'device_down'" in sql and params[2] is esperado
+    monkeypatch.delenv("ALERTA_DISPOSITIVO_CAIDO_ACTIVA")
+    client.get("/devices/ecoair-node-01/alerts")
+    assert llamadas[-1][1]["caido"] is True                              # por defecto, como siempre

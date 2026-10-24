@@ -45,7 +45,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 126 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
+- [TESTS] 127 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
   notifier, 13 del ingestor, 60 de ai/ y 145 de db/ + shared/ + tools/.
 - [LOCAL] Replay historico (api/replay.py): /predictions/replay, /predictions/replay/metrics y
   /predictions/replay/estaciones aplican v4 SOLO con external_measurements (IDEAM datos.gov.co +
@@ -160,6 +160,11 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     diario, temperatura/humedad, gráfica de 24 h (escala ajustada a los datos o "Ver contra
     límites"), recomendación de texto fijo con su fuente, alertas en hora de Colombia, la
     insignia DATOS SIMULADOS y la advertencia de estación de bajo costo.
+- ALERTA_DISPOSITIVO_CAIDO_ACTIVA (true por defecto; misma variable en alerter, notifier y api):
+  con false el alerter no abre "Dispositivo caido" y cierra las abiertas en silencio
+  (details.cierre_silencioso; su correo de cierre nunca sale, aunque se vuelva a true), el notifier
+  omite sus correos (pendientes -> skipped) y la api las filtra de /devices/{id}/alerts y /alerts, asi
+  que el panel no las lista ni las cuenta. Solo filtros: no se borran filas. Las demas reglas no cambian.
 - Alertas (alerter/, solo reglas deterministas, no IA):
   - Umbral/norma (kind=threshold): ica_1h (danina_sensibles = aviso; danina o peor = crítica;
     marcada como indicativa) y tabla4_pm25/pm10 (prevención = aviso; alerta y emergencia =

@@ -9,7 +9,7 @@ _RAIZ = Path(__file__).resolve().parent.parent
 if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
     sys.path.insert(0, str(_RAIZ))
 
-from shared.settings import dsn_desde_entorno  # noqa: E402
+from shared.settings import alerta_caido_activa, dsn_desde_entorno  # noqa: E402
 
 
 def _int(nombre, defecto):
@@ -25,6 +25,10 @@ REVISIONES_ABRIR = _int("ALERTER_REVISIONES_ABRIR", 2)
 REVISIONES_CERRAR = _int("ALERTER_REVISIONES_CERRAR", 3)
 VENTANA_DISPOSITIVOS_H = _int("ALERTER_VENTANA_DISPOSITIVOS_H", 24)
 INCLUIR_SIMULADOS = _bool("ALERTER_INCLUIR_SIMULADOS", False)
+# Alerta "Dispositivo caido": true (por defecto) = comportamiento de siempre. false = no se abren
+# nuevas y las abiertas se cierran en silencio (details.cierre_silencioso, sin correo de cierre).
+# Reversible: volver a true. La misma variable va en notifier y api.
+ALERTA_DISPOSITIVO_CAIDO_ACTIVA = alerta_caido_activa()
 
 # Capa EXPERIMENTAL de anomalias (Isolation Forest). Apagada por defecto. Solo se aplica a
 # dispositivos simulados porque el modelo se entreno con datos simulados (ver su procedencia).

@@ -112,6 +112,23 @@ def error_conexion_seguro(exc, env=None):
     return f"{type(exc).__name__}" + (f" [{codigo}]" if codigo else "") + (f": {msg[:600]}" if msg else "")
 
 
+# Alertas "Dispositivo caido" (kind device_down / rule_code dispositivo_caido). La MISMA variable va en
+# alerter (no abre ni mantiene esas alertas), notifier (no envia sus correos) y api (no las muestra).
+VAR_ALERTA_CAIDO = "ALERTA_DISPOSITIVO_CAIDO_ACTIVA"
+_FALSO = ("0", "false", "no")
+
+
+def alerta_caido_activa(env=None):
+    """True (por defecto, comportamiento de siempre) o False. Lanza ValueError si el valor no se entiende."""
+    env = os.environ if env is None else env
+    v = (env.get(VAR_ALERTA_CAIDO) or "true").strip().lower()
+    if v in _VERDADERO:
+        return True
+    if v in _FALSO:
+        return False
+    raise ValueError(f"{VAR_ALERTA_CAIDO} debe ser true o false (recibido: {v!r})")
+
+
 def mqtt_desde_entorno(env=None):
     """Datos de conexion al broker. user/password son None si no se configuraron.
 

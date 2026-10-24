@@ -159,7 +159,8 @@ def evaluar_dispositivo(conn, device_id, ahora, es_simulado=False):
     if rows:
         df_min = promediar_por_minuto(_dataframe(rows))
         condiciones += condiciones_sensor(df_min, ahora, config.VENTANA_SENSOR_MIN)
-    caido = condicion_caido(ultima["received_at"] if ultima else None, ahora)
+    caido = (condicion_caido(ultima["received_at"] if ultima else None, ahora)
+             if config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA else None)
     if caido:
         condiciones.append(caido)
     anomalia = condicion_anomalia_de(conn, device_id, ahora, es_simulado, obtener_detector())
@@ -214,12 +215,34 @@ def aplicar(conn, device_id, is_simulated, condiciones, ahora):
             estado.alert_id, estado.severity = None, None
 
 
+MARCA_CIERRE_SILENCIOSO = {"cierre_silencioso": True, "motivo": "ALERTA_DISPOSITIVO_CAIDO_ACTIVA=false"}
+SQL_CERRAR_CAIDAS = (
+    "UPDATE alerts SET ended_at = %(ahora)s, details = COALESCE(details, '{}'::jsonb) || %(marca)s "
+    "WHERE ended_at IS NULL AND (kind = 'device_down' OR rule_code = 'dispositivo_caido') "
+    "RETURNING id, device_id"
+)
+
+
+def cerrar_caidas_en_silencio(conn, ahora):
+    """Con ALERTA_DISPOSITIVO_CAIDO_ACTIVA=false: cierra las alertas 'dispositivo caido' abiertas y las
+    marca con details.cierre_silencioso, para que el notifier nunca envie su correo de cierre. No borra
+    filas. Devuelve cuantas cerro."""
+    filas = conn.execute(SQL_CERRAR_CAIDAS, {"ahora": ahora, "marca": Jsonb(MARCA_CIERRE_SILENCIOSO)}).fetchall()
+    for f in filas:
+        estados.pop((f["device_id"], "dispositivo_caido"), None)
+        log.info("Alerta dispositivo_caido %s (id %s) cerrada en silencio: ALERTA_DISPOSITIVO_CAIDO_ACTIVA=false",
+                 f["device_id"], f["id"])
+    return len(filas)
+
+
 def revisar():
     conn = get_db()
     if not migraciones_ok(conn):
         log.error("Faltan migraciones (002 y/o 004): no se evalúan alertas en esta revisión")
         return
     ahora = datetime.now(timezone.utc)
+    if not config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA:
+        cerrar_caidas_en_silencio(conn, ahora)
     for d in dispositivos(conn):
         try:
             condiciones = evaluar_dispositivo(conn, d["device_id"], ahora, bool(d["is_simulated"]))
@@ -245,9 +268,10 @@ def revisar_predicciones(conn, ahora):
 
 def main():
     log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s, anomalias=%s, "
-             "prediccion=%s (minuto %d, %s)", config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
+             "prediccion=%s (minuto %d, %s), alerta dispositivo caido=%s", config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
              config.INCLUIR_SIMULADOS, config.ANOMALIAS_ACTIVAS, config.PREDICCION_ACTIVA,
-             config.PREDICCION_MINUTO, ",".join(config.PREDICCION_DISPOSITIVOS))
+             config.PREDICCION_MINUTO, ",".join(config.PREDICCION_DISPOSITIVOS),
+             config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA)
     while True:
         inicio = time.monotonic()
         try:

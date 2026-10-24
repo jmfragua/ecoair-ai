@@ -277,6 +277,23 @@ def procesar_bienvenidas(conn, mailer):
     return enviados
 
 
+# Alertas "Dispositivo caido" y cierres silenciosos (ver alerter: ALERTA_DISPOSITIVO_CAIDO_ACTIVA=false).
+FILTRO_CAIDO = "(%(caido)s OR NOT (a.kind = 'device_down' OR a.rule_code = 'dispositivo_caido'))"
+FILTRO_CIERRE_SILENCIOSO = "(%(kind)s = 'open' OR COALESCE(a.details->>'cierre_silencioso', 'false') <> 'true')"
+
+
+def es_caido(alert_kind, rule_code):
+    return alert_kind == "device_down" or rule_code == "dispositivo_caido"
+
+
+def omitir_envio(kind, alert_kind, rule_code, details, caido_activa):
+    """True si esta notificacion no debe salir: correo de 'dispositivo caido' con la bandera en false, o
+    correo de cierre de una alerta cerrada en silencio (aunque la bandera vuelva a true)."""
+    if not caido_activa and es_caido(alert_kind, rule_code):
+        return True
+    return kind == "close" and bool((details or {}).get("cierre_silencioso"))
+
+
 def encolar(conn):
     """Crea filas 'pending' en notifications_sent. ON CONFLICT DO NOTHING = una vez por episodio."""
     nuevas = 0
@@ -290,12 +307,13 @@ def encolar(conn):
             "SELECT a.id AS alert_id, a.severity, s.id AS subscriber_id, s.min_severity "
             "FROM alerts a JOIN subscribers s ON s.device_id = a.device_id "
             f"WHERE {cond} AND a.rule_code IS NOT NULL AND a.kind <> 'anomaly' "
+            f"AND {FILTRO_CAIDO} AND {FILTRO_CIERRE_SILENCIOSO} "
             "AND a.started_at > now() - interval '24 hours' AND (%(sim)s OR NOT a.is_simulated) "
             "AND s.confirmed_at IS NOT NULL AND s.unsubscribed_at IS NULL "
             "AND s.confirmed_at <= a.started_at "
             "AND NOT EXISTS (SELECT 1 FROM notifications_sent n WHERE n.alert_id = a.id "
             "  AND n.subscriber_id = s.id AND n.kind = %(kind)s)",
-            {"sim": config.INCLUIR_SIMULADOS, "kind": kind},
+            {"sim": config.INCLUIR_SIMULADOS, "kind": kind, "caido": config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA},
         ).fetchall()
         for f in filas:
             if not destinatarios(f["severity"], [f]):
@@ -358,7 +376,8 @@ def enviar_pendientes(conn, mailer):
     for f in filas:
         if not puede_intentar(f["attempts"], f["last_attempt_at"], ahora, config.MAX_INTENTOS):
             continue
-        if f["unsubscribed_at"]:
+        if f["unsubscribed_at"] or omitir_envio(f["kind"], f["alert_kind"], f["rule_code"], f["details"],
+                                                config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA):
             conn.execute("UPDATE notifications_sent SET status = 'skipped' WHERE id = %s", (f["id"],))
             continue
         baja = token_baja(config.SUBSCRIPTION_SECRET, f["sid"], f["s_created_at"])

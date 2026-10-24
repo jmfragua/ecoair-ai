@@ -21,7 +21,7 @@ _RAIZ = Path(__file__).resolve().parent.parent
 if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
     sys.path.insert(0, str(_RAIZ))
 
-from shared.settings import dsn_desde_entorno  # noqa: E402
+from shared.settings import alerta_caido_activa, dsn_desde_entorno  # noqa: E402
 from shared.prediccion import SQL_SERIE_PM25, cargar_modelo, prediccion, serie_por_minuto  # noqa: E402
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila
 from subscriptions import (
@@ -183,6 +183,11 @@ async def list_measurements(
     )
 
 
+# ALERTA_DISPOSITIVO_CAIDO_ACTIVA=false (la misma variable del alerter y el notifier): las alertas
+# "Dispositivo caido" no se listan ni cuentan. Es solo un filtro: no se borra ninguna fila.
+FILTRO_CAIDO_API = "(%(caido)s OR NOT (kind = 'device_down' OR rule_code IS NOT DISTINCT FROM 'dispositivo_caido'))"
+
+
 @app.get("/alerts", response_model=list[Alert])
 async def list_alerts(
     device_id: Optional[str] = None,
@@ -193,8 +198,9 @@ async def list_alerts(
     return await query(
         "SELECT id, device_id, measurement_id, detected_at, kind, score, message "
         "FROM alerts WHERE (%s::text IS NULL OR device_id = %s) "
+        f"AND {FILTRO_CAIDO_API.replace('%(caido)s', '%s')} "
         "ORDER BY detected_at DESC LIMIT %s",
-        (device_id, device_id, limit),
+        (device_id, device_id, alerta_caido_activa(), limit),
     )
 
 
@@ -250,8 +256,9 @@ async def device_alerts(
             "details, is_simulated "
             "FROM alerts WHERE device_id = %(device_id)s "
             "AND (%(estado)s = 'todas' OR (ended_at IS NULL AND started_at IS NOT NULL)) "
+            f"AND {FILTRO_CAIDO_API} "
             "ORDER BY COALESCE(started_at, detected_at) DESC LIMIT %(limit)s",
-            {"device_id": device_id, "estado": estado, "limit": limit},
+            {"device_id": device_id, "estado": estado, "limit": limit, "caido": alerta_caido_activa()},
         ))
     except psycopg.errors.UndefinedColumn:
         raise HTTPException(

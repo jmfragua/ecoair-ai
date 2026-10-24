@@ -63,6 +63,7 @@ services:
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
       # true solo detras de un proxy (tunel de Cloudflare, Railway): usa CF-Connecting-IP / X-Forwarded-For
       TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
     ports:
       - "8000:8000"
     depends_on:
@@ -81,6 +82,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       # true para la demo: evalua tambien ecoair-sim-01 (sus alertas quedan marcadas [SIMULACIÓN])
       ALERTER_INCLUIR_SIMULADOS: ${ALERTER_INCLUIR_SIMULADOS:-false}
+      ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
       # Capa EXPERIMENTAL de anomalias (Isolation Forest). Solo aplica a dispositivos simulados.
       ANOMALIAS_ACTIVAS: ${ANOMALIAS_ACTIVAS:-false}
     depends_on:
@@ -111,6 +113,7 @@ services:
       NOTIFY_ON_CLOSE: ${NOTIFY_ON_CLOSE:-false}
       # true para la demo: tambien envia correos de alertas simuladas (asunto con [SIMULACIÓN])
       NOTIFIER_INCLUIR_SIMULADOS: ${NOTIFIER_INCLUIR_SIMULADOS:-false}
+      ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
       # Correos de anomalias experimentales: apagados; si se activan, max. 1 por dispositivo cada 6 h
       ANOMALIAS_CORREO: ${ANOMALIAS_CORREO:-false}
     depends_on:

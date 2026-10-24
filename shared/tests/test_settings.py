@@ -108,3 +108,14 @@ def test_destino_importacion():
     assert "railway" not in dsn and "Ab" not in dsn and desc == "localhost:5433/ecoair"
     with pytest.raises(ValueError, match="falta DATABASE_URL"):
         destino_importacion(False, {"DB_PORT": "5433"})
+
+
+def test_alerta_dispositivo_caido_activa():
+    from shared.settings import alerta_caido_activa
+    assert alerta_caido_activa({}) is True                          # por defecto: comportamiento de siempre
+    for v in ("true", "TRUE", "1", "si", " yes "):
+        assert alerta_caido_activa({"ALERTA_DISPOSITIVO_CAIDO_ACTIVA": v}) is True
+    for v in ("false", "False", "0", "no"):
+        assert alerta_caido_activa({"ALERTA_DISPOSITIVO_CAIDO_ACTIVA": v}) is False
+    with pytest.raises(ValueError, match="ALERTA_DISPOSITIVO_CAIDO_ACTIVA"):
+        alerta_caido_activa({"ALERTA_DISPOSITIVO_CAIDO_ACTIVA": "flase"})

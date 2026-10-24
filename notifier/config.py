@@ -9,7 +9,7 @@ _RAIZ = Path(__file__).resolve().parent.parent
 if (_RAIZ / "shared").is_dir() and str(_RAIZ) not in sys.path:
     sys.path.insert(0, str(_RAIZ))
 
-from shared.settings import dsn_desde_entorno  # noqa: E402
+from shared.settings import alerta_caido_activa, dsn_desde_entorno  # noqa: E402
 
 
 def _int(nombre, defecto):
@@ -32,6 +32,8 @@ BIENVENIDA_VENTANA_H = _int("NOTIFIER_BIENVENIDA_VENTANA_H", 24)
 # Correos de anomalias (Isolation Forest, EXPERIMENTAL). Apagados por defecto; si se activan,
 # como maximo 1 correo de anomalia por dispositivo (y suscriptor) cada ANOMALIAS_CORREO_CADA_H horas.
 ANOMALIAS_CORREO = _bool("ANOMALIAS_CORREO", False)
+# Correos de "Dispositivo caido": la misma variable que en el alerter y la api (por defecto true).
+ALERTA_DISPOSITIVO_CAIDO_ACTIVA = alerta_caido_activa()
 ANOMALIAS_CORREO_CADA_H = _int("ANOMALIAS_CORREO_CADA_H", 6)
 # Modelo de prediccion experimental (por defecto modelos/prediccion_pm25_v1.json)
 MODELO_PREDICCION_PATH = os.getenv("MODELO_PREDICCION_PATH") or None
