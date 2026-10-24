@@ -8,7 +8,7 @@ import {
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import {
   ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
-  encuadre, estiloMarcador, vistaMapa,
+  ZOOM_UBICACION, encuadre, estiloMarcador, vistaMapa, vistaUbicacion,
 } from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
@@ -866,7 +866,7 @@ async function iniciarReplay() {
 // ---------- Mapa de estaciones (Leaflet local + teselas de OpenStreetMap) ----------
 // Solo /mapa/estaciones (coordenadas fijas, sin base). Leaflet se carga cuando la tarjeta entra en
 // pantalla, asi quien no llega al mapa no pide ninguna tesela a OSM.
-let mapa = null, mapaVista = null, mapaCapas = new Map(), mapaL = null;
+let mapa = null, mapaVista = null, mapaCapas = new Map();
 
 function cargarLeaflet() {
   if (window.L) return Promise.resolve(window.L);
@@ -896,6 +896,31 @@ function actualizarMapa() {
   }
 }
 
+// Mapa base comun: Leaflet local + teselas OSM con atribucion. Sin teselas (sin internet) avisa en
+// `msg` y deja los marcadores. opciones: las de L.map (zoom, limites, interaccion).
+function crearMapaBase(L, idCaja, msg, avisos, opciones) {
+  const m = L.map(idCaja, { scrollWheelZoom: false, ...opciones });
+  m.attributionControl.setPrefix(false);
+  let avisado = false;
+  L.tileLayer(URL_TESELAS, { ...OPCIONES_TESELAS, minZoom: opciones.minZoom ?? OPCIONES_TESELAS.minZoom,
+    maxZoom: opciones.maxZoom ?? OPCIONES_TESELAS.maxZoom, attribution: ATRIBUCION_OSM })
+    .on("tileerror", () => { if (!avisado) { avisado = true; msg.textContent = [SIN_TESELAS, ...avisos].join(" "); } })
+    .addTo(m);
+  new ResizeObserver(() => m.invalidateSize()).observe($(idCaja));
+  return m;
+}
+
+// EcoAir: rombo + circulo punteado de ~1 km + "ubicacion aproximada" (mismo dibujo en los dos mapas).
+function dibujarEcoair(L, m, eco) {
+  L.circle([eco.lat, eco.lon], { radius: RADIO_APROX_M, color: "#0d0d0d", weight: 1.5, dashArray: "4 4",
+    fillColor: "#0d0d0d", fillOpacity: 0.08, interactive: false }).addTo(m);
+  L.marker([eco.lat, eco.lon], { icon: L.divIcon({ className: "mapa-eco", iconSize: [22, 22],
+    html: '<span class="mapa-eco__rombo"></span>' }),
+    keyboard: true, title: `${eco.nombre} · ubicación aproximada` })
+    .bindPopup(popupMapa(eco.popup)).bindTooltip("EcoAir · ubicación aproximada", { direction: "top", offset: [0, -10] })
+    .addTo(m);
+}
+
 async function iniciarMapa() {
   const msg = $("mapa-msg");
   try {
@@ -906,31 +931,17 @@ async function iniciarMapa() {
   }
   const avisos = [...mapaVista.avisos];
   msg.textContent = avisos.join(" ");
+  let L;
   try {
-    mapaL = await cargarLeaflet();
+    L = await cargarLeaflet();
   } catch {
     $("mapa").hidden = true;
     msg.textContent = [SIN_LEAFLET, ...avisos].join(" ");
     return;
   }
-  const L = mapaL;
-  mapa = L.map("mapa", { scrollWheelZoom: false, maxBounds: LIMITES, maxBoundsViscosity: 1,
+  mapa = crearMapaBase(L, "mapa", msg, avisos, { maxBounds: LIMITES, maxBoundsViscosity: 1,
     minZoom: OPCIONES_TESELAS.minZoom, maxZoom: OPCIONES_TESELAS.maxZoom });
-  mapa.attributionControl.setPrefix(false);
-  let avisado = false;
-  L.tileLayer(URL_TESELAS, { ...OPCIONES_TESELAS, attribution: ATRIBUCION_OSM })
-    .on("tileerror", () => { if (!avisado) { avisado = true; msg.textContent = [SIN_TESELAS, ...avisos].join(" "); } })
-    .addTo(mapa);
-  const eco = mapaVista.ecoair;
-  if (eco) {
-    L.circle([eco.lat, eco.lon], { radius: RADIO_APROX_M, color: "#0d0d0d", weight: 1.5, dashArray: "4 4",
-      fillColor: "#0d0d0d", fillOpacity: 0.08, interactive: false }).addTo(mapa);
-    L.marker([eco.lat, eco.lon], { icon: L.divIcon({ className: "mapa-eco", iconSize: [22, 22],
-      html: '<span class="mapa-eco__rombo"></span>' }),
-      keyboard: true, title: `${eco.nombre} · ubicación aproximada` })
-      .bindPopup(popupMapa(eco.popup)).bindTooltip("EcoAir · ubicación aproximada", { direction: "top", offset: [0, -10] })
-      .addTo(mapa);
-  }
+  if (mapaVista.ecoair) dibujarEcoair(L, mapa, mapaVista.ecoair);
   for (const m of mapaVista.marcadores) {
     const capa = L.circleMarker([m.lat, m.lon], estiloMarcador(false)).bindPopup(popupMapa(m.popup))
       .bindTooltip(m.nombre, { direction: "top", offset: [0, -10] }).addTo(mapa);
@@ -944,16 +955,49 @@ async function iniciarMapa() {
   }
   mapa.fitBounds(encuadre(mapaVista), { padding: [28, 28], maxZoom: 14 });
   actualizarMapa();
-  new ResizeObserver(() => mapa.invalidateSize()).observe($("mapa"));
+}
+
+// Carga perezosa: `fn` corre la primera vez que `caja` se acerca a la pantalla.
+function cuandoSeVea(caja, fn) {
+  if (!("IntersectionObserver" in window)) { fn(); return; }
+  const io = new IntersectionObserver((entradas) => {
+    if (entradas.some((e) => e.isIntersecting)) { io.disconnect(); fn(); }
+  }, { rootMargin: "200px" });
+  io.observe(caja);
 }
 
 function iniciarMapaCuandoSeVea() {
-  const caja = $("mapa");
-  if (!("IntersectionObserver" in window)) { iniciarMapa(); return; }
-  const io = new IntersectionObserver((entradas) => {
-    if (entradas.some((e) => e.isIntersecting)) { io.disconnect(); iniciarMapa(); }
-  }, { rootMargin: "200px" });
-  io.observe(caja);
+  cuandoSeVea($("mapa"), iniciarMapa);
+}
+
+// ---------- Tarjeta "Ubicacion de la estacion" (solo el punto aproximado de EcoAir) ----------
+// Mapa fijo (zoom de barrio, sin arrastre ni zoom): pide pocas teselas y nunca baja a nivel de calle.
+async function iniciarUbicacion() {
+  const card = $("ubicacion"), caja = $("ubicacion-mapa"), msg = $("ubicacion-msg");
+  let r = null;
+  try { r = await getJSON("/mapa/estaciones"); } catch { /* se trata como sin configurar */ }
+  const v = vistaUbicacion(r, { device: DEVICE, simulado: simDispositivo || /^ecoair-sim-/.test(DEVICE), replay: MODO_REPLAY });
+  if (v.estado === "oculta") { card.hidden = true; return; }
+  msg.textContent = v.texto;
+  msg.classList.toggle("ubicacion__msg--sim", v.estado === "simulacion");
+  $("ubicacion-chip").textContent = v.estado === "simulacion" ? "SIMULACIÓN" : "ubicación aproximada";
+  $("ubicacion-chip").hidden = v.estado === "sin_config";
+  if (v.estado !== "mapa") return;
+  caja.hidden = false;
+  cuandoSeVea(caja, async () => {
+    let L;
+    try {
+      L = await cargarLeaflet();
+    } catch {
+      caja.hidden = true;
+      msg.textContent = `${SIN_LEAFLET} ${v.texto}`;
+      return;
+    }
+    const m = crearMapaBase(L, "ubicacion-mapa", msg, [v.texto], {
+      center: [v.ecoair.lat, v.ecoair.lon], zoom: ZOOM_UBICACION, minZoom: ZOOM_UBICACION, maxZoom: ZOOM_UBICACION,
+      zoomControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false });
+    dibujarEcoair(L, m, v.ecoair);
+  });
 }
 
 // Modo replay: nada en vivo (ni mediciones, ni grafica, ni alertas, ni suscripcion -> ningun correo).
@@ -1057,7 +1101,8 @@ function start() {
   initGauge();
   initRanges();
   initScaleToggle();
-  loadDevices();
+  // La tarjeta de ubicacion necesita saber si el dispositivo es simulado (lo dice /devices)
+  loadDevices().then(iniciarUbicacion);
   if (MODO_REPLAY) { iniciarModoReplay(); return; }
   initSubscriptionForm();
   loadConsent();

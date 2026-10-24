@@ -57,5 +57,25 @@ export function estiloMarcador(seleccionada) {
     : { radius: 7, weight: 2, color: "#0d0d0d", fillColor: "#3987e5", fillOpacity: 0.8 };
 }
 
+// ---------- Tarjeta "Ubicacion de la estacion" (panel en vivo) ----------
+// Solo el punto aproximado de EcoAir (ECOAIR_UBICACION_APROX), nunca las estaciones del IDEAM.
+export const DISPOSITIVO_UBICACION = "ecoair-node-01";
+export const ZOOM_UBICACION = 14;            // barrio (~1 km de radio visible), no calle; fijo
+export const SIN_UBICACION = "Ubicación no configurada";
+export const SIM_UBICACION = "SIMULACIÓN, sin ubicación real";
+
+// -> {estado: "oculta" | "simulacion" | "sin_config" | "mapa", texto, ecoair}
+export function vistaUbicacion(r, { device, simulado = false, replay = false } = {}) {
+  if (replay) return { estado: "oculta", texto: "", ecoair: null };
+  if (simulado) return { estado: "simulacion", texto: SIM_UBICACION, ecoair: null };
+  const e = r && r.ecoair;
+  if (device !== DISPOSITIVO_UBICACION || !valida(e)) return { estado: "sin_config", texto: SIN_UBICACION, ecoair: null };
+  return {
+    estado: "mapa", texto: `${TEXTO_APROX} · radio de ~1 km`,
+    ecoair: { lat: e.lat, lon: e.lon, nombre: e.nombre,
+      popup: { titulo: e.nombre, lineas: [TEXTO_APROX, e.fuente].filter(Boolean) } },
+  };
+}
+
 // Circulo que marca la incertidumbre del punto de EcoAir (redondeado a 2 decimales, ~1 km).
 export const RADIO_APROX_M = 1000;

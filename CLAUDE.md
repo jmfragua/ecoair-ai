@@ -71,6 +71,11 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   "© OpenStreetMap contributors", zoom 11–17, área del Valle de Aburrá, sin rueda, Leaflet solo se
   carga cuando el mapa entra en pantalla. Revisado en Chrome a 1280 y 390 px (sin scroll horizontal),
   clic y modo sin internet; aún no en Docker ni Railway.
+- [LOCAL] Tarjeta "Ubicación de la estación" (panel en vivo): mapa FIJO (zoom 14, barrio; sin arrastre
+  ni zoom) con SOLO el rombo de EcoAir, mismo /mapa/estaciones y mismo código de mapa. Solo para
+  ecoair-node-01; otro dispositivo o variable vacía/inválida = "Ubicación no configurada" sin mapa;
+  dispositivo simulado = "SIMULACIÓN, sin ubicación real" sin mapa; en modo replay la tarjeta se oculta.
+  ECOAIR_UBICACION_APROX acepta signos menos Unicode (−, –, —, －) y los normaliza a "-".
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base

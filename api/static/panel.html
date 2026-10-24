@@ -210,6 +210,16 @@
       <ol class="timeline" id="alerts"></ol>
       <p class="empty" id="alerts-empty" hidden>Sin alertas registradas.</p>
     </section>
+    <!-- Ubicacion aproximada de la estacion propia (solo EcoAir; sin estaciones del IDEAM) -->
+    <section class="card card--ubicacion" id="ubicacion" aria-labelledby="ubicacion-title" style="--i:7">
+      <header class="card__head">
+        <h2 id="ubicacion-title" class="card__title">Ubicación de la estación</h2>
+        <span class="chip chip--muted" id="ubicacion-chip">ubicación aproximada</span>
+      </header>
+      <div class="mapa__caja mapa__caja--ubicacion" id="ubicacion-mapa" role="region"
+           aria-label="Mapa con la ubicación aproximada de la estación EcoAir" hidden></div>
+      <p class="replay__src ubicacion__msg" id="ubicacion-msg" role="status" aria-live="polite">Cargando…</p>
+    </section>
     <!-- Replay historico (solo datos externos del IDEAM; no usa el sensor propio) -->
     <section class="card card--replay" aria-labelledby="replay-title" style="--i:7">
       <header class="card__head">

@@ -30,11 +30,16 @@ NOMBRE_ECOAIR = "Estación EcoAir (ecoair-node-01)"
 SIN_ECOAIR = "La ubicación de la estación EcoAir no está configurada: no se dibuja."
 
 
+# Signos menos Unicode que aparecen al copiar coordenadas de una web o un documento -> "-"
+MENOS_UNICODE = str.maketrans({"−": "-", "–": "-", "—": "-", "‒": "-",
+                               "﹣": "-", "－": "-"})
+
+
 def ubicacion_ecoair(valor):
     """'6.25,-75.57' -> {lat, lon} redondeados; None si falta o no es una coordenada válida."""
     if not valor or not str(valor).strip():
         return None
-    partes = str(valor).split(",")
+    partes = str(valor).translate(MENOS_UNICODE).split(",")
     if len(partes) != 2:
         return None
     try:

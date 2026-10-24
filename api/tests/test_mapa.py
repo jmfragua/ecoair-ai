@@ -65,6 +65,13 @@ def test_ubicacion_ecoair_redondeada_o_ninguna(valor, esperado):
     assert mapa.ubicacion_ecoair(valor) == esperado
 
 
+@pytest.mark.parametrize("valor", ["6.2512,−75.5634", "6.2512,–75.5634", "6.2512, —75.5634",
+                                   "6.2512,－75.5634"])
+def test_signo_menos_unicode_se_normaliza(valor):
+    assert mapa.ubicacion_ecoair(valor) == {"lat": 6.25, "lon": -75.56}
+    assert mapa.construir_mapa(valor)["ecoair"]["lon"] == -75.56
+
+
 def test_ecoair_aproximada_y_sin_configurar():
     r = mapa.construir_mapa("6.25123,-75.56789")
     assert r["ecoair"]["aproximada"] is True and (r["ecoair"]["lat"], r["ecoair"]["lon"]) == (6.25, -75.57)

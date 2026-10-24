@@ -47,3 +47,21 @@ test("seleccionada se distingue por tamano y borde, no solo por color", () => {
   const a = estiloMarcador(true), b = estiloMarcador(false);
   assert.ok(a.radius > b.radius && a.weight > b.weight && a.color !== b.color);
 });
+
+test("tarjeta de ubicacion: solo EcoAir, sin configurar, simulada y oculta en replay", async () => {
+  const m = await import("../../static/js/mapa-vista.js");
+  const r = { estaciones: R.estaciones, ecoair: { lat: 6.25, lon: -75.57, nombre: "Estación EcoAir", fuente: "~1 km" } };
+  const v = m.vistaUbicacion(r, { device: "ecoair-node-01" });
+  assert.equal(v.estado, "mapa");
+  assert.deepEqual([v.ecoair.lat, v.ecoair.lon], [6.25, -75.57]);
+  assert.deepEqual(v.ecoair.popup.lineas, ["ubicación aproximada", "~1 km"]);
+  assert.ok(!("marcadores" in v) && !JSON.stringify(v).includes("Tráfico"));   // nunca estaciones del IDEAM
+  assert.ok(m.ZOOM_UBICACION >= 13 && m.ZOOM_UBICACION <= 15);                 // barrio, no calle
+  for (const sin of [{ ...r, ecoair: null }, null, { ecoair: { lat: "6.2", lon: -75 } }]) {
+    assert.deepEqual(m.vistaUbicacion(sin, { device: "ecoair-node-01" }), { estado: "sin_config", texto: "Ubicación no configurada", ecoair: null });
+  }
+  assert.equal(m.vistaUbicacion(r, { device: "otro-nodo" }).estado, "sin_config");
+  const s = m.vistaUbicacion(r, { device: "ecoair-sim-01", simulado: true });
+  assert.deepEqual([s.estado, s.texto, s.ecoair], ["simulacion", "SIMULACIÓN, sin ubicación real", null]);
+  assert.equal(m.vistaUbicacion(r, { device: "ecoair-node-01", replay: true }).estado, "oculta");
+});
