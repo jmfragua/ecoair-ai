@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 from typing import Literal, Optional
@@ -37,6 +37,7 @@ from subscriptions import (
     normalizar_email,
     texto_consentimiento,
 )
+import replay  # noqa: E402
 from predicciones import (  # noqa: E402
     SQL_METRICAS,
     SQL_ULTIMAS,
@@ -461,6 +462,89 @@ async def predictions_metrics(device_id: str, days: int = Query(30, ge=1, le=365
         raise HTTPException(status_code=503, detail=FALTA_008)
     hoy = datetime.now(timezone(timedelta(hours=-5))).date()
     return construir_metricas(device_id, filas, days, horizon, hoy)
+
+
+# ---------- Replay HISTORICO (api/replay.py): solo external_measurements, todo al vuelo ----------
+# No lee measurements ni predictions y no escribe nada: el panel lo usa con el hardware desconectado.
+FALTA_006 = "Falta aplicar db/migrations/006_external_measurements.sql"
+
+
+def _modelo_replay():
+    modelo = cargar_modelo(PREDICCION_MODELO_PATH)
+    if modelo is None:
+        raise HTTPException(status_code=503, detail="Modelo de prediccion v4 no disponible en la API")
+    return modelo
+
+
+def _estacion_replay(station):
+    if station not in replay.ESTACIONES:
+        raise HTTPException(status_code=404, detail=f"Estacion '{station}' no disponible para el replay")
+    return station
+
+
+async def _serie_replay(station, desde, hasta):
+    sql, params = replay.sql_serie(station)
+    try:
+        filas = await _con_timeout(query(sql, (*params, desde, hasta)))
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_006)
+    return replay.serie_limpia(filas)
+
+
+@app.get("/predictions/replay/estaciones")
+async def replay_estaciones():
+    modelo = _modelo_replay()
+    out = []
+    for codigo, info in replay.ESTACIONES.items():
+        sql, params = replay.sql_rango(codigo)
+        try:
+            rangos = await _con_timeout(query(sql, tuple(params)))
+        except psycopg.errors.UndefinedTable:
+            raise HTTPException(status_code=503, detail=FALTA_006)
+        if not rangos:
+            continue
+        primera, ultima = min(r["primera"] for r in rangos), max(r["ultima"] for r in rangos)
+        pref = replay.AT_POR_DEFECTO.astimezone(timezone.utc)
+        desde = min(pref - timedelta(hours=25), ultima - timedelta(days=4))
+        hasta = max(pref + timedelta(hours=6), ultima)
+        serie, _ = await _serie_replay(codigo, desde, hasta)
+        defecto = replay.ultima_valida(serie, modelo)
+        out.append({"station": codigo, "nombre": info["nombre"],
+                    "fuentes": [{"source": r["source"], "primera_utc": r["primera"].isoformat(),
+                                 "ultima_utc": r["ultima"].isoformat(), "horas": r["horas"]} for r in rangos],
+                    "desde_local": primera.astimezone(replay.COLOMBIA).strftime("%Y-%m-%dT%H:%M"),
+                    "hasta_local": ultima.astimezone(replay.COLOMBIA).strftime("%Y-%m-%dT%H:%M"),
+                    "at_por_defecto": defecto.strftime("%Y-%m-%dT%H:%M") if defecto else None})
+    return {"estaciones": out, "aviso": replay.AVISO_REPLAY}
+
+
+@app.get("/predictions/replay")
+async def replay_prediccion(station: str, at: str):
+    station = _estacion_replay(station)
+    try:
+        t = replay.parsear_at(at)
+    except replay.ReplayError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    modelo = _modelo_replay()
+    t_utc = t.astimezone(timezone.utc)
+    serie, fuentes = await _serie_replay(station, t_utc - timedelta(hours=25), t_utc + timedelta(hours=6))
+    try:
+        return replay.calcular_replay(station, serie, fuentes, modelo, t)
+    except replay.ReplayError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.get("/predictions/replay/metrics")
+async def replay_metricas(station: str, desde: date, hasta: date):
+    station = _estacion_replay(station)
+    try:
+        ini, fin = replay.rango_periodo(desde, hasta)
+    except replay.ReplayError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    modelo = _modelo_replay()
+    serie, fuentes = await _serie_replay(station, ini.astimezone(timezone.utc) - timedelta(hours=25),
+                                         fin.astimezone(timezone.utc) + timedelta(hours=6))
+    return replay.calcular_metricas(station, serie, fuentes, modelo, desde, hasta)
 
 
 # ---------- Portada ("/") y panel ("/panel") ----------

@@ -1,9 +1,10 @@
 # Datos externos de PM2.5 (estaciones de terceros)
 
 Datos de estaciones oficiales del Valle de Aburrá que EcoAir usa **solo** para entrenar y evaluar los
-modelos de predicción. Van en la tabla `external_measurements` (migración 006), separada de
+modelos de predicción y para el **replay histórico** del panel. Van en la tabla `external_measurements` (migración 006), separada de
 `measurements`: nunca se mezclan con el sensor propio (`ecoair-node-*`) ni con los datos simulados
-(`ecoair-sim-01`). La API, el panel, el notifier y el alerter **no** leen esta tabla.
+(`ecoair-sim-01`). El notifier y el alerter **no** leen esta tabla; la API solo la lee en el replay
+histórico (`/predictions/replay*`, solo lectura, al vuelo).
 
 Todas las cifras de este documento salen de consultas reales a las fuentes o de los JSON de los
 modelos en `modelos/`. Fecha de corte: 2026-10-24.
@@ -102,3 +103,12 @@ e incluir filas de 31366 de 2020–2023: hay que comprobarlo con una consulta de
 - Antes de escribir muestran la base de destino (sin usuario ni clave); los errores de conexión
   salen sin URL ni clave.
 - Idempotentes: `ON CONFLICT (source, station, measured_at) DO NOTHING`.
+
+## Replay histórico (`api/replay.py`)
+- Estación del replay = estación física, con sus nombres en cada fuente: 29509 Tráfico Centro e
+  31854 Fiscalía Caribe (datos.gov.co hasta 2025 + SISAIRE 2026), 29493 Casa de Justicia (solo
+  datos.gov.co), 31366 Fernando Botero y 31946 Tomás Carrasquilla (solo SISAIRE 2026). Si una hora está
+  en las dos fuentes manda datos.gov.co.
+- Vuelve a aplicar la limpieza al leer y necesita la ventana completa de v4 (6 horas previas + 18 de 24):
+  con los ceros de 2026, en septiembre de 2026 Tráfico Centro no tiene ventana completa en 199 de 720
+  horas de emisión.

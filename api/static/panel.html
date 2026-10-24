@@ -206,18 +206,35 @@
       <ol class="timeline" id="alerts"></ol>
       <p class="empty" id="alerts-empty" hidden>Sin alertas registradas.</p>
     </section>
-    <!-- Prediccion experimental -->
-    <section class="card card--pred" aria-labelledby="pred-title" style="--i:7">
+    <!-- Replay historico (solo datos externos del IDEAM; no usa el sensor propio) -->
+    <section class="card card--replay" aria-labelledby="replay-title" style="--i:7">
       <header class="card__head">
-        <h2 id="pred-title" class="card__title">Predicción experimental · PM2.5</h2>
+        <h2 id="replay-title" class="card__title">Replay histórico · PM2.5</h2>
         <span class="chip chip--model">modelo, experimental</span>
       </header>
-      <p class="pred__fijo" id="pred-aviso-fijo" role="note">Estimación experimental, entrenada con estaciones de referencia del IDEAM. No es un equipo certificado.</p>
-      <ul class="pred__list" id="pred-list" aria-live="polite"></ul>
-      <p class="pred__msg" id="pred-msg">Consultando la última predicción…</p>
-      <p class="pred__src" id="pred-emision"></p>
-      <p class="pred__src" id="pred-fuentes"></p>
-      <p class="pred__warn" id="pred-aviso" hidden></p>
+      <p class="replay__aviso" id="replay-aviso" role="note">Replay histórico con datos de estaciones de referencia del IDEAM. No es un pronóstico en tiempo real ni un equipo certificado.</p>
+      <form id="replay-form" class="replay__form">
+        <div class="field">
+          <label for="replay-estacion">Estación</label>
+          <select id="replay-estacion"></select>
+        </div>
+        <div class="field">
+          <label for="replay-at">Fecha y hora (Colombia)</label>
+          <input id="replay-at" type="datetime-local" step="3600">
+        </div>
+        <button class="btn" type="submit">Ver</button>
+      </form>
+      <p class="replay__msg" id="replay-msg" role="status" aria-live="polite">Consultando las estaciones…</p>
+      <div class="table-wrap">
+        <table class="replay__tabla">
+          <caption class="sr-only">PM2.5 predicho frente a real a 4 y 5 horas</caption>
+          <thead><tr><th scope="col">Horizonte</th><th scope="col" title="mes-día hora, Colombia">Hora objetivo</th><th scope="col">Predicho</th><th scope="col">Real</th><th scope="col">Persistencia</th><th scope="col" title="predicho menos real">Error</th></tr></thead>
+          <tbody id="replay-filas"></tbody>
+        </table>
+      </div>
+      <p class="replay__src" id="replay-ventana"></p>
+      <p class="replay__src" id="replay-mae"></p>
+      <p class="replay__src" id="replay-fuentes"></p>
     </section>
 
     <!-- Suscripcion por correo -->

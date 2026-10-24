@@ -45,8 +45,13 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 102 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
-  notifier, 13 del ingestor, 60 de ai/ y 138 de db/ + shared/ + tools/.
+- [TESTS] 121 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
+  notifier, 13 del ingestor, 60 de ai/ y 145 de db/ + shared/ + tools/.
+- [LOCAL] Replay historico (api/replay.py): /predictions/replay, /predictions/replay/metrics y
+  /predictions/replay/estaciones aplican v4 SOLO con external_measurements (IDEAM datos.gov.co +
+  SISAIRE), al vuelo, sin escribir ni leer measurements/predictions. Tarjeta "Replay historico" en el
+  panel; la tarjeta de prediccion con mediciones en vivo se quito (el emisor del alerter sigue en el
+  codigo, apagado). Base local con IDEAM 2020-2025 (3 estaciones) + SISAIRE 2026 importados con --local.
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base
@@ -224,7 +229,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - API: /devices/{id}/predictions/latest (solo visibles; ?incluir_ocultos=true) y
     /predictions/metrics?days=&horizon= (404/422/503). Regla en vivo: con >= 168 predicciones
     evaluadas en 30 dias, si el MAE del modelo no es menor que el de la persistencia, el horizonte se
-    oculta. El panel usa /predictions/latest; /forecast se mantiene.
+    oculta. /forecast se mantiene. El panel ya NO usa /predictions/latest: muestra el replay historico.
 - anomalias_sim_if_v2_A.joblib (1,97 MB) + .json de procedencia (SHA-256, evaluación, límites):
   Isolation Forest (scikit-learn 1.9.1; la imagen usa la misma versión). Exportado con
   ai/exportar_modelo_anomalias.py, sin reentrenar.

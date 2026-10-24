@@ -81,7 +81,9 @@ def test_portada_rotulo_y_linea_honesta_sobre_ia():
     paso3 = html[html.index("<strong>Se analizan</strong>"):]
     paso3 = paso3[:paso3.index("</li>")]
     assert "reglas fijas evalúan las alertas" in paso3
-    ia = ("Además, un modelo experimental estima el PM2.5 a 6 horas (entrenado con datos externos históricos "
-          "de Medellín) y, en pruebas con datos simulados, un modelo busca lecturas anómalas.")
+    ia = ("Además, un modelo experimental muestra un replay histórico del PM2.5 a 4 y 5 horas con datos de "
+          "estaciones de referencia del IDEAM (no es un pronóstico en tiempo real) y, en pruebas con datos "
+          "simulados, un modelo busca lecturas anómalas.")
     assert ia in paso3
     assert "alerta" not in ia.lower()   # la linea de IA no dice que las alertas usen IA
+    assert "6 horas" not in paso3 and "tiempo real" in ia

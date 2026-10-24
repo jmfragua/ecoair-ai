@@ -42,7 +42,7 @@ def test_panel_sirve_el_dashboard_sin_cache():
     for ruta in ("/panel", "/panel?device=ecoair-sim-01"):
         r = client.get(ruta)
         assert r.status_code == 200 and r.headers["cache-control"] == "no-cache", ruta
-        assert 'id="suscripcion"' in r.text and "Predicción experimental" in r.text
+        assert 'id="suscripcion"' in r.text and "Replay histórico" in r.text
         assert 'src="/js/app.js"' in r.text and 'href="/css/app.css"' in r.text   # rutas absolutas
 
 

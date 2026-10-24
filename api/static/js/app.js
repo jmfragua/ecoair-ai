@@ -1,5 +1,5 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
-import { vistaPredicciones } from "./predicciones-vista.js";
+import { mensajeError, periodoMetricas, vistaEstaciones, vistaMetricas, vistaReplay } from "./replay-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
@@ -589,34 +589,52 @@ async function refreshHistory() {
   }
 }
 
-// ---------- Prediccion experimental ----------
-// Lee /predictions/latest (predicciones horarias del modelo v4 que guarda el alerter). La API solo
-// devuelve los horizontes visibles (4 y 5 h); /forecast sigue existiendo pero el panel ya no lo usa.
-let prediccionCargada = false;
-
-function renderPredicciones(r) {
-  const v = vistaPredicciones(r);   // estados explicitos en js/predicciones-vista.js
-  $("pred-list").replaceChildren(...v.items.map((i) => el("li", { class: "pred__item" },
-    el("span", { class: "pred__h" }, i.etiqueta),
-    el("span", { class: "pred__v" }, i.valor), el("span", { class: "unit" }, "µg/m³"),
-    el("span", { class: "pred__hasta" }, i.hasta))));
-  $("pred-msg").textContent = v.mensaje;
-  $("pred-emision").textContent = v.emision;
-  $("pred-fuentes").textContent = v.fuentes;
-  $("pred-aviso-fijo").textContent = v.avisoFijo;
-  $("pred-aviso").hidden = !v.aviso;
-  $("pred-aviso").textContent = v.aviso;
+// ---------- Replay historico ----------
+// Solo datos externos del IDEAM (datos.gov.co y SISAIRE) via /predictions/replay*: no usa las
+// mediciones del sensor propio, para que funcione con el hardware desconectado.
+async function cargarReplay() {
+  const st = $("replay-estacion").value, at = $("replay-at").value;
+  if (!st || !at) return;
+  $("replay-msg").textContent = "Calculando…";
+  try {
+    const v = vistaReplay(await getJSON(`/predictions/replay?station=${encodeURIComponent(st)}&at=${encodeURIComponent(at)}`));
+    $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", {},
+      el("td", {}, f.horizonte), el("td", {}, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
+      el("td", {}, f.persistencia), el("td", {}, f.error))));
+    $("replay-msg").textContent = v.mensaje;
+    $("replay-ventana").textContent = v.ventana;
+    $("replay-fuentes").textContent = v.fuentes;
+  } catch (e) {
+    $("replay-filas").replaceChildren();
+    $("replay-ventana").textContent = "";
+    $("replay-msg").textContent = mensajeError(e.status, e.message);
+  }
+  const per = periodoMetricas(at);
+  if (!per) return;
+  try {
+    $("replay-mae").textContent = vistaMetricas(await getJSON(
+      `/predictions/replay/metrics?station=${encodeURIComponent(st)}&desde=${per.desde}&hasta=${per.hasta}`));
+  } catch {
+    $("replay-mae").textContent = vistaMetricas(null);
+  }
 }
 
-async function refreshForecast() {
-  if (deviceMissing) return;
+async function iniciarReplay() {
+  $("replay-form").addEventListener("submit", (ev) => { ev.preventDefault(); cargarReplay(); });
+  $("replay-estacion").addEventListener("change", () => {
+    const o = $("replay-estacion").selectedOptions[0];
+    if (o && o.dataset.at) $("replay-at").value = o.dataset.at;
+    cargarReplay();
+  });
   try {
-    renderPredicciones(await getJSON(`/devices/${dev}/predictions/latest`));   // getJSON lanza si HTTP != 200
-    prediccionCargada = true;
-  } catch {
-    // Nunca se queda consultando: sin respuesta valida previa se dice "no disponible por ahora";
-    // si ya la hubo, se conserva (como el resto del panel).
-    if (!prediccionCargada) renderPredicciones(null);
+    const v = vistaEstaciones(await getJSON("/predictions/replay/estaciones"));
+    $("replay-estacion").replaceChildren(...v.opciones.map((o) => el("option", { value: o.value, "data-at": o.at }, o.label)));
+    $("replay-estacion").value = v.station;
+    $("replay-at").value = v.at;
+    $("replay-msg").textContent = v.mensaje;
+    await cargarReplay();
+  } catch (e) {
+    $("replay-msg").textContent = mensajeError(e.status, e.message);
   }
 }
 
@@ -708,10 +726,9 @@ function start() {
   // la vista al ancla cuando termina la primera actualizacion.
   refresh().finally(() => { if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });
   refreshHistory();
-  refreshForecast();
+  iniciarReplay();
   setInterval(refresh, REFRESH_MS);
   setInterval(refreshHistory, HISTORY_REFRESH_MS);
-  setInterval(refreshForecast, HISTORY_REFRESH_MS);
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => lastHistory && renderChart(lastHistory), 120); }).observe($("chart"));
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); refreshHistory(); } });

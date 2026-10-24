@@ -132,13 +132,27 @@ def test_forecast_se_mantiene():
 
 # ---------- Tarjeta del panel ----------
 
-def test_panel_tarjeta_prediccion_con_aviso_y_nueva_ruta():
+def test_panel_sin_tarjeta_de_prediccion_en_vivo_y_con_replay():
+    """La prediccion con mediciones en vivo se quito del panel; queda el replay historico."""
     html = client.get("/panel").text
-    tarjeta = html[html.index('class="card card--pred"'):html.index("<!-- Suscripcion por correo -->")]
-    assert "Estimación experimental, entrenada con estaciones de referencia del IDEAM. No es un equipo certificado." in tarjeta
-    assert "Cargando" not in tarjeta
+    assert 'class="card card--pred"' not in html and 'id="pred-list"' not in html
+    tarjeta = html[html.index('class="card card--replay"'):html.index("<!-- Suscripcion por correo -->")]
+    assert ("Replay histórico con datos de estaciones de referencia del IDEAM. "
+            "No es un pronóstico en tiempo real ni un equipo certificado.") in tarjeta
+    for id_ in ("replay-estacion", "replay-at", "replay-filas", "replay-mae"):
+        assert f'id="{id_}"' in tarjeta
     app_js = client.get("/js/app.js").text
-    assert "/predictions/latest" in app_js and "/forecast`" not in app_js
+    assert "/predictions/replay" in app_js and "/predictions/latest" not in app_js and "/forecast`" not in app_js
+
+
+def test_replay_vista_con_node():
+    import shutil
+    import subprocess
+    if shutil.which("node") is None:
+        pytest.skip("node no esta instalado")
+    r = subprocess.run(["node", "--test", os.path.join(os.path.dirname(__file__), "js", "test_replay_vista.mjs")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
 
 
 def test_predicciones_vista_con_node():
