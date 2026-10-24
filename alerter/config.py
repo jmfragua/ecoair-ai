@@ -32,6 +32,17 @@ ANOMALIAS_ACTIVAS = _bool("ANOMALIAS_ACTIVAS", False)
 ANOMALIAS_MODELO_PATH = os.getenv("ANOMALIAS_MODELO_PATH") or None
 ANOMALIAS_VENTANA_MIN = _int("ANOMALIAS_VENTANA_MIN", 60)
 
+# Predicciones EXPERIMENTALES de PM2.5 a 3, 4 y 5 h (modelo v4) y sus metricas diarias. Apagadas por
+# defecto. Solo dispositivos reales de la lista (el simulado nunca genera predicciones).
+PREDICCION_ACTIVA = _bool("PREDICCION_ACTIVA", False)
+PREDICCION_MINUTO = _int("PREDICCION_MINUTO", 5)
+PREDICCION_DISPOSITIVOS = [d.strip() for d in os.getenv("PREDICCION_DISPOSITIVOS", "ecoair-node-01").split(",")
+                           if d.strip()]
+_MODELO_V4 = "prediccion_pm25_v4.json"
+PREDICCION_MODELO_PATH = os.getenv("PREDICCION_MODELO_PATH") or str(next(
+    (c for c in (Path(__file__).resolve().parent / "modelos" / _MODELO_V4, _RAIZ / "modelos" / _MODELO_V4)
+     if c.is_file()), Path(__file__).resolve().parent / "modelos" / _MODELO_V4))
+
 # Ventana de datos por regla de sensor, para que la alerta refleje el estado actual.
 VENTANA_SENSOR_MIN = {
     "sensor_congelado": _int("ALERTER_VENTANA_CONGELADO_MIN", 45),
@@ -42,5 +53,7 @@ VENTANA_SENSOR_MIN = {
 # DATABASE_URL (Railway) o DB_HOST/DB_PORT/DB_NAME/DB_USER/POSTGRES_PASSWORD (compose local).
 DB_DSN = dsn_desde_entorno(connect_timeout=5)
 
+if not 0 <= PREDICCION_MINUTO <= 59:
+    raise ValueError("PREDICCION_MINUTO debe estar entre 0 y 59")
 if REVISIONES_ABRIR < 1 or REVISIONES_CERRAR < 1:
     raise ValueError("ALERTER_REVISIONES_ABRIR y ALERTER_REVISIONES_CERRAR deben ser >= 1")

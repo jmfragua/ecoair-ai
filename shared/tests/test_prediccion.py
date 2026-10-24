@@ -232,3 +232,37 @@ def test_modelo_valido_no_deja_warning(caplog):
     with caplog.at_level("WARNING", logger="prediccion"):
         assert pr.cargar_modelo(os.path.join(RAIZ, "modelos", "prediccion_pm25_v3.json"))["nombre"] == "prediccion_pm25_v3"
     assert caplog.text == ""
+
+
+# ---------- Variables v4 (6 horas previas + media de 24 h, relativas al nivel) ----------
+
+def test_variables_v4_desde_horas():
+    horas = [10.0, 8.0, 6.0, 6.0, 4.0, 2.0] + [5.0] * 18          # h1..h24
+    m = pr.minuto(AHORA)
+    x = pr.variables_v4_desde(horas, m, 2.0)
+    assert x["pm25_h1"] == 10.0 and x["media_6h"] == 6.0 and x["horas_24h"] == 24
+    assert math.isclose(x["lr_h2"], math.log(10 / 12)) and math.isclose(x["lr_h6"], math.log(4 / 12))
+    assert math.isclose(x["lr_m6"], math.log(8 / 12)) and math.isclose(x["pend_rel6"], 4 / 8)
+    assert math.isclose(x["lr_m24"], math.log((sum(horas) / 24 + 2) / 12))
+    assert set(pr.VARIABLES_V4) <= set(x)
+    # 2026-11-05 15:00 UTC = jueves 10:00 en Colombia
+    assert math.isclose(x["dia_sin"], math.sin(2 * math.pi * 3 / 7))
+
+
+def test_variables_v4_exige_6_horas_completas_y_18_de_24():
+    base = [5.0] * 24
+    assert pr.variables_v4_desde(base[:5] + [None] + base[6:], 0, 2.0) is None
+    assert pr.variables_v4_desde(base[:6] + [None] * 7 + base[13:], 0, 2.0) is None   # 17 validas
+    assert pr.variables_v4_desde(base[:6] + [None] * 6 + base[12:], 0, 2.0)["horas_24h"] == 18
+
+
+def test_v4_en_vivo_desde_la_serie_por_minuto_y_constante_da_relativas_cero():
+    modelo = {"resolucion": "hora", "transformacion": "relativa", "variables_familia": "v4", "c": 2.0,
+              "persistencia": "pm25_h1", "variables": pr.VARIABLES_V4, "media": [0.0] * 12, "escala": [1.0] * 12,
+              "horizontes": {"180": {"intercepto": 0.0, "coef": [0.0] * 12, "supera_persistencia": True}}}
+    s = pr.serie_por_minuto([(AHORA - timedelta(minutes=i), 7.0) for i in range(24 * 60)])
+    x = pr.variables_para(modelo, s, pr.minuto(AHORA))
+    assert all(x[v] == 0.0 for v in ("lr_h2", "lr_h6", "lr_m6", "lr_m24", "pend_rel6"))
+    assert math.isclose(pr.predecir_horizonte(modelo, x, 180), 7.0)
+    assert pr.variables_para(modelo, _serie(minutos=200), pr.minuto(AHORA)) is None   # solo 3 h de datos
+    assert "1445 minutes" in pr.SQL_SERIE_PM25_24H and "185 minutes" in pr.SQL_SERIE_PM25

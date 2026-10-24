@@ -1,5 +1,5 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
-import { vistaPrediccion } from "./prediccion-vista.js";
+import { vistaPredicciones } from "./predicciones-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
@@ -590,28 +590,20 @@ async function refreshHistory() {
 }
 
 // ---------- Prediccion experimental ----------
-// Solo se muestran los horizontes que superaron a la persistencia en la evaluacion; los demas dicen
-// "no disponible". La persistencia nunca se presenta como prediccion.
-const fmtErr = (v) => (v == null ? "—" : Number(v).toLocaleString("es-CO", { maximumFractionDigits: 2 }));
+// Lee /predictions/latest (predicciones horarias del modelo v4 que guarda el alerter). La API solo
+// devuelve los horizontes visibles (4 y 5 h); /forecast sigue existiendo pero el panel ya no lo usa.
 let prediccionCargada = false;
 
-function renderForecast(r) {
-  const v = vistaPrediccion(r);   // estados explicitos en js/prediccion-vista.js
-  $("pred-list").replaceChildren(...v.horizontes.map((h) => {
-    const etiqueta = el("span", { class: "pred__h" }, h.etiqueta);
-    if (!h.disponible) {
-      return el("li", { class: "pred__item" }, etiqueta,
-        el("span", { class: "pred__na" }, "No disponible: el modelo no superó la línea base"));
-    }
-    return el("li", { class: "pred__item" }, etiqueta,
-      el("span", { class: "pred__v" }, fmtNum(h.pm25)), el("span", { class: "unit" }, "µg/m³"),
-      el("span", { class: "pred__err" },
-        `Error medio en la evaluación: ${fmtErr(h.mae_modelo)} µg/m³ (línea base: ${fmtErr(h.mae_persistencia)})`));
-  }));
+function renderPredicciones(r) {
+  const v = vistaPredicciones(r);   // estados explicitos en js/predicciones-vista.js
+  $("pred-list").replaceChildren(...v.items.map((i) => el("li", { class: "pred__item" },
+    el("span", { class: "pred__h" }, i.etiqueta),
+    el("span", { class: "pred__v" }, i.valor), el("span", { class: "unit" }, "µg/m³"),
+    el("span", { class: "pred__hasta" }, i.hasta))));
   $("pred-msg").textContent = v.mensaje;
-  $("pred-tendencia").textContent = v.tendencia;
-  $("pred-ultima").textContent = v.ultima;
+  $("pred-emision").textContent = v.emision;
   $("pred-fuentes").textContent = v.fuentes;
+  $("pred-aviso-fijo").textContent = v.avisoFijo;
   $("pred-aviso").hidden = !v.aviso;
   $("pred-aviso").textContent = v.aviso;
 }
@@ -619,12 +611,12 @@ function renderForecast(r) {
 async function refreshForecast() {
   if (deviceMissing) return;
   try {
-    renderForecast(await getJSON(`/devices/${dev}/forecast`));   // getJSON lanza si HTTP != 200
+    renderPredicciones(await getJSON(`/devices/${dev}/predictions/latest`));   // getJSON lanza si HTTP != 200
     prediccionCargada = true;
   } catch {
-    // Nunca se queda en "Cargando…": si aun no hubo respuesta valida, se dice; si ya la hubo,
-    // se conserva la ultima (como el resto del panel) y el aviso general lo da refresh().
-    if (!prediccionCargada) renderForecast(null);
+    // Nunca se queda consultando: sin respuesta valida previa se dice "no disponible por ahora";
+    // si ya la hubo, se conserva (como el resto del panel).
+    if (!prediccionCargada) renderPredicciones(null);
   }
 }
 

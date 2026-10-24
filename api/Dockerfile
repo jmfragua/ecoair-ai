@@ -19,6 +19,8 @@ COPY api/*.py ./
 # v3 se activa con MODELO_PREDICCION_PATH=/app/modelos/prediccion_pm25_v3.json. v2 no se copia.
 COPY modelos/prediccion_pm25_v1.json ./modelos/
 COPY modelos/prediccion_pm25_v3.json ./modelos/
+# v4: lo emite el alerter; la API lo lee para saber que horizontes son visibles (/predictions/latest)
+COPY modelos/prediccion_pm25_v4.json ./modelos/
 # Dashboard publico (HTML, CSS, JS y fuente local; sin recursos de internet)
 COPY api/static/ ./static/
 

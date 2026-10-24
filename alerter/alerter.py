@@ -31,11 +31,15 @@ from reglas_alertas import (
 )
 from calidad_aire import SQL_ULTIMA, SQL_VENTANAS, construir_respuesta, ventanas_desde_fila  # noqa: E402
 from features import promediar_por_minuto  # noqa: E402
+from metricas_prediccion import CalculadorMetricas  # noqa: E402
+from prediccion_horaria import EmisorHorario  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("alerter")
 
 estados = defaultdict(EstadoRegla)  # (device_id, rule_code) -> EstadoRegla
+emisor = EmisorHorario(config.PREDICCION_MODELO_PATH, config.PREDICCION_DISPOSITIVOS, config.PREDICCION_MINUTO)
+metricas = CalculadorMetricas(config.PREDICCION_DISPOSITIVOS)
 db = None
 
 
@@ -224,12 +228,26 @@ def revisar():
             raise  # conexion rota: se reconecta en la siguiente revision
         except Exception:
             log.exception("Error evaluando %s; sigo con el siguiente", d["device_id"])
+    if config.PREDICCION_ACTIVA:
+        revisar_predicciones(conn, ahora)
+
+
+def revisar_predicciones(conn, ahora):
+    """Prediccion horaria y metricas diarias: un fallo aqui nunca detiene las alertas."""
+    for nombre, tarea in (("prediccion horaria", emisor), ("metricas de prediccion", metricas)):
+        try:
+            tarea.revisar(conn, ahora)
+        except psycopg.OperationalError:
+            raise
+        except Exception:
+            log.exception("Error en %s; sigo", nombre)
 
 
 def main():
-    log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s, anomalias=%s",
-             config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
-             config.INCLUIR_SIMULADOS, config.ANOMALIAS_ACTIVAS)
+    log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s, anomalias=%s, "
+             "prediccion=%s (minuto %d, %s)", config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
+             config.INCLUIR_SIMULADOS, config.ANOMALIAS_ACTIVAS, config.PREDICCION_ACTIVA,
+             config.PREDICCION_MINUTO, ",".join(config.PREDICCION_DISPOSITIVOS))
     while True:
         inicio = time.monotonic()
         try:

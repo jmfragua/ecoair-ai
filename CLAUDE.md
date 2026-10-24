@@ -45,8 +45,12 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 86 tests de la API (incluyen los de node de api/tests/js/), 38 del alerter, 48 del
-  notifier, 13 del ingestor, 53 de ai/ y 94 de db/ + shared/ + tools/.
+- [TESTS] 102 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
+  notifier, 13 del ingestor, 60 de ai/ y 138 de db/ + shared/ + tools/.
+- [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
+  /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
+  Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base
+  local (sin datos recientes: emision omitida por falta de datos, como debe). NO desplegado.
 - PENDIENTE:
   - Correo de alerta: quitar la hora duplicada ("Inicio" y "Se abrió a las" dicen lo mismo).
   - Gráfica del panel: la franja gris de "sin datos" (hueco en la serie).
@@ -92,10 +96,13 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     alerta abierta por device_id + rule_code). La 004 se verificó: la tabla alerts muestra
     sus 14 columnas. Y 005_subscriptions.sql (aplicada el 15 oct 2026): tablas subscribers
     (email, consentimiento, tokens solo como hash SHA-256, sin IP) y notifications_sent.
-  - 007_welcome_email.sql: NO APLICADA todavía. subscribers.welcome_sent_at (+ intentos) para
-    el correo de bienvenida único.
-  - 006_external_measurements.sql: NO APLICADA todavía. Tabla external_measurements (datos
-    externos de terceros), separada de measurements. Se aplica con db/migrate.py.
+  - 007_welcome_email.sql: subscribers.welcome_sent_at (+ intentos) para el correo de bienvenida único.
+  - 006_external_measurements.sql: tabla external_measurements (datos externos de terceros),
+    separada de measurements. Se aplica con db/migrate.py.
+  - 008_predictions.sql: tablas predictions (UNIQUE device_id + created_at + horizon_hours) y
+    prediction_metrics (UNIQUE fecha + device_id + horizonte + version).
+  - Estado (2026-10-24): Railway tiene schema, 002, 004, 005, 006 y 007; le falta la 008. La base
+    LOCAL tiene todo, 006, 007 y 008 incluidas (aplicadas el 2026-10-24).
   - 003_air_levels_borrador.sql: SOLO BORRADOR, no aplicada (las tablas del ICA viven en api/ica.py).
 - Endpoints de la API:
   - GET /health (503 si la base no responde en 3 s).
@@ -202,6 +209,22 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - Sesgo con series constantes (criterio declarado antes: niveles 3 y 6, <= 1,0 a 1 y 3 h,
     <= 1,5 a 6 h): CUMPLE en los tres (máx |pred - valor| 0,28 / 0,27 / 1,30) e invariancia de
     escala exacta. horizontes_visibles = [360] (único con mejora >= 5 % y sesgo cumplido).
+- prediccion_pm25_v4.json: horizontes 3, 4 y 5 h, variables relativas (6 horas previas + media de
+  24 h, hora y dia de la semana; festivos no distinguidos). IDEAM datos.gov.co, 3 estaciones
+  (29509, 29493, 31854); 31366 EXCLUIDA (valores incoherentes 2020-2023, motivo en el JSON).
+  Entrenamiento 2020-01..2023-06, validacion 2023-07..2023-12, prueba A = 2024, prueba B = 2025
+  (cada una evaluada una vez). MAE modelo/persistencia/media horaria, prueba A: 3 h 6,855/8,351/8,514;
+  4 h 7,156/9,170/8,509; 5 h 7,306/9,767/8,517. Prueba B: 3 h 6,591/8,181/7,885; 4 h 6,827/8,956/7,888;
+  5 h 6,953/9,554/7,886. horizontes_visibles = [240, 300]: 3 h falla el criterio de sesgo por 0,001
+  (-1,001 frente a 1,0). alpha = 0,01 (extremo de la rejilla; validacion plana).
+  - Servicio (alerter): PREDICCION_ACTIVA (false por defecto), PREDICCION_MINUTO (5),
+    PREDICCION_DISPOSITIVOS (ecoair-node-01), PREDICCION_MODELO_PATH. Emite los 3 horizontes cada
+    hora (tambien 3 h, oculto, para evaluarlo en vivo); omite si faltan datos; recorta a 0 y lo
+    registra en el log. Metricas por dia de Colombia a partir de las 00:30 (ayer y anteayer).
+  - API: /devices/{id}/predictions/latest (solo visibles; ?incluir_ocultos=true) y
+    /predictions/metrics?days=&horizon= (404/422/503). Regla en vivo: con >= 168 predicciones
+    evaluadas en 30 dias, si el MAE del modelo no es menor que el de la persistencia, el horizonte se
+    oculta. El panel usa /predictions/latest; /forecast se mantiene.
 - anomalias_sim_if_v2_A.joblib (1,97 MB) + .json de procedencia (SHA-256, evaluación, límites):
   Isolation Forest (scikit-learn 1.9.1; la imagen usa la misma versión). Exportado con
   ai/exportar_modelo_anomalias.py, sin reentrenar.
@@ -303,6 +326,15 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     "No especificada en OpenAQ (proveedor Medellín, entidad gubernamental); uso académico con atribución"
     (En el CSV y en los JSON de v2/v3 va la misma frase sin tildes, como se pasó a --licencia.)
   - Uso: solo con fines académicos no comerciales. NO cargados en ninguna base todavía.
+
+- IDEAM SISAIRE (CSV horarios descargados a mano con cuenta, fuera del repo): tools/importar_sisaire.py
+  (--archivo repetible, --dry-run, --local). source 'IDEAM SISAIRE', licencia "IDEAM SISAIRE – citar
+  la fuente, sin alterar, sin uso comercial" (NO es CC). Misma convencion de hora (Colombia, fin de
+  hora en UTC): en 2025 coincide al 100 % con datos.gov.co en las horas comunes, y todos los ceros del
+  SISAIRE son horas que datos.gov.co no publica. Ceros 2026: Trafico Centro 7,4 %, Fiscalia Caribe
+  7,1 %, Fernando Botero 5,5 % (IDEAM 2020-2025: < 0,6 %). Solo --dry-run ejecutado; nada importado.
+- tools/importar_ideam.py: corregido para el formato del IDEAM del 2026-10-24 (fechas como texto,
+  duracion "60.0"); antes descartaba todo 2024.
 
 ## Normas de calidad del aire (docs/normas/)
 - No leer los PDF de docs/normas/ (son pesados).

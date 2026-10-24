@@ -11,7 +11,7 @@ def test_orden_y_exclusion_del_borrador():
     assert nombres[0] == "schema.sql"
     assert "003_air_levels_borrador.sql" not in nombres
     assert nombres == ["schema.sql", "002_simulated.sql", "004_alerts.sql", "005_subscriptions.sql",
-                       "006_external_measurements.sql", "007_welcome_email.sql"]
+                       "006_external_measurements.sql", "007_welcome_email.sql", "008_predictions.sql"]
 
 
 def test_archivos_ignora_excluidos_en_cualquier_carpeta(tmp_path):

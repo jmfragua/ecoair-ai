@@ -1,0 +1,1 @@
+# Datos INVENTADOS solo para tools/tests/test_importar_sisaire.py (formato del reporte del SISAIRE).

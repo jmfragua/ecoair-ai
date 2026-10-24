@@ -14,6 +14,8 @@ Ninguna funcion devuelve ni registra claves en logs: solo las pasa a la conexion
 """
 
 import os
+import re
+from urllib.parse import unquote, urlsplit
 
 DB_DEFAULTS = {"DB_HOST": "localhost", "DB_PORT": "5433", "DB_NAME": "ecoair", "DB_USER": "ecoair"}
 MQTT_DEFAULTS = {"MQTT_HOST": "localhost", "MQTT_PORT": "1883"}
@@ -58,6 +60,56 @@ def descripcion_db(env=None):
         return resto.split("?", 1)[0]
     return (f"{env.get('DB_HOST') or DB_DEFAULTS['DB_HOST']}:{env.get('DB_PORT') or DB_DEFAULTS['DB_PORT']}"
             f"/{env.get('DB_NAME') or DB_DEFAULTS['DB_NAME']}")
+
+
+def origen_db(env=None):
+    """'DATABASE_URL' o 'DB_*' (sin DATABASE_URL se cae a DB_HOST/DB_PORT... o a sus valores por defecto)."""
+    env = os.environ if env is None else env
+    return "DATABASE_URL" if (env.get("DATABASE_URL") or "").strip() else "DB_*"
+
+
+def destino_importacion(local, env=None):
+    """(dsn, descripcion) para los importadores de datos externos. Lanza ValueError.
+
+    Sin --local exige DATABASE_URL (para no escribir por error en localhost). Con --local usa SOLO
+    DB_* (localhost:5433 por defecto) aunque DATABASE_URL exista, para no escribir por error en Railway.
+    La descripcion no lleva usuario ni clave.
+    """
+    env = dict(os.environ if env is None else env)
+    if local:
+        env.pop("DATABASE_URL", None)
+    elif not (env.get("DATABASE_URL") or "").strip():
+        raise ValueError("falta DATABASE_URL en el entorno (o usa --local para la base local con DB_*)")
+    return dsn_desde_entorno(env), descripcion_db(env)
+
+
+def error_conexion_seguro(exc, env=None):
+    """Texto de un error de conexion SIN la URL ni claves: tipo, codigo SQLSTATE (si hay) y mensaje.
+
+    Se ocultan: cualquier URL postgres://..., pares password=..., y los valores literales de la clave
+    de DATABASE_URL y de POSTGRES_PASSWORD. libpq no incluye la clave en sus mensajes, pero si puede
+    traer host, puerto y usuario, que se conservan porque ayudan a diagnosticar.
+    """
+    env = os.environ if env is None else env
+    msg = " ".join(str(exc).split())
+    secretos = []
+    url = (env.get("DATABASE_URL") or "").strip()
+    if url:
+        secretos.append(url)
+        try:
+            clave = urlsplit(url).password
+        except ValueError:
+            clave = None
+        if clave:
+            secretos += [clave, unquote(clave)]
+    if env.get("POSTGRES_PASSWORD"):
+        secretos.append(env["POSTGRES_PASSWORD"])
+    for s in sorted({s for s in secretos if s}, key=len, reverse=True):
+        msg = msg.replace(s, "***")
+    msg = re.sub(r"postgres(?:ql)?://\S+", "<url oculta>", msg)
+    msg = re.sub(r"(password\s*=\s*)('[^']*'|\S+)", r"\1***", msg, flags=re.I)
+    codigo = getattr(exc, "sqlstate", None) or getattr(exc, "pgcode", None)
+    return f"{type(exc).__name__}" + (f" [{codigo}]" if codigo else "") + (f": {msg[:600]}" if msg else "")
 
 
 def mqtt_desde_entorno(env=None):

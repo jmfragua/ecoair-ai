@@ -31,6 +31,13 @@ regresar hacia la media del entrenamiento. Con h1, h2, h3 y media_3h como arriba
     lr_h2_h1 = log((h2+c)/(h1+c)), lr_h3_h1 = log((h3+c)/(h1+c)), lr_m3_h1 = log((media_3h+c)/(h1+c)),
     pend_rel = (h1 - h3) / (media_3h + c), hora_sin/hora_cos
     f = intercepto + coef . variables_estandarizadas;  prediccion = (h1 + c) * exp(f) - c  (>= 0)
+Modelos v4 ("variables_familia": "v4", tambien relativos con "c"): 6 medias horarias previas y la
+media de 24 h. h1..h6 = medias de las ultimas 6 horas (cada una con >= 40 min con datos); la media de
+24 h exige >= 18 de las 24 horas. Con hk = media de la hora k (h1 la mas reciente):
+    lr_h2..lr_h6 = log((hk+c)/(h1+c)), lr_m6 = log((media_6h+c)/(h1+c)), lr_m24 = log((media_24h+c)/(h1+c)),
+    pend_rel6 = (h1 - h3)/(media_6h + c), hora_sin/hora_cos y dia_sin/dia_cos (hora de Colombia;
+    los festivos NO se distinguen: limitacion conocida). Necesita la serie por minuto de 24 h
+    (SQL_SERIE_PM25_24H).
 Un JSON sin "resolucion" se trata como v1 (por minuto, horizontes 60 y 180): v1 no cambia.
 
 Textos y presentacion SIEMPRE desde el JSON del modelo activo (sin frases fijas por modelo):
@@ -50,6 +57,11 @@ from pathlib import Path
 VARIABLES = ["ult", "media_15", "media_60", "media_180", "pendiente_15_60", "hora_sin", "hora_cos"]
 VARIABLES_HORARIAS = ["pm25_h1", "pm25_h2", "pm25_h3", "media_3h", "pendiente_h1_h3", "hora_sin", "hora_cos"]
 VARIABLES_RELATIVAS = ["lr_h2_h1", "lr_h3_h1", "lr_m3_h1", "pend_rel", "hora_sin", "hora_cos"]
+VARIABLES_V4 = ["lr_h2", "lr_h3", "lr_h4", "lr_h5", "lr_h6", "lr_m6", "lr_m24", "pend_rel6",
+                "hora_sin", "hora_cos", "dia_sin", "dia_cos"]
+V4_HORAS_LAGS = 6
+V4_HORAS_MEDIA = 24
+V4_MIN_HORAS_MEDIA = 18          # 75 % de 24 h, la misma cobertura minima del proyecto
 HORIZONTES = (60, 180)          # minutos
 COLOMBIA = timezone(timedelta(hours=-5))
 # Datos minimos (minutos con datos) en cada ventana para poder calcular las variables
@@ -64,6 +76,9 @@ SQL_SERIE_PM25 = (
     "WHERE device_id = %(device_id)s AND received_at > %(ahora)s - interval '185 minutes' "
     "AND received_at <= %(ahora)s GROUP BY 1 ORDER BY 1"
 )
+
+# PM2.5 por minuto de las ultimas 24 h (+5 min de margen), para modelos v4.
+SQL_SERIE_PM25_24H = SQL_SERIE_PM25.replace("interval '185 minutes'", "interval '1445 minutes'")
 
 _cache = {}
 log = logging.getLogger("prediccion")
@@ -151,7 +166,48 @@ def variables_relativas_desde(h1, h2, h3, m, c):
     return x
 
 
+def dia_ciclico(m):
+    """(sin, cos) del dia de la semana (lunes = 0) en hora de Colombia, en el minuto m."""
+    d = datetime.fromtimestamp(m * 60, tz=COLOMBIA).weekday()
+    return math.sin(2 * math.pi * d / 7), math.cos(2 * math.pi * d / 7)
+
+
+def variables_v4_desde(horas, m, c):
+    """horas: medias horarias [h1, h2, ..., h24] (h1 = la que termina en m; None = sin dato).
+
+    Devuelve las variables v4 (con pm25_h1, la base) o None si falta alguna de las 6 primeras o
+    hay menos de V4_MIN_HORAS_MEDIA horas validas en las 24.
+    """
+    lags = list(horas[:V4_HORAS_LAGS])
+    validas = [h for h in horas[:V4_HORAS_MEDIA] if h is not None]
+    if len(lags) < V4_HORAS_LAGS or any(h is None for h in lags) or len(validas) < V4_MIN_HORAS_MEDIA:
+        return None
+    h1 = lags[0]
+    b = h1 + c
+    m6 = sum(lags) / V4_HORAS_LAGS
+    m24 = sum(validas) / len(validas)
+    hs, hc = hora_ciclica(m)
+    ds, dc = dia_ciclico(m)
+    x = {"pm25_h1": h1, "media_6h": m6, "media_24h": m24, "horas_24h": len(validas),
+         "pend_rel6": (h1 - lags[2]) / (m6 + c), "lr_m6": math.log((m6 + c) / b), "lr_m24": math.log((m24 + c) / b),
+         "hora_sin": hs, "hora_cos": hc, "dia_sin": ds, "dia_cos": dc}
+    for k in range(2, V4_HORAS_LAGS + 1):
+        x[f"lr_h{k}"] = math.log((lags[k - 1] + c) / b)
+    return x
+
+
+def horas_desde_serie(serie, m, n=V4_HORAS_MEDIA):
+    """Medias horarias [h1..hn] de la serie por minuto (cada una con >= 40 min con datos, si no None)."""
+    return [_media(serie, m - 60 * k, 60) for k in range(n)]
+
+
+def es_v4(modelo):
+    return modelo.get("variables_familia") == "v4"
+
+
 def variables_para(modelo, serie, m):
+    if es_v4(modelo):
+        return variables_v4_desde(horas_desde_serie(serie, m), m, float(modelo["c"]))
     if not es_horario(modelo):
         return variables_en(serie, m)
     x = variables_horarias_en(serie, m)
@@ -204,16 +260,21 @@ def cargar_modelo(ruta=None):
     return _cache[clave]
 
 
-def predecir_horizonte(modelo, x, horizonte):
-    """Prediccion (ug/m3) para un horizonte con las variables x. Nunca negativa."""
+def predecir_horizonte_crudo(modelo, x, horizonte):
+    """Prediccion (ug/m3) SIN recortar: puede salir negativa (p. ej. (h1+c)*exp(f) - c con h1 ~ 0)."""
     h = modelo["horizontes"][str(horizonte)]
     z = [(x[v] - mu) / (s or 1.0) for v, mu, s in zip(modelo["variables"], modelo["media"], modelo["escala"])]
     delta = h["intercepto"] + sum(c * zi for c, zi in zip(h["coef"], z))
     base = x[modelo.get("persistencia", "ult")]
     if es_relativo(modelo):
         c = float(modelo["c"])
-        return max(0.0, (base + c) * math.exp(delta) - c)
-    return max(0.0, base + delta)
+        return (base + c) * math.exp(delta) - c
+    return base + delta
+
+
+def predecir_horizonte(modelo, x, horizonte):
+    """Prediccion (ug/m3) para un horizonte con las variables x. Recortada a un minimo de 0."""
+    return max(0.0, predecir_horizonte_crudo(modelo, x, horizonte))
 
 
 def texto_fuentes(modelo):

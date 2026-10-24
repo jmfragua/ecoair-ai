@@ -37,6 +37,12 @@ from subscriptions import (
     normalizar_email,
     texto_consentimiento,
 )
+from predicciones import (  # noqa: E402
+    SQL_METRICAS,
+    SQL_ULTIMAS,
+    construir_latest,
+    construir_metricas,
+)
 from historial import (
     BUCKET_MAX,
     BUCKET_MIN,
@@ -421,6 +427,40 @@ async def forecast(device_id: str):
          "minutos_desde_ultima_medicion": int((ahora - ult).total_seconds() // 60) if ult else None}
     _cache_prediccion[device_id] = (ahora, r)
     return r
+
+
+# ---------- Predicciones guardadas (modelo v4, las escribe el alerter; migracion 008) ----------
+# /forecast se mantiene (calculo en vivo). Estas rutas leen la tabla predictions y prediction_metrics.
+FALTA_008 = "Falta aplicar db/migrations/008_predictions.sql"
+_MODELO_V4 = "prediccion_pm25_v4.json"
+PREDICCION_MODELO_PATH = os.getenv("PREDICCION_MODELO_PATH") or str(next(
+    (c for c in (Path(__file__).resolve().parent / "modelos" / _MODELO_V4, _RAIZ / "modelos" / _MODELO_V4)
+     if c.is_file()), Path(__file__).resolve().parent / "modelos" / _MODELO_V4))
+
+
+@app.get("/devices/{device_id}/predictions/latest")
+async def predictions_latest(device_id: str, incluir_ocultos: bool = False):
+    await _con_timeout(require_device(device_id))
+    try:
+        filas = await _con_timeout(query(SQL_ULTIMAS, {"device_id": device_id}))
+        metricas = await _con_timeout(query(SQL_METRICAS, {"device_id": device_id, "dias": 30, "horizon": None}))
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_008)
+    return construir_latest(device_id, filas, cargar_modelo(PREDICCION_MODELO_PATH), metricas,
+                            datetime.now(timezone.utc), incluir_ocultos)
+
+
+@app.get("/devices/{device_id}/predictions/metrics")
+async def predictions_metrics(device_id: str, days: int = Query(30, ge=1, le=365), horizon: Optional[int] = None):
+    if horizon is not None and horizon not in (3, 4, 5):
+        raise HTTPException(status_code=422, detail="horizon debe ser 3, 4 o 5")
+    await _con_timeout(require_device(device_id))
+    try:
+        filas = await _con_timeout(query(SQL_METRICAS, {"device_id": device_id, "dias": days, "horizon": horizon}))
+    except psycopg.errors.UndefinedTable:
+        raise HTTPException(status_code=503, detail=FALTA_008)
+    hoy = datetime.now(timezone(timedelta(hours=-5))).date()
+    return construir_metricas(device_id, filas, days, horizon, hoy)
 
 
 # ---------- Portada ("/") y panel ("/panel") ----------

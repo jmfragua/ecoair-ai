@@ -409,6 +409,8 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .pred__msg:empty, .pred__src:empty, .pred__warn:empty { display: none; }
 .pred__src { font-size: .78rem; color: var(--muted); margin-top: 10px; }
 .pred__warn { font-size: .78rem; color: #ffe2a6; margin-top: 4px; }
+.pred__fijo { font-size: .8rem; font-weight: 600; color: #ffe2a6; margin-bottom: 10px; }
+.pred__hasta { font-size: .75rem; color: var(--muted); }
 
 /* ---------- Suscripcion por correo ---------- */
 .subs { display: grid; gap: 12px; max-width: 760px; }

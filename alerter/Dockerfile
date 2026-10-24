@@ -18,6 +18,8 @@ COPY api/ica.py api/calidad_aire.py api/recomendaciones.py ./
 COPY ai/reglas_sensor.py ai/features.py ai/scoring.py ./
 # Modelo experimental de anomalias + su procedencia (solo se carga con ANOMALIAS_ACTIVAS=true)
 COPY modelos/anomalias_sim_if_v2_A.joblib modelos/anomalias_sim_if_v2_A.json ./modelos/
+# Modelo experimental de prediccion v4 (solo se usa con PREDICCION_ACTIVA=true)
+COPY modelos/prediccion_pm25_v4.json ./modelos/
 COPY alerter/*.py ./
 
 RUN useradd --create-home --uid 1000 ecoair

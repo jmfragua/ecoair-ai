@@ -5,7 +5,8 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from shared.settings import descripcion_db, dsn_desde_entorno, mqtt_desde_entorno  # noqa: E402
+from shared.settings import (descripcion_db, destino_importacion, dsn_desde_entorno,  # noqa: E402
+                             error_conexion_seguro, mqtt_desde_entorno, origen_db)
 
 
 # ---------- Base de datos ----------
@@ -64,3 +65,46 @@ def test_mqtt_con_credenciales_y_tls():
 def test_mqtt_configuracion_invalida(env):
     with pytest.raises(ValueError):
         mqtt_desde_entorno(env)
+
+
+# ---------- Errores de conexion sin secretos ----------
+
+URL = "postgresql://postgres:Ab%40cd123@shinkansen.proxy.rlwy.net:41234/railway"
+
+
+class ErrorPG(Exception):
+    sqlstate = "28P01"
+
+
+def test_error_conexion_muestra_codigo_y_mensaje_sin_url_ni_clave():
+    e = ErrorPG('connection failed: connection to server at "shinkansen.proxy.rlwy.net" (66.33.22.1), '
+                'port 41234 failed: FATAL:  password authentication failed for user "postgres"\n'
+                f"dsn={URL} password=Ab@cd123 x Ab%40cd123")
+    txt = error_conexion_seguro(e, {"DATABASE_URL": URL})
+    assert txt.startswith("ErrorPG [28P01]: connection failed:")
+    assert "password authentication failed" in txt and "shinkansen.proxy.rlwy.net" in txt and "port 41234" in txt
+    for secreto in ("Ab@cd123", "Ab%40cd123", "postgresql://", URL):
+        assert secreto not in txt
+    assert "\n" not in txt
+
+
+def test_error_conexion_oculta_postgres_password_y_urls_ajenas():
+    e = RuntimeError("fallo con clave s3cr3t y postgres://otro:zz@h/db password='a b'")
+    txt = error_conexion_seguro(e, {"POSTGRES_PASSWORD": "s3cr3t"})
+    assert "s3cr3t" not in txt and "zz@h" not in txt and "'a b'" not in txt
+    assert txt.startswith("RuntimeError: fallo con clave ***")
+    assert error_conexion_seguro(ValueError(""), {}) == "ValueError"
+
+
+def test_origen_db():
+    assert origen_db({"DATABASE_URL": URL}) == "DATABASE_URL"
+    assert origen_db({"DATABASE_URL": "  "}) == "DB_*" and origen_db({}) == "DB_*"
+
+
+def test_destino_importacion():
+    dsn, desc = destino_importacion(False, {"DATABASE_URL": URL})
+    assert dsn == URL and desc == "shinkansen.proxy.rlwy.net:41234/railway"
+    dsn, desc = destino_importacion(True, {"DATABASE_URL": URL, "DB_PORT": "5433"})
+    assert "railway" not in dsn and "Ab" not in dsn and desc == "localhost:5433/ecoair"
+    with pytest.raises(ValueError, match="falta DATABASE_URL"):
+        destino_importacion(False, {"DB_PORT": "5433"})
