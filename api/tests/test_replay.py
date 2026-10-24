@@ -180,7 +180,8 @@ def test_rutas_503_sin_tabla(monkeypatch):
 def test_replay_no_lee_ni_escribe_measurements_ni_predictions(registro):
     for url in ("/predictions/replay/estaciones", "/predictions/replay?station=29509&at=2026-09-30T12:00",
                 "/predictions/replay/metrics?station=29509&desde=2026-09-01&hasta=2026-09-30",
-                "/predictions/replay?station=29509&at=2026-01-01T12:00"):
+                "/predictions/replay?station=29509&at=2026-01-01T12:00",
+                "/predictions/replay?station=29509&at=2026-09-29T07:00&buscar=siguiente"):
         client.get(url)
     assert registro.sql, "no se registro ninguna consulta"
     for sql in registro.sql:
@@ -190,3 +191,64 @@ def test_replay_no_lee_ni_escribe_measurements_ni_predictions(registro):
         assert "EXTERNAL_MEASUREMENTS" in s
         assert not re.search(r"(?<!EXTERNAL_)\bMEASUREMENTS\b", s), sql
         assert not re.search(r"\bPREDICTIONS\b|\bPREDICTION_METRICS\b", s), sql
+        assert not re.search(r"\b(ALERTS|SUBSCRIBERS|NOTIFICATIONS_SENT)\b", s), sql
+
+
+
+# ---------- Modo replay del panel: ICA solo con PM2.5 y salto a la siguiente hora valida ----------
+
+def test_actual_ica_solo_pm25_con_la_misma_funcion_que_el_panel_en_vivo():
+    from ica import calcular_ica
+    serie, f = rp.serie_limpia(FILAS)
+    a = rp.calcular_replay("29509", serie, f, MODELO, AT)["actual"]
+    esperado = calcular_ica("pm25", valor(T))
+    assert (a["ica"]["ica"], a["ica"]["category_code"]) == (esperado["ica"], esperado["category_code"])
+    assert a["ica"]["solo_pm25"] is True and "PM2.5 solamente" in a["ica"]["base"]
+    assert a["pm25_1h"] == valor(T) and a["recomendacion"]["efectos"]
+    assert a["no_disponibles"] == {k: "no disponible en el histórico" for k in ("pm10", "temperature", "humidity")}
+    assert not any(k in a for k in ("pm10_1h", "temperature", "humidity"))      # no se inventan valores
+
+
+def test_siguiente_hora_valida_salta_y_lo_avisa():
+    serie, f = rp.serie_limpia(filas_serie(rp.de_idx(T - 30), rp.de_idx(T + 30), saltar={T - 1}))
+    r = rp.calcular_replay_siguiente("29509", serie, f, MODELO, AT)
+    # con T-1 ausente, las emisiones T .. T+4 no tienen las 6 horas previas completas
+    assert r["at_local"] == "2026-09-30T17:00" and r["salto"]["horas"] == 5
+    assert r["salto"]["pedida_local"] == "2026-09-30T12:00" and "faltan horas" in r["salto"]["motivo"]
+    assert "salto" not in rp.calcular_replay_siguiente("29509", serie, f, MODELO, AT + timedelta(hours=6))
+    with pytest.raises(rp.ReplayError, match="No hay horas con ventana completa"):
+        rp.calcular_replay_siguiente("29509", {}, [], MODELO, AT, max_horas=3)
+
+
+def test_ruta_buscar_siguiente(registro):
+    # la serie empieza en T-40 (2026-09-28 20:00): a las 07:00 del 29 (T-29) hay 12 de 24 horas;
+    # la primera hora con >= 18 es las 13:00 (T-23), 6 h despues
+    r = client.get("/predictions/replay?station=29509&at=2026-09-29T07:00&buscar=siguiente")
+    assert r.status_code == 200 and r.json()["salto"]["horas"] == 6 and r.json()["at_local"] == "2026-09-29T13:00"
+    assert r.json()["actual"]["ica"]["solo_pm25"]
+    assert client.get("/predictions/replay?station=29509&at=2026-09-30T12:00&buscar=otra").status_code == 422
+
+
+def test_panel_modo_replay_banner_y_sin_consultas_en_vivo():
+    html = client.get("/panel").text
+    banner = html[html.index('id="replay-banner"'):]
+    banner = banner[:banner.index("</div>")]
+    assert "REPLAY HISTÓRICO</strong> · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado." in banner
+    assert 'class="sim-banner replay-banner"' in html
+    for id_ in ("replay-play", "replay-velocidad", "replay-salto"):
+        assert f'id="{id_}"' in html
+    js = client.get("/js/app.js").text
+    inicio = js[js.index("function start()"):]
+    # en modo replay se sale de start() antes de refresh(), refreshHistory(), consentimiento y suscripcion
+    corte = inicio.index("if (MODO_REPLAY) { iniciarModoReplay(); return; }")
+    for vivo in ("refresh()", "refreshHistory()", "loadConsent()", "initSubscriptionForm()"):
+        assert inicio.index(vivo) > corte, vivo
+    modo = js[js.index("function iniciarModoReplay()"):js.index("// ---------- Suscripcion por correo")]
+    assert "/devices/" not in modo and "/subscriptions" not in modo and 'subs-form").hidden = true' in modo
+    replay_js = js[js.index("// ---------- Replay historico ----------"):js.index("// ---------- Suscripcion por correo")]
+    assert "/devices/" not in replay_js and "/predictions/latest" not in replay_js
+
+
+def test_formulario_de_suscripcion_se_oculta_de_verdad():
+    css = client.get("/css/app.css").text
+    assert ".subs[hidden] { display: none; }" in css     # .subs usa display: grid, que anula [hidden]

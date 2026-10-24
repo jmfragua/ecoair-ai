@@ -45,13 +45,19 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 121 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
+- [TESTS] 126 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
   notifier, 13 del ingestor, 60 de ai/ y 145 de db/ + shared/ + tools/.
 - [LOCAL] Replay historico (api/replay.py): /predictions/replay, /predictions/replay/metrics y
   /predictions/replay/estaciones aplican v4 SOLO con external_measurements (IDEAM datos.gov.co +
   SISAIRE), al vuelo, sin escribir ni leer measurements/predictions. Tarjeta "Replay historico" en el
   panel; la tarjeta de prediccion con mediciones en vivo se quito (el emisor del alerter sigue en el
   codigo, apagado). Base local con IDEAM 2020-2025 (3 estaciones) + SISAIRE 2026 importados con --local.
+- [LOCAL] Modo replay del panel (/panel?modo=replay&station=&at=, opcion "Replay historico (IDEAM)"
+  del selector): ICA/semaforo con PM2.5 solamente, recomendacion, PM2.5 y prediccion a 4 y 5 h desde
+  /predictions/replay* (con ?buscar=siguiente salta a la siguiente hora con ventana completa y lo
+  avisa). PM10, temperatura y humedad: "no disponible en el historico". Play/Pausa (1 h cada 3, 1 o
+  6 s), banner fijo "REPLAY HISTORICO". En ese modo el panel no pide mediciones, alertas ni
+  suscripciones (verificado con el log de acceso: solo /panel, /devices y /predictions/replay*).
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base

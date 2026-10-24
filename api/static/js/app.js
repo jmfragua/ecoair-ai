@@ -1,10 +1,17 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
-import { mensajeError, periodoMetricas, vistaEstaciones, vistaMetricas, vistaReplay } from "./replay-vista.js";
+import {
+  OPCION_REPLAY, VELOCIDADES, avisoSalto, mensajeError, periodoMetricas, siguienteHora, urlModoReplay, urlModoVivo,
+  vistaActualReplay, vistaEstaciones, vistaMetricas, vistaReplay,
+} from "./replay-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
-const DEVICE = new URLSearchParams(location.search).get("device") || "ecoair-node-01";
+const PARAMS = new URLSearchParams(location.search);
+const DEVICE = PARAMS.get("device") || "ecoair-node-01";
+// Modo replay historico (?modo=replay): el panel se alimenta SOLO de /predictions/replay* (datos del
+// IDEAM en external_measurements). No consulta mediciones en vivo, alertas ni suscripciones.
+const MODO_REPLAY = PARAMS.get("modo") === "replay";
 const REFRESH_MS = 10_000;          // calidad actual, ultima medicion y alertas
 const HISTORY_REFRESH_MS = 60_000;  // la grafica usa intervalos de 5 min: basta cada minuto
 const FETCH_TIMEOUT_MS = 8_000;
@@ -591,37 +598,127 @@ async function refreshHistory() {
 
 // ---------- Replay historico ----------
 // Solo datos externos del IDEAM (datos.gov.co y SISAIRE) via /predictions/replay*: no usa las
-// mediciones del sensor propio, para que funcione con el hardware desconectado.
+// mediciones del sensor propio, para que funcione con el hardware desconectado. Siempre pide
+// buscar=siguiente: si a la hora elegida falta parte de la ventana, la API salta a la siguiente
+// hora valida y la tarjeta lo avisa.
+let replayTimer = null, replayVelocidad = VELOCIDADES[0].ms, metricasClave = "";
+
 async function cargarReplay() {
   const st = $("replay-estacion").value, at = $("replay-at").value;
-  if (!st || !at) return;
+  if (!st || !at) return false;
   $("replay-msg").textContent = "Calculando…";
+  let r;
   try {
-    const v = vistaReplay(await getJSON(`/predictions/replay?station=${encodeURIComponent(st)}&at=${encodeURIComponent(at)}`));
-    $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", {},
-      el("td", {}, f.horizonte), el("td", {}, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
-      el("td", {}, f.persistencia), el("td", {}, f.error))));
-    $("replay-msg").textContent = v.mensaje;
-    $("replay-ventana").textContent = v.ventana;
-    $("replay-fuentes").textContent = v.fuentes;
+    r = await getJSON(`/predictions/replay?station=${encodeURIComponent(st)}&at=${encodeURIComponent(at)}&buscar=siguiente`);
   } catch (e) {
     $("replay-filas").replaceChildren();
     $("replay-ventana").textContent = "";
     $("replay-msg").textContent = mensajeError(e.status, e.message);
+    return false;
   }
-  const per = periodoMetricas(at);
-  if (!per) return;
-  try {
-    $("replay-mae").textContent = vistaMetricas(await getJSON(
-      `/predictions/replay/metrics?station=${encodeURIComponent(st)}&desde=${per.desde}&hasta=${per.hasta}`));
-  } catch {
-    $("replay-mae").textContent = vistaMetricas(null);
+  if (r.at_local) $("replay-at").value = r.at_local;
+  const v = vistaReplay(r);
+  $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", {},
+    el("td", {}, f.horizonte), el("td", {}, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
+    el("td", {}, f.persistencia), el("td", {}, f.error))));
+  $("replay-msg").textContent = v.mensaje;
+  $("replay-ventana").textContent = v.ventana;
+  $("replay-fuentes").textContent = v.fuentes;
+  $("replay-salto").textContent = avisoSalto(r);
+  if (MODO_REPLAY) {
+    renderReplayPanel(r);
+    history.replaceState(null, "", urlModoReplay(location.href, st, r.at_local));
   }
+  const per = periodoMetricas(r.at_local || at);
+  const clave = per ? `${st}|${per.desde}|${per.hasta}` : "";
+  if (per && clave !== metricasClave) {        // el MAE del periodo solo se pide al cambiar de dia o estacion
+    metricasClave = clave;
+    try {
+      $("replay-mae").textContent = vistaMetricas(await getJSON(
+        `/predictions/replay/metrics?station=${encodeURIComponent(st)}&desde=${per.desde}&hasta=${per.hasta}`));
+    } catch {
+      metricasClave = "";
+      $("replay-mae").textContent = vistaMetricas(null);
+    }
+  }
+  return true;
+}
+
+// Panel principal en modo replay: ICA solo con PM2.5; PM10, temperatura y humedad no existen en el
+// historico importado (solo PM2.5): se dice, no se inventan.
+function renderReplayPanel(r) {
+  const a = vistaActualReplay(r);
+  if (!a) return;
+  const cat = CATS.find((c) => c.code === a.codigo) || CATS[0];
+  document.querySelector(".card--ica").classList.remove("is-nodata");
+  document.documentElement.style.setProperty("--cat", cat.color);
+  setNumber($("ica-value"), a.ica, 0);
+  setGauge(a.ica);
+  $("ica-cat").textContent = a.categoria;
+  $("gauge-label").textContent = `Medidor del ICA (solo PM2.5): ${a.ica}, categoría ${a.categoria}`;
+  $("ica-by").textContent = a.icaBy;
+  document.querySelector(".ica__base").textContent = a.base;
+  for (const li of $("ica-scale").children) {
+    if (li.dataset.code === cat.code) li.setAttribute("aria-current", "true"); else li.removeAttribute("aria-current");
+  }
+  setActiveBand(cat.code);
+  renderRec(a.recomendacion, a.categoria);
+
+  setNumber($("pm25-now"), a.pm25, 1);
+  setNumber($("pm25-1h"), a.pm25, 1);
+  $("pm25-lbl-l").textContent = "hora del histórico · media 1 h ";
+  $("pm25-lbl-s").textContent = "media 1 h ";
+  renderLimit("pm25", a.media24, { parcial: false, horas_con_datos: a.horas24 });
+
+  for (const id of ["pm10-now", "pm10-1h", "temp", "hum"]) { $(id).textContent = "—"; $(id).dataset.v = ""; }
+  $("pm10-lbl-l").textContent = `${a.noDisponible} · `;
+  $("pm10-lbl-s").textContent = `${a.noDisponible} · `;
+  renderLimit("pm10", null, null);
+  $("pm10-note").textContent = `PM10 ${a.noDisponible}`;
+  setRange("temp", null);
+  setRange("hum", null);
+  $("temp-state").textContent = a.noDisponible;
+  $("hum-state").textContent = a.noDisponible;
+  $("env-time").textContent = "Solo se importó PM2.5 de las estaciones del IDEAM.";
+
+  $("now-pm25").textContent = r.actual.pm25_1h == null ? "—" : Number(r.actual.pm25_1h).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  for (const id of ["now-pm10", "now-temp", "now-hum"]) $(id).textContent = "—";
+  $("now-ultima").textContent = `Hora del histórico: ${String(r.at_local).replace("T", " ")} (hora de Colombia) · PM10, temperatura y humedad: ${a.noDisponible}`;
+  $("now-aviso").hidden = true;
+  setStatus("replay", a.estado);
+  $("updated").textContent = `replay ${String(r.at_local).replace("T", " ")} (hora de Colombia)`;
+}
+
+function detenerReplay(msg) {
+  clearTimeout(replayTimer);
+  replayTimer = null;
+  $("replay-play").textContent = "▶ Play";
+  $("replay-play").setAttribute("aria-pressed", "false");
+  if (msg) $("replay-salto").textContent = msg;
+}
+
+async function pasoReplay() {
+  const sig = siguienteHora($("replay-at").value);
+  if (!sig) { detenerReplay(); return; }
+  $("replay-at").value = sig;
+  if (!(await cargarReplay())) { detenerReplay("Fin de los datos disponibles: el replay quedó en pausa."); return; }
+  if (replayTimer !== null) replayTimer = setTimeout(pasoReplay, replayVelocidad);
+}
+
+function alternarPlay() {
+  if (replayTimer !== null) { detenerReplay(); return; }
+  $("replay-play").textContent = "⏸ Pausa";
+  $("replay-play").setAttribute("aria-pressed", "true");
+  replayTimer = setTimeout(pasoReplay, replayVelocidad);
 }
 
 async function iniciarReplay() {
-  $("replay-form").addEventListener("submit", (ev) => { ev.preventDefault(); cargarReplay(); });
+  $("replay-velocidad").replaceChildren(...VELOCIDADES.map((v) => el("option", { value: String(v.ms) }, v.label)));
+  $("replay-velocidad").addEventListener("change", () => { replayVelocidad = Number($("replay-velocidad").value); });
+  $("replay-play").addEventListener("click", alternarPlay);
+  $("replay-form").addEventListener("submit", (ev) => { ev.preventDefault(); detenerReplay(); cargarReplay(); });
   $("replay-estacion").addEventListener("change", () => {
+    detenerReplay();
     const o = $("replay-estacion").selectedOptions[0];
     if (o && o.dataset.at) $("replay-at").value = o.dataset.at;
     cargarReplay();
@@ -629,13 +726,33 @@ async function iniciarReplay() {
   try {
     const v = vistaEstaciones(await getJSON("/predictions/replay/estaciones"));
     $("replay-estacion").replaceChildren(...v.opciones.map((o) => el("option", { value: o.value, "data-at": o.at }, o.label)));
-    $("replay-estacion").value = v.station;
-    $("replay-at").value = v.at;
+    const pedida = MODO_REPLAY && v.opciones.find((o) => o.value === PARAMS.get("station"));
+    $("replay-estacion").value = pedida ? pedida.value : v.station;
+    $("replay-at").value = (MODO_REPLAY && PARAMS.get("at")) || (pedida ? pedida.at : v.at);
     $("replay-msg").textContent = v.mensaje;
     await cargarReplay();
   } catch (e) {
     $("replay-msg").textContent = mensajeError(e.status, e.message);
   }
+}
+
+// Modo replay: nada en vivo (ni mediciones, ni grafica, ni alertas, ni suscripcion -> ningun correo).
+function iniciarModoReplay() {
+  document.body.classList.add("modo-replay");
+  $("replay-banner").hidden = false;
+  $("sim-banner").hidden = true;
+  $("sim-badge").hidden = true;
+  document.title = "REPLAY HISTÓRICO · EcoAir AI";
+  setStatus("replay", "Replay histórico");
+  $("alerts").replaceChildren();
+  $("alerts-count").textContent = "modo replay";
+  $("alerts-empty").hidden = false;
+  $("alerts-empty").textContent = "En modo replay histórico no se evalúan alertas ni se envían correos.";
+  $("chart-note").hidden = false;
+  $("chart-note").textContent = "La gráfica de 24 h usa las mediciones del sensor propio: no se muestra en modo replay.";
+  $("subs-form").hidden = true;
+  $("subs-form").after(el("p", { class: "empty" }, "En modo replay histórico no hay suscripciones ni se envían correos."));
+  iniciarReplay();
 }
 
 // ---------- Suscripcion por correo ----------
@@ -685,6 +802,7 @@ function initSubscriptionForm() {
 // una lectura simulada como si fuera del sensor real.
 let simDispositivo = false, simDatos = false;
 function setSimulacion() {
+  if (MODO_REPLAY) return;                 // el modo replay tiene su propio banner
   const sim = simDispositivo || simDatos;
   $("sim-badge").hidden = !sim;
   $("sim-banner").hidden = !sim;
@@ -705,13 +823,13 @@ async function loadDevices() {
       return o;
     });
     if (!lista.some((d) => d.device_id === DEVICE)) opciones.unshift(el("option", { value: DEVICE, selected: "" }, DEVICE));
+    opciones.push(el("option", { value: OPCION_REPLAY }, "Replay histórico (IDEAM)"));
+    if (MODO_REPLAY) for (const o of opciones) o.selected = o.value === OPCION_REPLAY;
     sel.replaceChildren(...opciones);
     setSimulacion();
   } catch { /* se queda el identificador */ }
   sel.addEventListener("change", () => {
-    const url = new URL(location.href);
-    url.searchParams.set("device", sel.value);
-    location.assign(url);
+    location.assign(sel.value === OPCION_REPLAY ? urlModoReplay(location.href) : urlModoVivo(location.href, sel.value));
   });
 }
 
@@ -719,9 +837,10 @@ function start() {
   initGauge();
   initRanges();
   initScaleToggle();
+  loadDevices();
+  if (MODO_REPLAY) { iniciarModoReplay(); return; }
   initSubscriptionForm();
   loadConsent();
-  loadDevices();
   // /panel#suscripcion: al cargar los datos cambia la altura de las tarjetas; se vuelve a llevar
   // la vista al ancla cuando termina la primera actualizacion.
   refresh().finally(() => { if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });

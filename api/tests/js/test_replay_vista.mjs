@@ -44,3 +44,25 @@ test("errores, periodo de 30 dias y metricas", () => {
     por_horizonte: [{ horizon_hours: 4, n: 50, mae_modelo: 6.123, mae_persistencia: 8.5 }] });
   assert.match(m, /4 h: modelo 6,12 frente a persistencia 8,50 µg\/m³ \(n = 50\)\. Pocas horas válidas/);
 });
+
+test("modo replay del panel: actual solo PM2.5, siguiente hora, salto y URLs", async () => {
+  const m = await import("../../static/js/replay-vista.js");
+  assert.equal(m.BANNER_REPLAY,
+    "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado.");
+  const a = m.vistaActualReplay({ at_local: "2026-09-30T12:00", actual: { pm25_1h: 21, media_24h: 23.5, horas_24h: 24,
+    ica: { ica: 70, category_code: "aceptable", category_name: "Aceptable" }, recomendacion: { efectos: "x" } } });
+  assert.equal(a.icaBy, "ICA con PM2.5 solamente");
+  assert.deepEqual([a.ica, a.codigo, a.pm25, a.media24, a.noDisponible], [70, "aceptable", 21, 23.5, "no disponible en el histórico"]);
+  assert.equal(a.estado, "Replay histórico · 2026-09-30 12:00");
+  assert.equal(m.vistaActualReplay({}), null);
+  assert.equal(m.siguienteHora("2026-09-30T23:00"), "2026-10-01T00:00");
+  assert.equal(m.siguienteHora("x"), null);
+  assert.match(m.avisoSalto({ at_local: "2026-09-30T15:00", salto: { pedida_local: "2026-09-30T13:00", horas: 2 } }),
+    /Faltaban horas en la ventana de 2026-09-30 13:00: se saltó 2 h hasta 2026-09-30 15:00/);
+  assert.equal(m.avisoSalto({}), "");
+  const r = new URL(m.urlModoReplay("http://x/panel?device=ecoair-node-01", "29509", "2026-09-30T12:00"));
+  assert.deepEqual([r.searchParams.get("modo"), r.searchParams.get("device"), r.searchParams.get("station")], ["replay", null, "29509"]);
+  const v = new URL(m.urlModoVivo(r.toString(), "ecoair-node-01"));
+  assert.deepEqual([v.searchParams.get("modo"), v.searchParams.get("at"), v.searchParams.get("device")], [null, null, "ecoair-node-01"]);
+  assert.equal(m.VELOCIDADES[0].ms, 3000);
+});

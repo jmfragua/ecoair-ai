@@ -70,3 +70,60 @@ export function vistaMetricas(m) {
   const base = `MAE del ${m.desde} al ${m.hasta}: ` + (partes.length ? partes.join(" · ") : "sin horas válidas");
   return m.estado === "ok" ? base : `${base}. ${m.mensaje || ""}`.trim();
 }
+
+// ---------- Modo replay del panel principal ----------
+export const BANNER_REPLAY =
+  "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado.";
+export const NO_DISPONIBLE = "no disponible en el histórico";
+export const OPCION_REPLAY = "__replay__";
+export const VELOCIDADES = [
+  { ms: 3000, label: "1 h cada 3 s" },
+  { ms: 1000, label: "1 h cada 1 s" },
+  { ms: 6000, label: "1 h cada 6 s" },
+];
+
+// Bloque "actual" de /predictions/replay -> lo que muestra el panel principal (solo PM2.5).
+export function vistaActualReplay(r) {
+  const a = r && r.actual;
+  if (!a || !a.ica || typeof a.ica.ica !== "number") return null;
+  return {
+    ica: a.ica.ica, codigo: a.ica.category_code, categoria: a.ica.category_name,
+    icaBy: "ICA con PM2.5 solamente",
+    base: "Media de la hora de PM2.5 (dato histórico del IDEAM) · Res. 2254/2017",
+    pm25: a.pm25_1h, media24: a.media_24h, horas24: a.horas_24h,
+    recomendacion: a.recomendacion || null,
+    estado: `Replay histórico · ${local(r.at_local)}`,
+    noDisponible: NO_DISPONIBLE,
+  };
+}
+
+// "2026-09-30T12:00" + 1 h (hora de Colombia, sin cambio de horario) -> "2026-09-30T13:00".
+export function siguienteHora(atLocal) {
+  const t = String(atLocal).slice(0, 16);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t)) return null;
+  const d = new Date(`${t}:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Date(d.getTime() + 3_600_000).toISOString().slice(0, 16);
+}
+
+export function avisoSalto(r) {
+  const s = r && r.salto;
+  if (!s) return "";
+  return `Faltaban horas en la ventana de ${local(s.pedida_local)}: se saltó ${s.horas} h hasta ${local(r.at_local)}.`;
+}
+
+export function urlModoReplay(href, station, at) {
+  const u = new URL(href);
+  u.searchParams.set("modo", "replay");
+  u.searchParams.delete("device");
+  if (station) u.searchParams.set("station", station);
+  if (at) u.searchParams.set("at", at);
+  return u.toString();
+}
+
+export function urlModoVivo(href, device) {
+  const u = new URL(href);
+  for (const k of ["modo", "station", "at"]) u.searchParams.delete(k);
+  u.searchParams.set("device", device);
+  return u.toString();
+}

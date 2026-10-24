@@ -15,6 +15,8 @@ shared/limpieza_pm25.py y calcula todo al vuelo. Nunca escribe en la base ni gua
 import math
 from datetime import date, datetime, time, timedelta, timezone
 
+from ica import calcular_ica
+from recomendaciones import recomendacion
 from shared import prediccion as pr
 from shared.limpieza_pm25 import limpiar
 
@@ -27,6 +29,9 @@ AVISO_REPLAY = ("Replay histórico con datos de estaciones de referencia del IDE
 AT_POR_DEFECTO = datetime(2026, 9, 30, 12, 0, tzinfo=COLOMBIA)
 MAX_DIAS_METRICAS = 366
 MIN_HORAS_METRICAS = 168          # menos que esto: se avisa que hay pocas horas validas
+MAX_SALTO_HORAS = 7 * 24          # buscar=siguiente: hasta 7 dias hacia adelante
+LIMITE_DIARIO_PM25 = 37           # Res. 2254/2017, ug/m3 (24 h)
+NO_DISPONIBLE = "no disponible en el histórico"
 
 # Estaciones fisicas -> sus nombres en cada fuente (tal como los guardan los importadores).
 # 31366 (Fernando Botero): sus filas IDEAM de 2020-2023 son incoherentes (excluida de v4); el replay
@@ -152,13 +157,40 @@ def calcular_replay(codigo, serie, fuentes, modelo, at):
                       "observed_pm25": _r(obs),
                       "error_modelo": None if obs is None else _r(pred - obs, 2),
                       "error_persistencia": None if obs is None else _r(pers - obs, 2)})
+    ica = calcular_ica("pm25", pers)
+    actual = {"pm25_1h": _r(pers), "media_24h": _r(x["media_24h"]), "horas_24h": x["horas_24h"],
+              "limite_diario_pm25": LIMITE_DIARIO_PM25,
+              "ica": {"ica": ica["ica"], "category_code": ica["category_code"], "category_name": ica["category_name"],
+                      "color": ica["color"], "solo_pm25": True,
+                      "base": "ICA con PM2.5 solamente · media de la hora que termina en 'at' (indicativo)"},
+              "recomendacion": recomendacion(ica["category_code"]),
+              "no_disponibles": {"pm10": NO_DISPONIBLE, "temperature": NO_DISPONIBLE, "humidity": NO_DISPONIBLE}}
     return {"station": codigo, "nombre": ESTACIONES[codigo]["nombre"], "at_local": at.strftime("%Y-%m-%dT%H:%M"),
             "at_utc": at.astimezone(timezone.utc).isoformat(), "modelo": modelo.get("nombre"),
             "fuentes": fuentes, "aviso": AVISO_REPLAY, "aviso_modelo": modelo.get("aviso_publico"),
             "ventana": {"h1_a_h6": [_r(serie.get(t_idx - k)) for k in range(pr.V4_HORAS_LAGS)],
                         "media_6h": _r(x["media_6h"]), "media_24h": _r(x["media_24h"]), "horas_24h": x["horas_24h"]},
-            "predicciones": preds,
+            "predicciones": preds, "actual": actual,
             "nota": "Valores en ug/m3. Hora objetivo = fin de la hora (Colombia). Persistencia = media de la hora que termina en 'at'."}
+
+
+def calcular_replay_siguiente(codigo, serie, fuentes, modelo, at, max_horas=MAX_SALTO_HORAS):
+    """Como calcular_replay, pero si la ventana de 'at' esta incompleta salta a la siguiente hora valida
+    (hasta max_horas). La respuesta lleva 'salto' con la hora pedida, cuantas horas se saltaron y el motivo."""
+    try:
+        return calcular_replay(codigo, serie, fuentes, modelo, at)
+    except ReplayError as e:
+        motivo = str(e)
+    for k in range(1, max_horas + 1):
+        t = at + timedelta(hours=k)
+        try:
+            r = calcular_replay(codigo, serie, fuentes, modelo, t)
+        except ReplayError:
+            continue
+        r["salto"] = {"pedida_local": at.strftime("%Y-%m-%dT%H:%M"), "horas": k, "motivo": motivo}
+        return r
+    raise ReplayError(f"No hay horas con ventana completa en las {max_horas} horas siguientes a "
+                      f"{at.strftime('%Y-%m-%d %H:%M')} ({motivo})")
 
 
 def rango_periodo(desde, hasta):

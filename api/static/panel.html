@@ -45,6 +45,10 @@
     No son mediciones de un sensor real.
   </div>
 
+  <div id="replay-banner" class="sim-banner replay-banner" role="note" hidden>
+    <strong>REPLAY HISTÓRICO</strong> · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado.
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <main id="principal" class="grid">
@@ -222,8 +226,14 @@
           <label for="replay-at">Fecha y hora (Colombia)</label>
           <input id="replay-at" type="datetime-local" step="3600">
         </div>
-        <button class="btn" type="submit">Ver</button>
+        <button class="btn" type="submit">Ir a la fecha</button>
+        <div class="replay__play">
+          <button class="btn btn--ghost" type="button" id="replay-play" aria-pressed="false">▶ Play</button>
+          <label class="sr-only" for="replay-velocidad">Velocidad</label>
+          <select id="replay-velocidad"></select>
+        </div>
       </form>
+      <p class="replay__salto" id="replay-salto" role="status" aria-live="polite"></p>
       <p class="replay__msg" id="replay-msg" role="status" aria-live="polite">Consultando las estaciones…</p>
       <div class="table-wrap">
         <table class="replay__tabla">

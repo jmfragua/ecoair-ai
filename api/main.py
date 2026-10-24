@@ -519,7 +519,9 @@ async def replay_estaciones():
 
 
 @app.get("/predictions/replay")
-async def replay_prediccion(station: str, at: str):
+async def replay_prediccion(station: str, at: str, buscar: Optional[Literal["siguiente"]] = None):
+    """?buscar=siguiente: si a esa hora la ventana esta incompleta, salta a la siguiente hora valida
+    (hasta 7 dias) y lo indica en 'salto'. Sin buscar, una ventana incompleta es un 422 con el motivo."""
     station = _estacion_replay(station)
     try:
         t = replay.parsear_at(at)
@@ -527,8 +529,11 @@ async def replay_prediccion(station: str, at: str):
         raise HTTPException(status_code=422, detail=str(e))
     modelo = _modelo_replay()
     t_utc = t.astimezone(timezone.utc)
-    serie, fuentes = await _serie_replay(station, t_utc - timedelta(hours=25), t_utc + timedelta(hours=6))
+    extra = timedelta(hours=replay.MAX_SALTO_HORAS if buscar else 0)
+    serie, fuentes = await _serie_replay(station, t_utc - timedelta(hours=25), t_utc + extra + timedelta(hours=6))
     try:
+        if buscar:
+            return replay.calcular_replay_siguiente(station, serie, fuentes, modelo, t)
         return replay.calcular_replay(station, serie, fuentes, modelo, t)
     except replay.ReplayError as e:
         raise HTTPException(status_code=422, detail=str(e))
