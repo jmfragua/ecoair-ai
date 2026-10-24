@@ -48,7 +48,7 @@ test("errores, periodo de 30 dias y metricas", () => {
 test("modo replay del panel: actual solo PM2.5, siguiente hora, salto y URLs", async () => {
   const m = await import("../../static/js/replay-vista.js");
   assert.equal(m.BANNER_REPLAY,
-    "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado.");
+    "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada.");
   const a = m.vistaActualReplay({ at_local: "2026-09-30T12:00", actual: { pm25_1h: 21, media_24h: 23.5, horas_24h: 24,
     ica: { ica: 70, category_code: "aceptable", category_name: "Aceptable" }, recomendacion: { efectos: "x" } } });
   assert.equal(a.icaBy, "ICA con PM2.5 solamente");

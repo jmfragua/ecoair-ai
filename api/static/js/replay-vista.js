@@ -73,7 +73,7 @@ export function vistaMetricas(m) {
 
 // ---------- Modo replay del panel principal ----------
 export const BANNER_REPLAY =
-  "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado.";
+  "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada.";
 export const NO_DISPONIBLE = "no disponible en el histórico";
 export const OPCION_REPLAY = "__replay__";
 export const VELOCIDADES = [

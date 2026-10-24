@@ -235,7 +235,8 @@ def test_panel_modo_replay_banner_y_sin_consultas_en_vivo():
     html = client.get("/panel").text
     banner = html[html.index('id="replay-banner"'):]
     banner = banner[:banner.index("</div>")]
-    assert "REPLAY HISTÓRICO</strong> · datos reales del IDEAM de una fecha pasada. No es en vivo ni un equipo certificado." in banner
+    assert "REPLAY HISTÓRICO</strong> · datos reales del IDEAM de una fecha pasada." in banner
+    assert "No es en vivo" not in banner and "certificado" not in banner
     assert 'class="sim-banner replay-banner"' in html
     for id_ in ("replay-play", "replay-velocidad", "replay-salto"):
         assert f'id="{id_}"' in html
