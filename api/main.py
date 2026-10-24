@@ -546,6 +546,27 @@ async def replay_prediccion(station: str, at: str, buscar: Optional[Literal["sig
         raise HTTPException(status_code=422, detail=str(e))
 
 
+@app.get("/predictions/replay/serie")
+async def replay_serie(station: str, at: str, horas: int = 24, horizonte: int = 4):
+    """Real frente a predicho (y persistencia) por hora objetivo, para la grafica del replay. Una sola
+    consulta amplia de external_measurements; maximo 168 horas."""
+    station = _estacion_replay(station)
+    if horas not in replay.SERIE_HORAS or horizonte not in replay.SERIE_HORIZONTES:
+        raise HTTPException(status_code=422, detail=f"horas debe ser {replay.SERIE_HORAS} y horizonte {replay.SERIE_HORIZONTES}")
+    try:
+        t = replay.parsear_at(at)
+    except replay.ReplayError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    modelo = _modelo_replay()
+    t_utc = t.astimezone(timezone.utc)
+    serie, fuentes = await _serie_replay(station, t_utc - timedelta(hours=horas + 24),
+                                         t_utc + timedelta(hours=horizonte))
+    try:
+        return replay.calcular_serie(station, serie, fuentes, modelo, t, horas, horizonte)
+    except replay.ReplayError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
 @app.get("/predictions/replay/metrics")
 async def replay_metricas(station: str, desde: date, hasta: date):
     station = _estacion_replay(station)

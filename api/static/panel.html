@@ -242,6 +242,30 @@
           <tbody id="replay-filas"></tbody>
         </table>
       </div>
+      <div class="replay__grafica">
+        <div class="replay__gctrl">
+          <div class="field">
+            <label for="replay-rango">Rango</label>
+            <select id="replay-rango"></select>
+          </div>
+          <div class="field">
+            <label for="replay-horizonte">Horizonte</label>
+            <select id="replay-horizonte"></select>
+          </div>
+        </div>
+        <ul class="legend replay__leyenda" aria-label="Leyenda de la gráfica">
+          <li><svg class="rkey" viewBox="0 0 24 8" aria-hidden="true"><line class="r-real" x1="1" y1="4" x2="23" y2="4"/></svg>Real (línea continua)</li>
+          <li><svg class="rkey" viewBox="0 0 24 8" aria-hidden="true"><line class="r-pred" x1="1" y1="4" x2="23" y2="4"/></svg>Predicho (rayas)</li>
+          <li><svg class="rkey" viewBox="0 0 24 8" aria-hidden="true"><line class="r-pers" x1="1" y1="4" x2="23" y2="4"/></svg>Persistencia (puntos)</li>
+          <li><svg class="rkey" viewBox="0 0 24 8" aria-hidden="true"><line class="r-ahora" x1="12" y1="0" x2="12" y2="8"/></svg>Hora del replay</li>
+        </ul>
+        <div class="chart replay__chart" id="replay-chart" tabindex="0" role="img"
+             aria-label="PM2.5 real frente a predicho por hora objetivo, hora de Colombia, en µg/m³">
+          <svg id="replay-svg" class="chart__svg replay__svg" aria-hidden="true"></svg>
+          <div id="replay-tip" class="tip" hidden></div>
+        </div>
+        <p class="replay__src" id="replay-gmet"></p>
+      </div>
       <p class="replay__src" id="replay-ventana"></p>
       <p class="replay__src" id="replay-mae"></p>
       <p class="replay__src" id="replay-fuentes"></p>

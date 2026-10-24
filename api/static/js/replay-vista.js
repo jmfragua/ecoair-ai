@@ -127,3 +127,54 @@ export function urlModoVivo(href, device) {
   u.searchParams.set("device", device);
   return u.toString();
 }
+
+// ---------- Grafica real frente a predicho (/predictions/replay/serie) ----------
+export const RANGOS = [{ horas: 24, label: "24 h" }, { horas: 72, label: "72 h" }, { horas: 168, label: "7 días" }];
+export const HORIZONTES_GRAFICA = [4, 5];
+
+// Tramos de indices consecutivos con valor (null corta el tramo: los huecos no se conectan).
+export function tramos(valores) {
+  const out = [];
+  let ini = null;
+  valores.forEach((v, i) => {
+    const hay = typeof v === "number" && Number.isFinite(v);
+    if (hay && ini === null) ini = i;
+    if (!hay && ini !== null) { out.push([ini, i - 1]); ini = null; }
+  });
+  if (ini !== null) out.push([ini, valores.length - 1]);
+  return out;
+}
+
+// Path SVG por tramos + indices aislados (tramos de 1 punto, que se dibujan como marca).
+export function pathTramos(valores, x, y) {
+  let d = "";
+  const aislados = [];
+  for (const [a, b] of tramos(valores)) {
+    if (a === b) { aislados.push(a); continue; }
+    for (let i = a; i <= b; i++) d += `${i === a ? "M" : "L"}${x(i).toFixed(1)},${y(valores[i]).toFixed(1)}`;
+  }
+  return { d, aislados };
+}
+
+// "2026-09-30T16:00" (hora de Colombia) -> milisegundos UTC
+export function msLocal(t) {
+  return new Date(`${String(t).slice(0, 16)}:00-05:00`).getTime();
+}
+
+export function textoMetricasSerie(r) {
+  const m = r && r.metricas;
+  if (!m) return "";
+  if (!m.n) return `Sin horas con valor real y predicho en el rango (n = 0).`;
+  const rango = (RANGOS.find((x) => x.horas === r.horas) || {}).label || `${r.horas} h`;
+  return `Últimas ${rango}, a ${r.horizonte} h: MAE modelo ${num(m.mae_modelo, 2)} (RMSE ${num(m.rmse_modelo, 2)}) frente a ` +
+         `persistencia ${num(m.mae_persistencia, 2)} (RMSE ${num(m.rmse_persistencia, 2)}) µg/m³, con n = ${m.n} horas.`;
+}
+
+export function filasTooltip(p) {
+  const v = (x) => (x == null ? "sin dato" : `${num(x)} µg/m³`);
+  return {
+    titulo: `${local(p.target_local)} (hora objetivo, Colombia)`,
+    filas: [["Real", v(p.real)], ["Predicho", v(p.predicho)], ["Persistencia", v(p.persistencia)]],
+    emision: `emitida ${local(p.emision_local)}`,
+  };
+}

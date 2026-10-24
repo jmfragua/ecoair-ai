@@ -45,7 +45,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ~118 MiB activo (+64 MiB). Imagen del alerter 318 -> 531 MB (scikit-learn + scipy). Con un fallo
   inyectado (PM2.5 = 700) abrió isolation_forest (info, variable principal pm25_std_10); durante un
   episodio suave de 110 µg/m³ NO marcó anomalía (el entrenamiento ya tenía episodios así).
-- [TESTS] 127 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
+- [TESTS] 132 tests de la API (incluyen los de node de api/tests/js/), 47 del alerter, 48 del
   notifier, 13 del ingestor, 60 de ai/ y 145 de db/ + shared/ + tools/.
 - [LOCAL] Replay historico (api/replay.py): /predictions/replay, /predictions/replay/metrics y
   /predictions/replay/estaciones aplican v4 SOLO con external_measurements (IDEAM datos.gov.co +
@@ -58,6 +58,10 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   avisa). PM10, temperatura y humedad: "no disponible en el historico". Play/Pausa (1 h cada 3, 1 o
   6 s), banner fijo "REPLAY HISTORICO". En ese modo el panel no pide mediciones, alertas ni
   suscripciones (verificado con el log de acceso: solo /panel, /devices y /predictions/replay*).
+- [LOCAL] Grafica real vs predicho del replay: /predictions/replay/serie?station=&at=&horas=24|72|168&
+  horizonte=4|5 (una consulta de external_measurements; por hora objetivo; null sin ventana o sin real,
+  nada interpolado; MAE/RMSE de modelo y persistencia con n). SVG propio en la tarjeta: real continua,
+  predicho a rayas, persistencia punteada gris, huecos sin unir, marca "ahora", tooltip con raton o toque.
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base

@@ -424,6 +424,23 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .replay__salto:empty { display: none; }
 .replay__nodisp { color: var(--muted); font-size: .8rem; }
 .subs[hidden] { display: none; }
+/* Grafica real vs predicho del replay: la distincion no depende solo del color (continua / rayas / puntos) */
+.replay__grafica { margin-top: 12px; }
+.replay__gctrl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+.replay__gctrl .field { display: grid; gap: 4px; min-width: 0; }
+.replay__leyenda { margin: 4px 0 2px; }
+.rkey { width: 24px; height: 8px; flex: none; }
+.replay__svg { height: 240px; }
+.r-real { fill: none; stroke: var(--series-pm25); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.r-pred { fill: none; stroke: var(--series-pm10); stroke-width: 2; stroke-dasharray: 6 4; stroke-linecap: butt; }
+.r-pers { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 1.5 4; stroke-linecap: round; opacity: .8; }
+.r-ahora { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.r-ahora-txt { fill: var(--text); font-size: 11px; font-weight: 700; }
+.r-dot-real { fill: var(--series-pm25); }
+.r-dot-pred { fill: var(--surface); stroke: var(--series-pm10); stroke-width: 2; }
+.r-dot-pers { fill: var(--muted); }
+.r-guia { stroke: var(--text-2); stroke-width: 1; opacity: .5; }
+.r-unidad { fill: var(--muted); font-size: 11px; }
 @media (min-width: 600px) { .replay__form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; } }
 .replay__msg { color: var(--text-2); font-size: .9rem; margin: 6px 0; }
 .replay__msg:empty, .replay__src:empty { display: none; }

@@ -193,6 +193,50 @@ def calcular_replay_siguiente(codigo, serie, fuentes, modelo, at, max_horas=MAX_
                       f"{at.strftime('%Y-%m-%d %H:%M')} ({motivo})")
 
 
+SERIE_HORAS = (24, 72, 168)
+SERIE_HORIZONTES = (4, 5)
+
+
+def calcular_serie(codigo, serie, fuentes, modelo, at, horas, horizonte):
+    """Real frente a predicho para la grafica del replay.
+
+    Para cada emision t en (at - horas, at] (horas en punto de Colombia) calcula la prediccion a
+    'horizonte' horas y la indexa por la hora objetivo t + horizonte. predicho = None si la ventana de
+    t esta incompleta; real = None si no hay dato en la hora objetivo; persistencia = valor de la hora
+    t (None si falta). Nada se interpola. Las metricas usan solo las horas con real Y predicho.
+    """
+    if horas not in SERIE_HORAS:
+        raise ReplayError(f"horas debe ser una de {SERIE_HORAS}")
+    h_min = horizonte * 60
+    if horizonte not in SERIE_HORIZONTES or h_min not in horizontes_visibles(modelo):
+        raise ReplayError(f"horizonte debe ser uno de los visibles: {SERIE_HORIZONTES}")
+    c = float(modelo["c"])
+    t_fin = hora_idx(at)
+    puntos, em, ep = [], [], []
+    for t_idx in range(t_fin - horas + 1, t_fin + 1):
+        obj = t_idx + horizonte
+        x = pr.variables_v4_desde([serie.get(t_idx - k) for k in range(pr.V4_HORAS_MEDIA)], t_idx * 60, c)
+        pred = None if x is None else pr.predecir_horizonte(modelo, x, h_min)
+        real, pers = serie.get(obj), serie.get(t_idx)
+        puntos.append({"target_local": de_idx(obj).astimezone(COLOMBIA).strftime("%Y-%m-%dT%H:%M"),
+                       "emision_local": de_idx(t_idx).astimezone(COLOMBIA).strftime("%Y-%m-%dT%H:%M"),
+                       "predicho": _r(pred), "real": _r(real), "persistencia": _r(pers)})
+        if pred is not None and real is not None and pers is not None:
+            em.append(pred - real)
+            ep.append(pers - real)
+    n = len(em)
+    met = {"n": n}
+    if n:
+        met.update({"mae_modelo": round(sum(map(abs, em)) / n, 3), "rmse_modelo": round(math.sqrt(sum(e * e for e in em) / n), 3),
+                    "mae_persistencia": round(sum(map(abs, ep)) / n, 3),
+                    "rmse_persistencia": round(math.sqrt(sum(e * e for e in ep) / n), 3)})
+    return {"station": codigo, "nombre": ESTACIONES[codigo]["nombre"], "at_local": at.strftime("%Y-%m-%dT%H:%M"),
+            "horas": horas, "horizonte": horizonte, "modelo": modelo.get("nombre"), "fuentes": fuentes,
+            "puntos": puntos, "metricas": met, "aviso": AVISO_REPLAY,
+            "nota": ("Indexado por la hora objetivo (emision + horizonte), hora de Colombia, ug/m3. "
+                     "null = sin ventana completa o sin dato real; nada se interpola. Metricas solo con real y predicho.")}
+
+
 def rango_periodo(desde, hasta):
     """Fechas locales inclusive -> (emision_inicial, emision_final) en hora de Colombia. ReplayError si no vale."""
     if hasta < desde:

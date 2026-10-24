@@ -66,3 +66,19 @@ test("modo replay del panel: actual solo PM2.5, siguiente hora, salto y URLs", a
   assert.deepEqual([v.searchParams.get("modo"), v.searchParams.get("at"), v.searchParams.get("device")], [null, null, "ecoair-node-01"]);
   assert.equal(m.VELOCIDADES[0].ms, 3000);
 });
+
+test("grafica: tramos con huecos sin conectar, aislados, metricas y tooltip", async () => {
+  const m = await import("../../static/js/replay-vista.js");
+  assert.deepEqual(m.tramos([1, 2, null, 3, null, null, 4, 5, 6]), [[0, 1], [3, 3], [6, 8]]);
+  assert.deepEqual(m.tramos([null, null]), []);
+  const p = m.pathTramos([10, 20, null, 5, 7, 8], (i) => i * 10, (v) => 100 - v);
+  assert.equal(p.d, "M0.0,90.0L10.0,80.0M30.0,95.0L40.0,93.0L50.0,92.0");     // dos tramos, sin unir el hueco
+  assert.deepEqual(m.pathTramos([null, 4, null], (i) => i, (v) => v).aislados, [1]);
+  assert.equal(m.msLocal("2026-09-30T16:00"), Date.parse("2026-09-30T21:00:00Z"));
+  const t = m.textoMetricasSerie({ horas: 168, horizonte: 4, metricas: { n: 120, mae_modelo: 7.1, rmse_modelo: 9, mae_persistencia: 10.2, rmse_persistencia: 13 } });
+  assert.match(t, /Últimas 7 días, a 4 h: MAE modelo 7,10 \(RMSE 9,00\) frente a persistencia 10,20 \(RMSE 13,00\) µg\/m³, con n = 120 horas/);
+  assert.match(m.textoMetricasSerie({ horas: 24, horizonte: 5, metricas: { n: 0 } }), /n = 0/);
+  const tip = m.filasTooltip({ target_local: "2026-09-30T16:00", emision_local: "2026-09-30T12:00", real: null, predicho: 20.7, persistencia: 21 });
+  assert.deepEqual(tip.filas, [["Real", "sin dato"], ["Predicho", "20,7 µg/m³"], ["Persistencia", "21,0 µg/m³"]]);
+  assert.match(tip.titulo, /2026-09-30 16:00 \(hora objetivo, Colombia\)/);
+});

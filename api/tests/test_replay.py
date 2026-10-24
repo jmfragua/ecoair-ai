@@ -181,7 +181,9 @@ def test_replay_no_lee_ni_escribe_measurements_ni_predictions(registro):
     for url in ("/predictions/replay/estaciones", "/predictions/replay?station=29509&at=2026-09-30T12:00",
                 "/predictions/replay/metrics?station=29509&desde=2026-09-01&hasta=2026-09-30",
                 "/predictions/replay?station=29509&at=2026-01-01T12:00",
-                "/predictions/replay?station=29509&at=2026-09-29T07:00&buscar=siguiente"):
+                "/predictions/replay?station=29509&at=2026-09-29T07:00&buscar=siguiente",
+                "/predictions/replay/serie?station=29509&at=2026-09-30T12:00&horas=168&horizonte=5",
+                "/predictions/replay/serie?station=29509&at=2026-09-30T12:00&horas=24&horizonte=4"):
         client.get(url)
     assert registro.sql, "no se registro ninguna consulta"
     for sql in registro.sql:
@@ -252,3 +254,61 @@ def test_panel_modo_replay_banner_y_sin_consultas_en_vivo():
 def test_formulario_de_suscripcion_se_oculta_de_verdad():
     css = client.get("/css/app.css").text
     assert ".subs[hidden] { display: none; }" in css     # .subs usa display: grid, que anula [hidden]
+
+
+
+# ---------- Grafica real frente a predicho (/predictions/replay/serie) ----------
+
+def test_serie_indexada_por_hora_objetivo_con_huecos_null_y_metricas():
+    # sin T-3 (hueco en la serie): las emisiones T-3 .. T+2 no tienen las 6 previas completas
+    serie, f = rp.serie_limpia(filas_serie(rp.de_idx(T - 60), rp.de_idx(T + 2), saltar={T - 3}))
+    r = rp.calcular_serie("29509", serie, f, MODELO, AT, 24, 4)
+    pts = r["puntos"]
+    assert len(pts) == 24 and pts[-1]["emision_local"] == "2026-09-30T12:00" and pts[-1]["target_local"] == "2026-09-30T16:00"
+    por_emision = {p["emision_local"]: p for p in pts}
+    hueco = por_emision["2026-09-30T09:00"]                       # emision T-3: su h1 falta
+    assert hueco["predicho"] is None and hueco["persistencia"] is None
+    assert por_emision["2026-09-30T11:00"]["predicho"] is None   # T-1: falta T-3 entre sus 6 previas
+    assert por_emision["2026-09-30T12:00"]["real"] is None       # objetivo T+4 > fin de la serie (T+2)
+    completos = [p for p in pts if p["predicho"] is not None and p["real"] is not None and p["persistencia"] is not None]
+    assert r["metricas"]["n"] == len(completos) > 0
+    mae = sum(abs(p["predicho"] - p["real"]) for p in completos) / len(completos)
+    assert abs(r["metricas"]["mae_modelo"] - mae) < 0.06            # redondeo de los valores a 0,1
+    assert r["aviso"] == rp.AVISO_REPLAY
+
+
+def test_serie_parametros_invalidos():
+    serie, f = rp.serie_limpia(FILAS)
+    with pytest.raises(rp.ReplayError, match="horas"):
+        rp.calcular_serie("29509", serie, f, MODELO, AT, 48, 4)
+    with pytest.raises(rp.ReplayError, match="horizonte"):
+        rp.calcular_serie("29509", serie, f, MODELO, AT, 24, 3)       # 3 h no es visible
+
+
+def test_ruta_serie(registro):
+    r = client.get("/predictions/replay/serie?station=29509&at=2026-09-30T12:00&horas=24&horizonte=5")
+    assert r.status_code == 200 and len(r.json()["puntos"]) == 24 and r.json()["horizonte"] == 5
+    consultas_serie = [q for q in registro.sql if "SELECT source, station, measured_at, pm25" in q]
+    assert len(consultas_serie) == 1                                   # una sola consulta amplia
+    for q, codigo in (("horas=48", 422), ("horizonte=3", 422), ("at=2026-09-30T12:30", 422)):
+        url = "/predictions/replay/serie?station=29509&at=2026-09-30T12:00&horas=24&horizonte=4"
+        clave = q.split("=")[0]
+        url = re.sub(rf"{clave}=[^&]+", q, url)
+        assert client.get(url).status_code == codigo, url
+    assert client.get("/predictions/replay/serie?station=99999&at=2026-09-30T12:00").status_code == 404
+
+
+def test_ruta_serie_503(monkeypatch):
+    monkeypatch.setattr(main, "query", Registro(falta_tabla=True).query)
+    assert client.get("/predictions/replay/serie?station=29509&at=2026-09-30T12:00").status_code == 503
+
+
+def test_panel_grafica_replay_markup():
+    html = client.get("/panel").text
+    tarjeta = html[html.index('class="card card--replay"'):html.index("<!-- Suscripcion por correo -->")]
+    for id_ in ("replay-rango", "replay-horizonte", "replay-chart", "replay-svg", "replay-tip", "replay-gmet"):
+        assert f'id="{id_}"' in tarjeta
+    assert "Real (línea continua)" in tarjeta and "Predicho (rayas)" in tarjeta and "Persistencia (puntos)" in tarjeta
+    assert "No es un pronóstico en tiempo real" in tarjeta
+    css = client.get("/css/app.css").text
+    assert "stroke-dasharray: 6 4" in css and "stroke-dasharray: 1.5 4" in css     # no solo color

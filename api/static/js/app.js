@@ -1,7 +1,8 @@
 // EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
 import {
-  OPCION_REPLAY, VELOCIDADES, avisoSalto, mensajeError, periodoMetricas, siguienteHora, urlModoReplay, urlModoVivo,
-  vistaActualReplay, vistaEstaciones, vistaMetricas, vistaReplay,
+  HORIZONTES_GRAFICA, OPCION_REPLAY, RANGOS, VELOCIDADES, avisoSalto, filasTooltip, mensajeError, msLocal, pathTramos,
+  periodoMetricas, siguienteHora, textoMetricasSerie, urlModoReplay, urlModoVivo, vistaActualReplay, vistaEstaciones,
+  vistaMetricas, vistaReplay,
 } from "./replay-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
@@ -602,6 +603,112 @@ async function refreshHistory() {
 // buscar=siguiente: si a la hora elegida falta parte de la ventana, la API salta a la siguiente
 // hora valida y la tarjeta lo avisa.
 let replayTimer = null, replayVelocidad = VELOCIDADES[0].ms, metricasClave = "";
+let replaySerie = null, replayGeom = null;
+
+// ---- Grafica real frente a predicho (/predictions/replay/serie), SVG propio ----
+async function cargarSerieReplay(at) {
+  const st = $("replay-estacion").value;
+  if (!st || !at) return;
+  const url = `/predictions/replay/serie?station=${encodeURIComponent(st)}&at=${encodeURIComponent(at)}` +
+              `&horas=${$("replay-rango").value}&horizonte=${$("replay-horizonte").value}`;
+  try {
+    renderSerieReplay(await getJSON(url));
+  } catch (e) {
+    replaySerie = null;
+    $("replay-svg").replaceChildren();
+    $("replay-gmet").textContent = mensajeError(e.status, e.message);
+  }
+}
+
+function renderSerieReplay(r) {
+  replaySerie = r;
+  const svg = $("replay-svg"), box = $("replay-chart");
+  const W = svg.clientWidth || box.clientWidth || 600, H = svg.clientHeight || 240;
+  const M = { l: 36, r: 10, t: 18, b: 34 };
+  const iw = Math.max(10, W - M.l - M.r), ih = Math.max(10, H - M.t - M.b);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.replaceChildren();
+  const pts = r.puntos || [];
+  const n = pts.length;
+  const ts = pts.map((p) => msLocal(p.target_local));
+  const t0 = ts[0], t1 = ts[n - 1] ?? t0 + 3_600_000;
+  const valores = (k) => pts.map((p) => (p[k] == null ? null : Number(p[k])));
+  const real = valores("real"), pred = valores("predicho"), pers = valores("persistencia");
+  const yMax = escalaY(Math.max(1, ...[...real, ...pred, ...pers].filter((v) => v != null)));
+  const xT = (t) => M.l + (t1 > t0 ? ((t - t0) / (t1 - t0)) * iw : iw / 2);
+  const x = (i) => xT(ts[i]);
+  const y = (v) => M.t + ih - (v / yMax) * ih;
+  replayGeom = { x, n, M, iw };
+
+  for (let i = 0; i <= 4; i++) {
+    const v = (yMax / 4) * i, yy = y(v);
+    svg.append(svgEl("line", { x1: M.l, x2: M.l + iw, y1: yy, y2: yy, class: i === 0 ? "c-axis" : "c-grid" }));
+    const t = svgEl("text", { x: M.l - 6, y: yy + 4, "text-anchor": "end", class: "c-tick" });
+    t.textContent = String(Math.round(v));
+    svg.append(t);
+  }
+  const u = svgEl("text", { x: M.l - 30, y: 10, class: "r-unidad" });
+  u.textContent = "µg/m³";
+  svg.append(u);
+  // Varios dias: una marca por dia a medianoche de Colombia con la fecha corta (dd/m); si no, horas.
+  const variosDias = t1 - t0 > 30 * 3_600_000;
+  const paso = variosDias ? 86_400_000 : pasoEjeX(t1 - t0, iw);
+  for (let t = Math.ceil((t0 + COL_OFFSET_MS) / paso) * paso - COL_OFFSET_MS; t <= t1; t += paso) {
+    const xx = xT(t);
+    if (xx < M.l + 14 || xx > M.l + iw - 14) continue;
+    const tx = svgEl("text", { x: xx, y: M.t + ih + 16, "text-anchor": "middle", class: "c-tick" });
+    const loc = new Date(t + COL_OFFSET_MS);
+    tx.textContent = variosDias ? `${loc.getUTCDate()}/${loc.getUTCMonth() + 1}` : fmtHora.format(new Date(t));
+    svg.append(tx);
+  }
+  const ex = svgEl("text", { x: M.l + iw, y: H - 2, "text-anchor": "end", class: "r-unidad" });
+  ex.textContent = "hora objetivo (Colombia)";
+  svg.append(ex);
+
+  // Marca de la hora del replay (la emision actual)
+  const tAt = msLocal(r.at_local);
+  if (tAt >= t0 && tAt <= t1) {
+    const xa = xT(tAt);
+    svg.append(svgEl("line", { x1: xa, x2: xa, y1: M.t - 6, y2: M.t + ih, class: "r-ahora" }));
+    const izq = xa > M.l + iw - 80;          // cerca del borde derecho: la etiqueta va a la izquierda
+    const ta = svgEl("text", { x: izq ? xa - 4 : xa + 4, y: M.t - 6, "text-anchor": izq ? "end" : "start", class: "r-ahora-txt" });
+    ta.textContent = `ahora ${String(r.at_local).slice(11)}`;
+    svg.append(ta);
+  }
+  // Series: persistencia (fondo), predicho, real (encima). Huecos sin conectar; puntos aislados como marca.
+  for (const [vals, cls, dot] of [[pers, "r-pers", "r-dot-pers"], [pred, "r-pred", "r-dot-pred"], [real, "r-real", "r-dot-real"]]) {
+    const { d, aislados } = pathTramos(vals, x, y);
+    if (d) svg.append(svgEl("path", { d, class: cls }));
+    for (const i of aislados) svg.append(svgEl("circle", { cx: x(i), cy: y(vals[i]), r: 2.5, class: dot }));
+  }
+  if (!real.some((v) => v != null) && !pred.some((v) => v != null)) {
+    const t = svgEl("text", { x: M.l + iw / 2, y: M.t + ih / 2, "text-anchor": "middle", class: "c-empty" });
+    t.textContent = "Sin datos en este rango";
+    svg.append(t);
+  }
+  $("replay-gmet").textContent = textoMetricasSerie(r);
+  $("replay-tip").hidden = true;
+}
+
+function tipSerieReplay(ev) {
+  if (!replaySerie || !replayGeom || !replayGeom.n) return;
+  const box = $("replay-chart"), rect = box.getBoundingClientRect();
+  const svg = $("replay-svg"), escala = (svg.viewBox.baseVal?.width || rect.width) / rect.width;
+  const px = (ev.clientX - rect.left) * escala;
+  let mejor = 0;
+  for (let i = 1; i < replayGeom.n; i++) if (Math.abs(replayGeom.x(i) - px) < Math.abs(replayGeom.x(mejor) - px)) mejor = i;
+  const t = filasTooltip(replaySerie.puntos[mejor]);
+  const tip = $("replay-tip");
+  tip.replaceChildren(el("div", { class: "tip__time" }, t.titulo),
+    ...t.filas.map(([k, v]) => el("div", { class: "tip__row" }, el("span", {}, k), el("strong", {}, v))),
+    el("div", { class: "tip__time" }, t.emision));
+  tip.hidden = false;
+  const xPx = replayGeom.x(mejor) / escala;
+  tip.style.left = `${Math.max(0, Math.min(xPx + 12, rect.width - 190))}px`;
+  svg.querySelector(".r-guia")?.remove();
+  svg.append(svgEl("line", { x1: replayGeom.x(mejor), x2: replayGeom.x(mejor), y1: 12, y2: (svg.viewBox.baseVal?.height || 240) - 30, class: "r-guia" }));
+}
+
 
 async function cargarReplay() {
   const st = $("replay-estacion").value, at = $("replay-at").value;
@@ -625,6 +732,7 @@ async function cargarReplay() {
   $("replay-ventana").textContent = v.ventana;
   $("replay-fuentes").textContent = v.fuentes;
   $("replay-salto").textContent = avisoSalto(r);
+  cargarSerieReplay(r.at_local || at);
   if (MODO_REPLAY) {
     renderReplayPanel(r);
     history.replaceState(null, "", urlModoReplay(location.href, st, r.at_local));
@@ -713,6 +821,17 @@ function alternarPlay() {
 }
 
 async function iniciarReplay() {
+  $("replay-rango").replaceChildren(...RANGOS.map((o) => el("option", { value: String(o.horas) }, o.label)));
+  $("replay-horizonte").replaceChildren(...HORIZONTES_GRAFICA.map((h) => el("option", { value: String(h) }, `${h} h`)));
+  for (const id of ["replay-rango", "replay-horizonte"]) {
+    $(id).addEventListener("change", () => cargarSerieReplay($("replay-at").value));
+  }
+  const caja = $("replay-chart");
+  caja.addEventListener("pointermove", tipSerieReplay);
+  caja.addEventListener("pointerdown", tipSerieReplay);
+  caja.addEventListener("pointerleave", () => { $("replay-tip").hidden = true; $("replay-svg").querySelector(".r-guia")?.remove(); });
+  let rr;
+  new ResizeObserver(() => { clearTimeout(rr); rr = setTimeout(() => replaySerie && renderSerieReplay(replaySerie), 120); }).observe(caja);
   $("replay-velocidad").replaceChildren(...VELOCIDADES.map((v) => el("option", { value: String(v.ms) }, v.label)));
   $("replay-velocidad").addEventListener("change", () => { replayVelocidad = Number($("replay-velocidad").value); });
   $("replay-play").addEventListener("click", alternarPlay);
