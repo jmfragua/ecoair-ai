@@ -447,6 +447,25 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .replay__tabla { width: 100%; font-variant-numeric: tabular-nums; font-size: .85rem; }
 .replay__tabla th, .replay__tabla td { padding: 6px 8px; white-space: nowrap; }
 .replay__src { font-size: .78rem; color: var(--muted); margin-top: 8px; }
+
+/* Mapa de estaciones (Leaflet). Seleccionada = mas grande y borde blanco; EcoAir = rombo, no circulo */
+.mapa { margin-top: 14px; min-width: 0; }
+.mapa__titulo { font-size: .9rem; font-weight: 600; color: var(--text-2); margin: 0 0 4px; }
+.mapa__leyenda { margin: 4px 0 6px; }
+.mapa__caja { width: 100%; height: 300px; border-radius: 12px; overflow: hidden; background: var(--surface-2);
+  border: 1px solid var(--border); isolation: isolate; }
+@media (min-width: 900px) { .mapa__caja { height: 340px; } }
+.mkey { display: inline-block; width: 12px; height: 12px; flex: none; border-radius: 50%;
+  background: var(--series-pm25); border: 2px solid var(--page); }
+.mkey--sel { width: 16px; height: 16px; border: 3px solid #fff; }
+.mkey--eco { border-radius: 2px; transform: rotate(45deg); background: var(--text); border-color: var(--page); }
+.mapa-eco { background: none; border: 0; display: grid; place-items: center; }
+.mapa-eco__rombo { display: block; width: 15px; height: 15px; background: var(--text); border: 3px solid var(--page);
+  border-radius: 2px; transform: rotate(45deg); box-sizing: border-box; box-shadow: 0 0 0 2px var(--text); }
+.mapa__caja .leaflet-popup-content { font: 13px/1.4 var(--font); margin: 10px 12px; }
+.mapa__caja .leaflet-popup-content strong { display: block; margin-bottom: 2px; }
+.mapa__caja .leaflet-tooltip { font: 600 12px var(--font); }
+.mapa__caja .leaflet-control-attribution { font: 11px var(--font); }
 .pred__fijo { font-size: .8rem; font-weight: 600; color: #ffe2a6; margin-bottom: 10px; }
 .pred__hasta { font-size: .75rem; color: var(--muted); }
 

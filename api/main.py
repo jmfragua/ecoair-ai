@@ -38,6 +38,7 @@ from subscriptions import (
     texto_consentimiento,
 )
 import replay  # noqa: E402
+import mapa  # noqa: E402
 from predicciones import (  # noqa: E402
     SQL_METRICAS,
     SQL_ULTIMAS,
@@ -565,6 +566,12 @@ async def replay_serie(station: str, at: str, horas: int = 24, horizonte: int = 
         return replay.calcular_serie(station, serie, fuentes, modelo, t, horas, horizonte)
     except replay.ReplayError as e:
         raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.get("/mapa/estaciones")
+async def mapa_estaciones():
+    """Coordenadas del mapa del panel (tabla fija en api/mapa.py + ECOAIR_UBICACION_APROX). Sin base."""
+    return mapa.mapa_desde_entorno()
 
 
 @app.get("/predictions/replay/metrics")

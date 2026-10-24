@@ -1,10 +1,15 @@
-// EcoAir AI - dashboard publico. Sin librerias ni recursos externos.
+// EcoAir AI - dashboard publico. Sin CDN: la unica libreria (Leaflet, para el mapa) se sirve desde
+// /vendor/ y el unico recurso externo son las teselas de OpenStreetMap del mapa.
 import {
   HORIZONTES_GRAFICA, OPCION_REPLAY, RANGOS, VELOCIDADES, avisoSalto, filasTooltip, mensajeError, msLocal, pathTramos,
   periodoMetricas, siguienteHora, textoMetricasSerie, urlModoReplay, urlModoVivo, vistaActualReplay, vistaEstaciones,
   vistaMetricas, vistaReplay,
 } from "./replay-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
+import {
+  ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
+  encuadre, estiloMarcador, vistaMapa,
+} from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
@@ -835,11 +840,13 @@ async function iniciarReplay() {
   $("replay-velocidad").replaceChildren(...VELOCIDADES.map((v) => el("option", { value: String(v.ms) }, v.label)));
   $("replay-velocidad").addEventListener("change", () => { replayVelocidad = Number($("replay-velocidad").value); });
   $("replay-play").addEventListener("click", alternarPlay);
+  iniciarMapaCuandoSeVea();      // no espera a /predictions/replay/estaciones (consulta lenta)
   $("replay-form").addEventListener("submit", (ev) => { ev.preventDefault(); detenerReplay(); cargarReplay(); });
   $("replay-estacion").addEventListener("change", () => {
     detenerReplay();
     const o = $("replay-estacion").selectedOptions[0];
     if (o && o.dataset.at) $("replay-at").value = o.dataset.at;
+    actualizarMapa();
     cargarReplay();
   });
   try {
@@ -849,10 +856,104 @@ async function iniciarReplay() {
     $("replay-estacion").value = pedida ? pedida.value : v.station;
     $("replay-at").value = (MODO_REPLAY && PARAMS.get("at")) || (pedida ? pedida.at : v.at);
     $("replay-msg").textContent = v.mensaje;
+    actualizarMapa();
     await cargarReplay();
   } catch (e) {
     $("replay-msg").textContent = mensajeError(e.status, e.message);
   }
+}
+
+// ---------- Mapa de estaciones (Leaflet local + teselas de OpenStreetMap) ----------
+// Solo /mapa/estaciones (coordenadas fijas, sin base). Leaflet se carga cuando la tarjeta entra en
+// pantalla, asi quien no llega al mapa no pide ninguna tesela a OSM.
+let mapa = null, mapaVista = null, mapaCapas = new Map(), mapaL = null;
+
+function cargarLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  return new Promise((ok, mal) => {
+    document.head.append(el("link", { rel: "stylesheet", href: LEAFLET_CSS }));
+    const s = el("script", { src: LEAFLET_JS });
+    const t = setTimeout(() => mal(new Error("timeout")), FETCH_TIMEOUT_MS);
+    s.onload = () => { clearTimeout(t); window.L ? ok(window.L) : mal(new Error("sin L")); };
+    s.onerror = () => { clearTimeout(t); mal(new Error("no carga")); };
+    document.head.append(s);
+  });
+}
+
+function popupMapa(p) {
+  return el("div", {}, el("strong", {}, p.titulo), ...p.lineas.map((l) => el("div", {}, l)));
+}
+
+function actualizarMapa() {
+  if (!mapa || !mapaVista) return;
+  const st = $("replay-estacion").value;
+  for (const m of mapaVista.marcadores) {
+    const capa = mapaCapas.get(m.station);
+    if (!capa) continue;
+    const sel = m.station === st;
+    capa.setStyle(estiloMarcador(sel));      // sin etiqueta fija: taparia estaciones cercanas
+    if (sel) capa.bringToFront();
+  }
+}
+
+async function iniciarMapa() {
+  const msg = $("mapa-msg");
+  try {
+    mapaVista = vistaMapa(await getJSON("/mapa/estaciones"), $("replay-estacion").value);
+  } catch {
+    msg.textContent = SIN_LEAFLET;
+    return;
+  }
+  const avisos = [...mapaVista.avisos];
+  msg.textContent = avisos.join(" ");
+  try {
+    mapaL = await cargarLeaflet();
+  } catch {
+    $("mapa").hidden = true;
+    msg.textContent = [SIN_LEAFLET, ...avisos].join(" ");
+    return;
+  }
+  const L = mapaL;
+  mapa = L.map("mapa", { scrollWheelZoom: false, maxBounds: LIMITES, maxBoundsViscosity: 1,
+    minZoom: OPCIONES_TESELAS.minZoom, maxZoom: OPCIONES_TESELAS.maxZoom });
+  mapa.attributionControl.setPrefix(false);
+  let avisado = false;
+  L.tileLayer(URL_TESELAS, { ...OPCIONES_TESELAS, attribution: ATRIBUCION_OSM })
+    .on("tileerror", () => { if (!avisado) { avisado = true; msg.textContent = [SIN_TESELAS, ...avisos].join(" "); } })
+    .addTo(mapa);
+  const eco = mapaVista.ecoair;
+  if (eco) {
+    L.circle([eco.lat, eco.lon], { radius: RADIO_APROX_M, color: "#0d0d0d", weight: 1.5, dashArray: "4 4",
+      fillColor: "#0d0d0d", fillOpacity: 0.08, interactive: false }).addTo(mapa);
+    L.marker([eco.lat, eco.lon], { icon: L.divIcon({ className: "mapa-eco", iconSize: [22, 22],
+      html: '<span class="mapa-eco__rombo"></span>' }),
+      keyboard: true, title: `${eco.nombre} · ubicación aproximada` })
+      .bindPopup(popupMapa(eco.popup)).bindTooltip("EcoAir · ubicación aproximada", { direction: "top", offset: [0, -10] })
+      .addTo(mapa);
+  }
+  for (const m of mapaVista.marcadores) {
+    const capa = L.circleMarker([m.lat, m.lon], estiloMarcador(false)).bindPopup(popupMapa(m.popup))
+      .bindTooltip(m.nombre, { direction: "top", offset: [0, -10] }).addTo(mapa);
+    capa.on("click", () => {
+      const sel = $("replay-estacion");
+      if (sel.value === m.station || ![...sel.options].some((o) => o.value === m.station)) return;
+      sel.value = m.station;
+      sel.dispatchEvent(new Event("change"));
+    });
+    mapaCapas.set(m.station, capa);
+  }
+  mapa.fitBounds(encuadre(mapaVista), { padding: [28, 28], maxZoom: 14 });
+  actualizarMapa();
+  new ResizeObserver(() => mapa.invalidateSize()).observe($("mapa"));
+}
+
+function iniciarMapaCuandoSeVea() {
+  const caja = $("mapa");
+  if (!("IntersectionObserver" in window)) { iniciarMapa(); return; }
+  const io = new IntersectionObserver((entradas) => {
+    if (entradas.some((e) => e.isIntersecting)) { io.disconnect(); iniciarMapa(); }
+  }, { rootMargin: "200px" });
+  io.observe(caja);
 }
 
 // Modo replay: nada en vivo (ni mediciones, ni grafica, ni alertas, ni suscripcion -> ningun correo).

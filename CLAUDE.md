@@ -62,6 +62,15 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   horizonte=4|5 (una consulta de external_measurements; por hora objetivo; null sin ventana o sin real,
   nada interpolado; MAE/RMSE de modelo y persistencia con n). SVG propio en la tarjeta: real continua,
   predicho a rayas, persistencia punteada gris, huecos sin unir, marca "ahora", tooltip con raton o toque.
+- [LOCAL] Mapa de estaciones en la tarjeta Replay (GET /mapa/estaciones, sin base; api/mapa.py +
+  js/mapa-vista.js): coordenadas COPIADAS del IDEAM datos.gov.co g4t8-zkc3 (2026-10-24; contrastadas
+  con el catálogo del SIATA). Estación sin coordenada = no se dibuja y se avisa. Clic en un marcador
+  cambia de estación; popup con nombre, "estación de referencia" y fuente. EcoAir = rombo con círculo
+  de ~1 km, "ubicación aproximada", desde ECOAIR_UBICACION_APROX="lat,lon" (redondeada a 2 decimales);
+  vacía = no se dibuja (HOY no está configurada: el equipo debe dar el punto). Teselas OSM con
+  "© OpenStreetMap contributors", zoom 11–17, área del Valle de Aburrá, sin rueda, Leaflet solo se
+  carga cuando el mapa entra en pantalla. Revisado en Chrome a 1280 y 390 px (sin scroll horizontal),
+  clic y modo sin internet; aún no en Docker ni Railway.
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base
@@ -152,9 +161,11 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   - HTML, CSS y JavaScript sin framework. Dispositivo por defecto ecoair-node-01; se cambia
     con ?device=... Se actualiza cada 10 s (la gráfica cada 60 s); si la API falla, muestra un
     aviso y conserva los últimos valores.
-  - Sin recursos externos (el Wi-Fi de la feria puede fallar): sin CDN; fuente Inter variable
-    local (api/static/fonts/, licencia SIL OFL 1.1 en OFL-Inter.txt). Comprobar con
-    grep "http" en api/static/ (solo deben aparecer espacios de nombres SVG).
+  - Sin CDN (el Wi-Fi de la feria puede fallar): fuente Inter variable local (api/static/fonts/,
+    licencia SIL OFL 1.1 en OFL-Inter.txt) y Leaflet 1.9.4 local (api/static/vendor/leaflet-1.9.4/,
+    BSD-2, SHA256SUMS; integridad npm verificada). ÚNICA excepción externa: las teselas de
+    OpenStreetMap del mapa (tile.openstreetmap.org). Sin internet el mapa conserva los marcadores y
+    lo avisa. El test test_unico_recurso_externo_son_las_teselas_osm lo comprueba (fuera de vendor/).
   - Tarjeta del ICA: cuadrícula 2x2 con el último registro (/measurements/latest: PM2.5,
     PM10, temperatura, humedad; sin PM1.0), "Última medición: hace X min · hora de Colombia"
     y aviso "el nodo puede estar apagado" con más de 10 min. Valor que falta = "—". Lógica pura

@@ -109,6 +109,16 @@ e incluir filas de 31366 de 2020–2023: hay que comprobarlo con una consulta de
   31854 Fiscalía Caribe (datos.gov.co hasta 2025 + SISAIRE 2026), 29493 Casa de Justicia (solo
   datos.gov.co), 31366 Fernando Botero y 31946 Tomás Carrasquilla (solo SISAIRE 2026). Si una hora está
   en las dos fuentes manda datos.gov.co.
+- Coordenadas del mapa (`api/mapa.py`), copiadas de datos.gov.co `g4t8-zkc3` (columnas `latitud` y
+  `longitud`, una sola pareja por estación, consultado el 2026-10-24):
+
+  | Estación | Latitud | Longitud | Contraste SIATA (`Estaciones.txt`) |
+  |---|---|---|---|
+  | 29509 Tráfico Centro | 6.252709 | -75.569656 | a menos de 25 m |
+  | 31854 Fiscalía Sector Caribe | 6.268792 | -75.573653 | no aparece con ese nombre |
+  | 29493 Casa de Justicia (Itagüí) | 6.185667 | -75.597206 | idéntica |
+  | 31366 Fernando Botero | 6.277838 | -75.636363 | a unos 300 m |
+  | 31946 Tomás Carrasquilla | 6.285101 | -75.583145 | a menos de 25 m |
 - Vuelve a aplicar la limpieza al leer y necesita la ventana completa de v4 (6 horas previas + 18 de 24):
   con los ceros de 2026, en septiembre de 2026 Tráfico Centro no tiene ventana completa en 199 de 720
   horas de emisión.

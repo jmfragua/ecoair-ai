@@ -269,6 +269,17 @@
       <p class="replay__src" id="replay-ventana"></p>
       <p class="replay__src" id="replay-mae"></p>
       <p class="replay__src" id="replay-fuentes"></p>
+      <!-- Mapa de estaciones: Leaflet local (vendor/) + teselas de OpenStreetMap (unico recurso externo) -->
+      <div class="mapa" id="mapa-bloque">
+        <h3 class="mapa__titulo">Dónde están las estaciones</h3>
+        <ul class="legend mapa__leyenda" aria-label="Leyenda del mapa">
+          <li><span class="mkey mkey--ref" aria-hidden="true"></span>Estación de referencia (IDEAM)</li>
+          <li><span class="mkey mkey--sel" aria-hidden="true"></span>Seleccionada</li>
+          <li><span class="mkey mkey--eco" aria-hidden="true"></span>EcoAir (ubicación aproximada)</li>
+        </ul>
+        <div class="mapa__caja" id="mapa" role="region" aria-label="Mapa de las estaciones; toque un marcador para cambiar de estación"></div>
+        <p class="replay__src" id="mapa-msg" role="status" aria-live="polite"></p>
+      </div>
     </section>
 
     <!-- Suscripcion por correo -->
