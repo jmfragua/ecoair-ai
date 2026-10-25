@@ -8,7 +8,7 @@ import {
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import {
   ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
-  ZOOM_UBICACION, encuadre, estiloMarcador, vistaMapa, vistaUbicacion,
+  AYUDA_TACTIL, ZOOM_UBICACION, encuadre, estiloMarcador, interaccionTactil, opcionesUbicacion, vistaMapa, vistaUbicacion,
 } from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
@@ -939,8 +939,11 @@ async function iniciarMapa() {
     msg.textContent = [SIN_LEAFLET, ...avisos].join(" ");
     return;
   }
+  const tactil = matchMedia("(pointer: coarse)").matches;
   mapa = crearMapaBase(L, "mapa", msg, avisos, { maxBounds: LIMITES, maxBoundsViscosity: 1,
-    minZoom: OPCIONES_TESELAS.minZoom, maxZoom: OPCIONES_TESELAS.maxZoom });
+    minZoom: OPCIONES_TESELAS.minZoom, maxZoom: OPCIONES_TESELAS.maxZoom, ...interaccionTactil(tactil) });
+  $("mapa-ayuda").hidden = !tactil;
+  $("mapa-ayuda").textContent = tactil ? AYUDA_TACTIL : "";
   if (mapaVista.ecoair) dibujarEcoair(L, mapa, mapaVista.ecoair);
   for (const m of mapaVista.marcadores) {
     const capa = L.circleMarker([m.lat, m.lon], estiloMarcador(false)).bindPopup(popupMapa(m.popup))
@@ -993,10 +996,14 @@ async function iniciarUbicacion() {
       msg.textContent = `${SIN_LEAFLET} ${v.texto}`;
       return;
     }
-    const m = crearMapaBase(L, "ubicacion-mapa", msg, [v.texto], {
-      center: [v.ecoair.lat, v.ecoair.lon], zoom: ZOOM_UBICACION, minZoom: ZOOM_UBICACION, maxZoom: ZOOM_UBICACION,
-      zoomControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false });
+    const tactil = matchMedia("(pointer: coarse)").matches;
+    const m = crearMapaBase(L, "ubicacion-mapa", msg, [v.texto], { ...opcionesUbicacion(tactil), maxBounds: v.limites });
     dibujarEcoair(L, m, v.ecoair);
+    m.fitBounds(v.vista, { padding: [28, 28], maxZoom: ZOOM_UBICACION });   // misma vista que el Replay
+    $("ubicacion-acciones").hidden = false;
+    $("ubicacion-ayuda").hidden = !tactil;
+    $("ubicacion-ayuda").textContent = tactil ? AYUDA_TACTIL : "";
+    $("ubicacion-centrar").addEventListener("click", () => m.setView([v.ecoair.lat, v.ecoair.lon], ZOOM_UBICACION));
   });
 }
 

@@ -70,9 +70,15 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   vacía = no se dibuja (HOY no está configurada: el equipo debe dar el punto). Teselas OSM con
   "© OpenStreetMap contributors", zoom 11–17, área del Valle de Aburrá, sin rueda, Leaflet solo se
   carga cuando el mapa entra en pantalla. Revisado en Chrome a 1280 y 390 px (sin scroll horizontal),
-  clic y modo sin internet; aún no en Docker ni Railway.
-- [LOCAL] Tarjeta "Ubicación de la estación" (panel en vivo): mapa FIJO (zoom 14, barrio; sin arrastre
-  ni zoom) con SOLO el rombo de EcoAir, mismo /mapa/estaciones y mismo código de mapa. Solo para
+  clic y modo sin internet; aún no en Docker ni Railway. Táctil (mismo interaccionTactil que el mapa de
+  ubicación): un dedo desplaza la página, dos dedos mueven y amplían, con texto de ayuda; probado con
+  eventos táctiles de DevTools (pellizco 11 -> 14, un dedo no mueve el mapa, toque en marcador cambia
+  de estación).
+- [LOCAL] Tarjeta "Ubicación de la estación" (panel en vivo): SOLO el rombo de EcoAir (las estaciones
+  del IDEAM solo sirven para el encuadre, no se dibujan). Misma vista inicial, límites (Valle de
+  Aburrá, ampliados si el punto quedara fuera), zoom 11–17, botones +/− y sin rueda que el mapa del
+  Replay; botón "Centrar en la estación" (zoom 14). Con pantalla táctil un dedo desplaza la página y el
+  mapa se mueve y amplía con dos dedos (pellizco probado con eventos táctiles de DevTools). Solo para
   ecoair-node-01; otro dispositivo o variable vacía/inválida = "Ubicación no configurada" sin mapa;
   dispositivo simulado = "SIMULACIÓN, sin ubicación real" sin mapa; en modo replay la tarjeta se oculta.
   ECOAIR_UBICACION_APROX acepta signos menos Unicode (−, –, —, －) y los normaliza a "-".

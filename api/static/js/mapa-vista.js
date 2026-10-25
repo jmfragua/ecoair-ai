@@ -70,11 +70,36 @@ export function vistaUbicacion(r, { device, simulado = false, replay = false } =
   if (simulado) return { estado: "simulacion", texto: SIM_UBICACION, ecoair: null };
   const e = r && r.ecoair;
   if (device !== DISPOSITIVO_UBICACION || !valida(e)) return { estado: "sin_config", texto: SIN_UBICACION, ecoair: null };
-  return {
-    estado: "mapa", texto: `${TEXTO_APROX} · radio de ~1 km`,
-    ecoair: { lat: e.lat, lon: e.lon, nombre: e.nombre,
-      popup: { titulo: e.nombre, lineas: [TEXTO_APROX, e.fuente].filter(Boolean) } },
-  };
+  const ecoair = { lat: e.lat, lon: e.lon, nombre: e.nombre,
+    popup: { titulo: e.nombre, lineas: [TEXTO_APROX, e.fuente].filter(Boolean) } };
+  // Vista inicial = la del mapa del Replay (las estaciones solo encuadran; NO se dibujan aqui).
+  const vista = encuadre({ ...vistaMapa(r, ""), ecoair });
+  return { estado: "mapa", texto: `${TEXTO_APROX} · radio de ~1 km`, ecoair, vista, limites: limitesCon(ecoair) };
+}
+
+// Limites del Valle de Aburra, ampliados si el punto de EcoAir quedara fuera (asi "Centrar" siempre llega).
+export function limitesCon(p) {
+  const [[s, o], [n, e]] = LIMITES;
+  if (!valida(p)) return LIMITES;
+  const m = 0.02;
+  return [[Math.min(s, p.lat - m), Math.min(o, p.lon - m)], [Math.max(n, p.lat + m), Math.max(e, p.lon + m)]];
+}
+
+export const TEXTO_CENTRAR = "Centrar en la estación";
+export const AYUDA_TACTIL = "Mueve el mapa con dos dedos; con uno se desplaza la página.";
+
+// Interaccion del mapa de ubicacion: igual que el del Replay (zoom 11-17, +/-, sin rueda). Con pantalla
+// tactil, un dedo NO arrastra el mapa (no atrapa el scroll de la pagina): se mueve y amplia con dos dedos.
+export function opcionesUbicacion(tactil) {
+  return { minZoom: OPCIONES_TESELAS.minZoom, maxZoom: OPCIONES_TESELAS.maxZoom, zoomControl: true,
+    scrollWheelZoom: false, ...interaccionTactil(tactil), doubleClickZoom: true, boxZoom: false,
+    keyboard: true, maxBoundsViscosity: 1 };
+}
+
+// Comun a los dos mapas: con pantalla tactil un dedo desplaza la pagina (Leaflet deja touch-action
+// pan-x pan-y) y dos dedos mueven y amplian el mapa; con raton se arrastra normal.
+export function interaccionTactil(tactil) {
+  return { dragging: !tactil, touchZoom: true };
 }
 
 // Circulo que marca la incertidumbre del punto de EcoAir (redondeado a 2 decimales, ~1 km).

@@ -218,6 +218,10 @@
       </header>
       <div class="mapa__caja mapa__caja--ubicacion" id="ubicacion-mapa" role="region"
            aria-label="Mapa con la ubicación aproximada de la estación EcoAir" hidden></div>
+      <div class="ubicacion__acciones" id="ubicacion-acciones" hidden>
+        <button class="btn btn--ghost" type="button" id="ubicacion-centrar">Centrar en la estación</button>
+        <p class="replay__src ubicacion__ayuda" id="ubicacion-ayuda" hidden></p>
+      </div>
       <p class="replay__src ubicacion__msg" id="ubicacion-msg" role="status" aria-live="polite">Cargando…</p>
     </section>
     <!-- Replay historico (solo datos externos del IDEAM; no usa el sensor propio) -->
@@ -288,6 +292,7 @@
           <li><span class="mkey mkey--eco" aria-hidden="true"></span>EcoAir (ubicación aproximada)</li>
         </ul>
         <div class="mapa__caja" id="mapa" role="region" aria-label="Mapa de las estaciones; toque un marcador para cambiar de estación"></div>
+        <p class="replay__src mapa__ayuda" id="mapa-ayuda" hidden></p>
         <p class="replay__src" id="mapa-msg" role="status" aria-live="polite"></p>
       </div>
     </section>

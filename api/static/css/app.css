@@ -456,8 +456,10 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   border: 1px solid var(--border); isolation: isolate; }
 @media (min-width: 900px) { .mapa__caja { height: 340px; } }
 .mapa__caja[hidden], .card--ubicacion[hidden] { display: none; }
-.mapa__caja--ubicacion { height: 260px; }
 .ubicacion__msg { font-size: .85rem; }
+.ubicacion__acciones { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 10px; }
+.ubicacion__acciones[hidden], .ubicacion__ayuda[hidden], .mapa__ayuda[hidden] { display: none; }
+.ubicacion__acciones .ubicacion__ayuda { margin: 0; flex: 1 1 180px; min-width: 0; }
 .ubicacion__msg--sim { color: #ffe2a6; font-weight: 700; letter-spacing: .02em; }
 .mkey { display: inline-block; width: 12px; height: 12px; flex: none; border-radius: 50%;
   background: var(--series-pm25); border: 2px solid var(--page); }

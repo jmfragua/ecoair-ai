@@ -131,3 +131,21 @@ def test_js_mapa_vista():
     r = subprocess.run(["node", "--test", str(Path(__file__).parent / "js" / "test_mapa_vista.mjs")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_tarjeta_ubicacion_con_boton_centrar():
+    panel = (STATIC / "panel.html").read_text()
+    assert 'id="ubicacion-centrar">Centrar en la estación</button>' in panel
+    assert 'id="ubicacion-mapa"' in panel
+    vista = (STATIC / "js" / "mapa-vista.js").read_text()
+    assert 'TEXTO_CENTRAR = "Centrar en la estación"' in vista
+
+
+def test_mapa_replay_usa_el_arreglo_tactil():
+    panel = (STATIC / "panel.html").read_text()
+    assert 'id="mapa-ayuda" hidden' in panel and 'id="mapa"' in panel
+    app = (STATIC / "js" / "app.js").read_text()
+    inicio = app.index("async function iniciarMapa()")
+    cuerpo = app[inicio:app.index("\n}\n", inicio)]
+    assert "...interaccionTactil(tactil)" in cuerpo and "AYUDA_TACTIL" in cuerpo
+    assert "for (const m of mapaVista.marcadores)" in cuerpo      # sigue dibujando las estaciones del IDEAM

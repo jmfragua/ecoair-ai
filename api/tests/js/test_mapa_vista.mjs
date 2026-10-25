@@ -65,3 +65,30 @@ test("tarjeta de ubicacion: solo EcoAir, sin configurar, simulada y oculta en re
   assert.deepEqual([s.estado, s.texto, s.ecoair], ["simulacion", "SIMULACIÓN, sin ubicación real", null]);
   assert.equal(m.vistaUbicacion(r, { device: "ecoair-node-01", replay: true }).estado, "oculta");
 });
+
+test("ubicacion interactiva: vista del Replay, limites 11-17, sin rueda, tactil con dos dedos", async () => {
+  const m = await import("../../static/js/mapa-vista.js");
+  const eco = { lat: 6.23, lon: -75.6, nombre: "Estación EcoAir", fuente: "~1 km" };
+  const r = { ...R, ecoair: eco, mensaje_ecoair: "" };
+  const v = m.vistaUbicacion(r, { device: "ecoair-node-01" });
+  assert.deepEqual(v.vista, m.encuadre(m.vistaMapa(r, "")));            // misma vista inicial que el Replay
+  assert.ok(!("marcadores" in v));                                     // las estaciones solo encuadran
+  assert.deepEqual(v.limites, m.LIMITES);                              // punto dentro del Valle de Aburra
+  const fuera = m.limitesCon({ lat: 6.5, lon: -75.4 });
+  assert.ok(fuera[1][0] > 6.5 && fuera[1][1] > -75.4 && fuera[0][0] === 6.05);   // amplia N y E, no S
+  const pc = m.opcionesUbicacion(false), cel = m.opcionesUbicacion(true);
+  assert.deepEqual([pc.minZoom, pc.maxZoom, pc.zoomControl, pc.scrollWheelZoom, pc.dragging], [11, 17, true, false, true]);
+  assert.deepEqual([cel.dragging, cel.touchZoom, cel.scrollWheelZoom], [false, true, false]);   // un dedo = scroll de la pagina
+  assert.equal(m.TEXTO_CENTRAR, "Centrar en la estación");
+  assert.equal(m.ZOOM_UBICACION, 14);
+  assert.equal(m.vistaUbicacion({ ...r, ecoair: null }, { device: "ecoair-node-01" }).texto, "Ubicación no configurada");
+  assert.equal(m.vistaUbicacion(r, { device: "ecoair-sim-01", simulado: true }).texto, "SIMULACIÓN, sin ubicación real");
+});
+
+test("arreglo tactil comun a los dos mapas (Replay y ubicacion)", async () => {
+  const m = await import("../../static/js/mapa-vista.js");
+  assert.deepEqual(m.interaccionTactil(true), { dragging: false, touchZoom: true });    // un dedo = pagina
+  assert.deepEqual(m.interaccionTactil(false), { dragging: true, touchZoom: true });    // raton: arrastre normal
+  const u = m.opcionesUbicacion(true);
+  assert.deepEqual([u.dragging, u.touchZoom], [false, true]);
+});
