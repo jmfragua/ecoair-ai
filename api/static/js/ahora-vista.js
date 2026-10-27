@@ -5,7 +5,8 @@
 // Reglas:
 // - un valor que falta o no es un numero finito se muestra como "—" (nunca undefined/NaN).
 // - "Última medición: hace X min · HH:MM (hora de Colombia)".
-// - mas de 10 min sin medir: aviso "el nodo puede estar apagado" (mismo umbral que la prediccion).
+// - mas de 10 min sin medir: aviso "el nodo puede estar apagado" (mismo umbral que la prediccion) y
+//   "última lectura · hora" bajo cada valor, que el panel muestra atenuado.
 // - fallo de red sin datos previos: "No se pudo consultar la última medición" (nunca "Cargando…").
 import { MIN_SIN_DATOS_AVISO } from "./prediccion-vista.js";
 
@@ -13,6 +14,7 @@ export const SIN_VALOR = "—";
 export const NO_SE_PUDO = "No se pudo consultar la última medición";
 export const SIN_MEDICIONES = "La estación aún no tiene mediciones";
 export const AVISO_APAGADO = `Más de ${MIN_SIN_DATOS_AVISO} min sin mediciones: el nodo puede estar apagado`;
+export const ETIQUETA_LECTURA = "última lectura";
 
 const TZ = "America/Bogota";
 const fmtHora = new Intl.DateTimeFormat("es-CO", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -59,7 +61,7 @@ export function vistaAhora(m, ahora = Date.now(), { fallo = false } = {}) {
   const t = valida && typeof m.received_at === "string" ? new Date(m.received_at) : null;
   if (!t || Number.isNaN(t.getTime())) {
     return { ...valores, ultima: valida ? "Hora de la última medición desconocida" : fallo ? NO_SE_PUDO : SIN_MEDICIONES,
-             aviso: "", antigua: false, minutos: null, hora: "" };
+             aviso: "", antigua: false, minutos: null, hora: "", lectura: "" };
   }
   const ref = new Date(ahora);
   const minutos = Math.max(0, Math.floor((ref - t) / 60_000));
@@ -71,5 +73,7 @@ export function vistaAhora(m, ahora = Date.now(), { fallo = false } = {}) {
     antigua,
     minutos,
     hora: horaColombia(t, ref),
+    // Bajo cada valor cuando el nodo lleva mas de 10 min sin enviar: no se ve como medicion actual.
+    lectura: antigua ? `${ETIQUETA_LECTURA} · ${horaColombia(t, ref)}` : "",
   };
 }

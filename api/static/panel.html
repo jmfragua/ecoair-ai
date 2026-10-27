@@ -74,10 +74,10 @@
       <p class="ica__by" id="ica-by">&nbsp;</p>
       <p class="ica__base">ICA con la media de la última hora (indicativo) · Res. 2254/2017</p>
       <dl class="now" aria-label="Valores de la última medición">
-        <div class="now__item"><dt>PM2.5</dt><dd><span id="now-pm25">—</span> <span class="unit">µg/m³</span></dd></div>
-        <div class="now__item"><dt>PM10</dt><dd><span id="now-pm10">—</span> <span class="unit">µg/m³</span></dd></div>
-        <div class="now__item"><dt>Temperatura</dt><dd><span id="now-temp">—</span> <span class="unit">°C</span></dd></div>
-        <div class="now__item"><dt>Humedad</dt><dd><span id="now-hum">—</span> <span class="unit">%</span></dd></div>
+        <div class="now__item"><dt>PM2.5</dt><dd><span id="now-pm25">—</span> <span class="unit">µg/m³</span><span class="lectura" data-lectura></span></dd></div>
+        <div class="now__item"><dt>PM10</dt><dd><span id="now-pm10">—</span> <span class="unit">µg/m³</span><span class="lectura" data-lectura></span></dd></div>
+        <div class="now__item"><dt>Temperatura</dt><dd><span id="now-temp">—</span> <span class="unit">°C</span><span class="lectura" data-lectura></span></dd></div>
+        <div class="now__item"><dt>Humedad</dt><dd><span id="now-hum">—</span> <span class="unit">%</span><span class="lectura" data-lectura></span></dd></div>
       </dl>
       <p class="now__time" id="now-ultima">&nbsp;</p>
       <p class="now__warn" id="now-aviso" hidden></p>
@@ -142,6 +142,7 @@
         <div class="env__body">
           <h2 class="card__title">Temperatura</h2>
           <p class="env__value"><span id="temp">—</span><span class="unit"> °C</span></p>
+          <p class="lectura" data-lectura></p>
           <div class="range" id="temp-range" data-min="0" data-max="40" data-lo="18" data-hi="26" aria-hidden="true">
             <span class="range__band"></span><span class="range__dot"></span>
           </div>
@@ -154,6 +155,7 @@
         <div class="env__body">
           <h2 class="card__title">Humedad</h2>
           <p class="env__value"><span id="hum">—</span><span class="unit"> %</span></p>
+          <p class="lectura" data-lectura></p>
           <div class="range" id="hum-range" data-min="0" data-max="100" data-lo="40" data-hi="60" aria-hidden="true">
             <span class="range__band"></span><span class="range__dot"></span>
           </div>

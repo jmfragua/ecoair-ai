@@ -80,6 +80,11 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   "Sin conexión desde hace X"), con los banners de SIMULACIÓN/REPLAY. Sin selectores, formularios, mapas
   ni pie; no inicia ubicación, suscripción, /proyecto ni el Replay en vivo (comprobado en el log de
   acceso). Cabe en 1920x1080 sin scroll.
+- [LOCAL] Nodo sin enviar más de 10 min (vistaAhora.antigua, mismo umbral del aviso): PM2.5, PM10,
+  temperatura y humedad atenuados (--muted) con "última lectura · hora" bajo cada valor, en la
+  cuadrícula del ICA (panel y kiosco) y en temperatura/humedad; las tarjetas PM ya lo decían en su
+  subtítulo. El ICA sigue en "Sin datos recientes". En línea se ve igual que antes. Capturas del estado
+  en línea con un Postgres desechable y datos de prueba (no con la base real).
 - [LOCAL] Franja del proyecto en el pie del panel normal: EcoAir AI, descripción, ODS 3, 11 y 13 (solo
   número y nombre, sin logos de la ONU) y QR generado en el navegador con qrcode-generator 2.0.4 (MIT,
   api/static/vendor/, integridad npm verificada, SHA256SUMS). URL = BASE_URL + /panel vía GET /proyecto

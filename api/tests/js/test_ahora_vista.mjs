@@ -80,3 +80,14 @@ test("etiqueta de PM2.5/PM10: 'actual' con datos recientes; fuera de linea, 'úl
   // sin medicion: no inventa una hora
   assert.equal(etiquetaMetrica(vistaAhora(null, AHORA, { fallo: true })).largo, "actual · media 1 h ");
 });
+
+test("mas de 10 min sin datos: 'última lectura · hora' bajo cada valor; en linea, nada", async () => {
+  const { ETIQUETA_LECTURA } = await import("../../static/js/ahora-vista.js");
+  assert.equal(ETIQUETA_LECTURA, "última lectura");
+  assert.equal(vistaAhora({ ...M, received_at: "2026-10-17T14:50:00Z" }, AHORA).lectura, "", "10 min justos: en linea");
+  assert.equal(vistaAhora({ ...M, received_at: "2026-10-17T14:35:00Z" }, AHORA).lectura, "última lectura · 09:35");
+  assert.match(vistaAhora({ ...M, received_at: "2026-10-16T13:00:00Z" }, AHORA).lectura, /^última lectura · 16 de oct\.? 08:00$/);
+  assert.equal(vistaAhora(null, AHORA, { fallo: true }).lectura, "");
+  const v = vistaAhora({ ...M, received_at: "2026-10-17T14:35:00Z" }, AHORA);
+  assert.equal(v.pm25, "12,0");                            // el valor no cambia: solo se presenta como lectura vieja
+});

@@ -72,3 +72,17 @@ def test_kiosco_oculta_formularios_mapas_y_pie():
     kiosco = inicio[inicio.index("if (MODO_KIOSCO) {"):inicio.index("return;", inicio.index("if (MODO_KIOSCO) {"))]
     for no in ("initSubscriptionForm", "loadConsent", "iniciarReplay"):
         assert no not in kiosco
+
+
+def test_valores_atenuados_sin_conexion():
+    """Bajo cada valor de la cuadricula del ICA (panel y kiosco) y de temperatura/humedad hay un hueco
+    para "última lectura · hora"; con el nodo sin enviar (> 10 min) se atenuan con --muted."""
+    panel = (STATIC / "panel.html").read_text()
+    for k in ("pm25", "pm10", "temp", "hum"):
+        assert f'<span id="now-{k}">—</span>' in panel
+    assert panel.count("data-lectura") == 6                                # 4 de la cuadricula + temperatura + humedad
+    css = (STATIC / "css" / "app.css").read_text()
+    assert ".now.is-antigua dd, .card--pm.is-antigua .metric__value, .card--env.is-antigua .env__value { color: var(--muted); }" in css
+    assert ".lectura:empty { display: none; }" in css                       # en linea no se ve nada
+    app = (STATIC / "js" / "app.js").read_text()
+    assert 'n.classList.toggle("is-antigua", v.antigua)' in app and "n.textContent = v.lectura" in app

@@ -230,6 +230,11 @@ ol, ul { padding: 0; list-style: none; }
 .now__item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; }
 .now dt { font-size: .78rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .now dd { margin: 2px 0 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+/* Nodo sin enviar datos (> 10 min): valores atenuados (--muted, 7,6:1) + "última lectura · hora" */
+.lectura { display: block; font-size: .78rem; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-top: 2px; }
+.lectura:empty { display: none; }
+.now.is-antigua dd, .card--pm.is-antigua .metric__value, .card--env.is-antigua .env__value { color: var(--muted); }
+.now.is-antigua .unit, .card--env.is-antigua .unit { color: var(--muted); }
 .now__time { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 8px; }
 .now__warn { text-align: center; color: #ffe2a6; font-size: .8rem; font-weight: 600; margin-top: 2px; }
 .scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 16px; }
@@ -706,6 +711,8 @@ body.modo-kiosco .now__item { padding: clamp(10px, 1.2vw, 24px) clamp(12px, 1.4v
 body.modo-kiosco .now dt { font-size: clamp(.9rem, 1.4vw, 1.8rem); }
 body.modo-kiosco .now dd { font-size: clamp(1.9rem, 4.2vw, 5.2rem); line-height: 1.05; }
 body.modo-kiosco .now .unit { font-size: .45em; font-weight: 600; color: var(--text-2); }
+body.modo-kiosco .now.is-antigua .unit { color: var(--muted); }
+body.modo-kiosco .now .lectura { font-size: clamp(.85rem, 1.15vw, 1.45rem); margin-top: .3em; }
 body.modo-kiosco .now__time { grid-area: time; font-size: clamp(1rem, 1.6vw, 2rem); color: var(--text-2); margin-top: clamp(8px, 1.4vw, 24px); }
 body.modo-kiosco .now__warn { grid-area: warn; font-size: clamp(.95rem, 1.4vw, 1.8rem); }
 body.modo-kiosco .now__warn[hidden] { display: none; }

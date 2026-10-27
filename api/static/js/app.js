@@ -309,6 +309,12 @@ function renderAhora(fallo) {
   $("now-aviso").hidden = !v.aviso;
   const lbl = etiquetaMetrica(v);
   for (const p of ["pm25", "pm10"]) { $(`${p}-lbl-l`).textContent = lbl.largo; $(`${p}-lbl-s`).textContent = lbl.corto; }
+  // Mas de 10 min sin datos: los valores se ven atenuados y con "última lectura · hora" (no son actuales).
+  // Las tarjetas PM2.5/PM10 ya llevan esa etiqueta en su subtitulo (etiquetaMetrica).
+  for (const sel of [".card--ica .now", ".card--pm", ".card--env"]) {
+    for (const n of document.querySelectorAll(sel)) n.classList.toggle("is-antigua", v.antigua);
+  }
+  for (const n of document.querySelectorAll("[data-lectura]")) n.textContent = v.lectura;
 }
 
 // Franja de confort orientativa (no normativa) para temperatura y humedad.
