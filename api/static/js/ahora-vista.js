@@ -28,8 +28,8 @@ export function haceCuanto(minutos) {
   if (minutos < 60) return `hace ${minutos} min`;
   const h = Math.floor(minutos / 60), m = minutos % 60;
   if (h < 24) return m ? `hace ${h} h ${m} min` : `hace ${h} h`;
-  const d = Math.floor(h / 24), hr = h % 24;
-  return hr ? `hace ${d} d ${hr} h` : `hace ${d} d`;
+  const d = Math.floor(h / 24), hr = h % 24, dias = `${d} ${d === 1 ? "día" : "días"}`;
+  return hr ? `hace ${dias} ${hr} h` : `hace ${dias}`;
 }
 
 function horaColombia(fecha, ahora) {

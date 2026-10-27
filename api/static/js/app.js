@@ -1,7 +1,7 @@
 // EcoAir AI - dashboard publico. Sin CDN: la unica libreria (Leaflet, para el mapa) se sirve desde
 // /vendor/ y el unico recurso externo son las teselas de OpenStreetMap del mapa.
 import {
-  HORIZONTES_GRAFICA, OPCION_REPLAY, RANGOS, VELOCIDADES, avisoSalto, filasTooltip, mensajeError, msLocal, pathTramos,
+  HORIZONTES_GRAFICA, OPCION_REPLAY, chipsMetricasSerie, RANGOS, VELOCIDADES, avisoSalto, filasTooltip, mensajeError, msLocal, pathTramos,
   periodoMetricas, siguienteHora, textoMetricasSerie, urlModoReplay, urlModoVivo, vistaActualReplay, vistaEstaciones,
   vistaMetricas, vistaReplay,
 } from "./replay-vista.js";
@@ -10,7 +10,8 @@ import {
   ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
   AYUDA_TACTIL, ZOOM_UBICACION, encuadre, estiloMarcador, interaccionTactil, opcionesUbicacion, vistaMapa, vistaUbicacion,
 } from "./mapa-vista.js";
-import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
+import { vistaAhora, etiquetaMetrica, haceCuanto } from "./ahora-vista.js";
+import { vistaTendencia } from "./tendencia-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const PARAMS = new URLSearchParams(location.search);
@@ -189,7 +190,7 @@ function renderCurrent(aq) {
     document.documentElement.style.setProperty("--cat", "#6b6a63");
     const u = aq.ultima_medicion;
     const min = u ? Math.floor(u.antiguedad_s / 60) : null;
-    setStatus("stale", u ? `Sin datos hace ${min} min` : "Sin datos");
+    setStatus("stale", u ? `Sin datos ${haceCuanto(min)}` : "Sin datos");
     setGauge(null);
     $("ica-value").textContent = "—"; $("ica-value").dataset.v = "";
     $("ica-cat").textContent = "Sin datos recientes";
@@ -537,14 +538,12 @@ function renderChart(h) {
   };
 
   // Titulo, nota de datos parciales y tabla
-  $("chart-title").textContent = h.parcial
-    ? `Tendencia · últimas ${fmtNum(h.horas_con_datos, 1)} h de datos`
-    : `Tendencia de las últimas ${h.hours} h`;
+  const vt = vistaTendencia(h, pts.length);
+  $("chart-title").textContent = vt.titulo;
+  document.querySelector(".card--chart").classList.toggle("is-empty", vt.vacia);   // una linea, sin ejes
   const note = $("chart-note");
-  note.hidden = !h.parcial;
-  note.textContent = h.parcial
-    ? `Los datos cubren solo ${fmtNum(h.horas_con_datos)} h de las últimas ${h.hours} h; la gráfica muestra lo disponible.`
-    : "";
+  note.hidden = !vt.nota;
+  note.textContent = vt.nota;
   $("table-body").replaceChildren(...[...pts].reverse().map((p) => el("tr", {},
     el("td", {}, fechaHoraCol(p.t)), el("td", {}, fmtNum(p.pm25)), el("td", {}, fmtNum(p.pm10)),
     el("td", {}, fmtNum(p.temperature)), el("td", {}, fmtNum(p.humidity, 0)))));
@@ -610,6 +609,15 @@ async function refreshHistory() {
 let replayTimer = null, replayVelocidad = VELOCIDADES[0].ms, metricasClave = "";
 let replaySerie = null, replayGeom = null;
 
+// Chips MAE modelo / MAE persistencia / mejora; el texto completo queda en "Detalles".
+function renderChipsReplay(r) {
+  const c = chipsMetricasSerie(r);
+  $("replay-chips").replaceChildren(...(c ? c.chips : []).map((x) => el("li", {
+    class: `mchip mchip--${x.tono}`, title: x.etiqueta === "Mejora" ? "Mejora = 1 − MAE modelo / MAE persistencia" : null },
+    el("span", { class: "mchip__k" }, x.etiqueta), el("strong", { class: "mchip__v" }, x.valor))));
+  $("replay-chips-pie").textContent = c ? c.pie : "";
+}
+
 // ---- Grafica real frente a predicho (/predictions/replay/serie), SVG propio ----
 async function cargarSerieReplay(at) {
   const st = $("replay-estacion").value;
@@ -622,6 +630,7 @@ async function cargarSerieReplay(at) {
     replaySerie = null;
     $("replay-svg").replaceChildren();
     $("replay-gmet").textContent = mensajeError(e.status, e.message);
+    renderChipsReplay(null);
   }
 }
 
@@ -692,6 +701,7 @@ function renderSerieReplay(r) {
     svg.append(t);
   }
   $("replay-gmet").textContent = textoMetricasSerie(r);
+  renderChipsReplay(r);
   $("replay-tip").hidden = true;
 }
 
@@ -730,9 +740,11 @@ async function cargarReplay() {
   }
   if (r.at_local) $("replay-at").value = r.at_local;
   const v = vistaReplay(r);
-  $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", {},
-    el("td", {}, f.horizonte), el("td", {}, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
-    el("td", {}, f.persistencia), el("td", {}, f.error))));
+  $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", { class: f.mejor ? "fila--mejor" : null },
+    el("td", {}, f.horizonte, f.horaCorta ? el("span", { class: "solo-estrecho" }, ` · ${f.horaCorta}`) : null),
+    el("td", { class: "col-hora" }, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
+    el("td", {}, f.persistencia),
+    el("td", {}, f.error, f.mejor ? el("span", { class: "fila__mejor", title: "El modelo quedó más cerca del real que la persistencia" }, " ✓") : null))));
   $("replay-msg").textContent = v.mensaje;
   $("replay-ventana").textContent = v.ventana;
   $("replay-fuentes").textContent = v.fuentes;

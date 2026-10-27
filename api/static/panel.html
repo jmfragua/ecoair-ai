@@ -252,10 +252,11 @@
       <div class="table-wrap">
         <table class="replay__tabla">
           <caption class="sr-only">PM2.5 predicho frente a real a 4 y 5 horas</caption>
-          <thead><tr><th scope="col">Horizonte</th><th scope="col" title="mes-día hora, Colombia">Hora objetivo</th><th scope="col">Predicho</th><th scope="col">Real</th><th scope="col">Persistencia</th><th scope="col" title="predicho menos real">Error</th></tr></thead>
+          <thead><tr><th scope="col">Horizonte</th><th scope="col" class="col-hora" title="mes-día hora, Colombia">Hora objetivo</th><th scope="col">Predicho</th><th scope="col">Real</th><th scope="col">Persistencia</th><th scope="col" title="predicho menos real">Error</th></tr></thead>
           <tbody id="replay-filas"></tbody>
         </table>
       </div>
+      <p class="replay__nota" id="replay-nota">Error = predicho − real. ✓ = el modelo quedó más cerca del real que la persistencia.</p>
       <div class="replay__grafica">
         <div class="replay__gctrl">
           <div class="field">
@@ -278,10 +279,15 @@
           <svg id="replay-svg" class="chart__svg replay__svg" aria-hidden="true"></svg>
           <div id="replay-tip" class="tip" hidden></div>
         </div>
-        <p class="replay__src" id="replay-gmet"></p>
+        <ul class="replay__chips" id="replay-chips" aria-label="Error medio de la gráfica"></ul>
+        <p class="replay__src replay__pie" id="replay-chips-pie"></p>
       </div>
-      <p class="replay__src" id="replay-ventana"></p>
-      <p class="replay__src" id="replay-mae"></p>
+      <details class="replay__detalles">
+        <summary>Detalles</summary>
+        <p class="replay__src" id="replay-gmet"></p>
+        <p class="replay__src" id="replay-ventana"></p>
+        <p class="replay__src" id="replay-mae"></p>
+      </details>
       <p class="replay__src" id="replay-fuentes"></p>
       <!-- Mapa de estaciones: Leaflet local (vendor/) + teselas de OpenStreetMap (unico recurso externo) -->
       <div class="mapa" id="mapa-bloque">

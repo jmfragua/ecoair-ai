@@ -27,8 +27,10 @@ test("replay: predicho vs real, sin dato y error con signo", () => {
       { horizon_hours: 4, target_local: "2026-09-30T16:00", predicted_pm25: 17.2, observed_pm25: 15, persistence_pm25: 20, error_modelo: 2.2 },
       { horizon_hours: 5, target_local: "2026-09-30T17:00", predicted_pm25: 16.9, observed_pm25: null, persistence_pm25: 20, error_modelo: null },
     ] });
-  assert.deepEqual(v.filas[0], { horizonte: "4 h", hora: "09-30 16:00", predicho: "17,2", real: "15,0", persistencia: "20,0", error: "+2,2" });
+  assert.deepEqual(v.filas[0], { horizonte: "4 h", hora: "09-30 16:00", horaCorta: "16:00", predicho: "17,2", real: "15,0",
+    persistencia: "20,0", error: "+2,2", mejor: true });                      // |17,2 - 15| < |20 - 15|
   assert.equal(v.filas[1].real, "sin dato");
+  assert.equal(v.filas[1].mejor, null);                // sin real no se compara
   assert.equal(v.filas[1].error, "—");
   assert.match(v.ventana, /media 24 h 18,4 µg\/m³ \(24 de 24 h\)/);
   assert.equal(v.fuentes, "Datos: IDEAM SISAIRE.");
@@ -81,4 +83,19 @@ test("grafica: tramos con huecos sin conectar, aislados, metricas y tooltip", as
   const tip = m.filasTooltip({ target_local: "2026-09-30T16:00", emision_local: "2026-09-30T12:00", real: null, predicho: 20.7, persistencia: 21 });
   assert.deepEqual(tip.filas, [["Real", "sin dato"], ["Predicho", "20,7 µg/m³"], ["Persistencia", "21,0 µg/m³"]]);
   assert.match(tip.titulo, /2026-09-30 16:00 \(hora objetivo, Colombia\)/);
+});
+
+test("chips de metricas, modelo frente a persistencia y nota del error", async () => {
+  const m = await import("../../static/js/replay-vista.js");
+  const c = m.chipsMetricasSerie({ horas: 24, horizonte: 4, metricas: { n: 24, mae_modelo: 7.15, mae_persistencia: 9.13 } });
+  assert.deepEqual(c.chips.map((x) => [x.etiqueta, x.valor, x.tono]),
+    [["MAE modelo", "7,15 µg/m³", "modelo"], ["MAE persistencia", "9,13 µg/m³", "neutro"], ["Mejora", "+21,7 %", "mejor"]]);
+  assert.equal(c.pie, "Últimas 24 h, a 4 h · n = 24 horas");
+  const peor = m.chipsMetricasSerie({ horas: 168, horizonte: 5, metricas: { n: 3, mae_modelo: 10, mae_persistencia: 8 } });
+  assert.deepEqual([peor.chips[2].valor, peor.chips[2].tono, peor.pie], ["-25,0 %", "peor", "Últimas 7 días, a 5 h · n = 3 horas"]);
+  assert.equal(m.chipsMetricasSerie({ horas: 24, horizonte: 4, metricas: { n: 0 } }), null);
+  assert.equal(m.chipsMetricasSerie(null), null);
+  assert.equal(m.mejorQuePersistencia({ predicted_pm25: 20, observed_pm25: 15, persistence_pm25: 18 }), false);
+  assert.equal(m.mejorQuePersistencia({ predicted_pm25: 16, observed_pm25: 15, persistence_pm25: 14 }), false);   // empate: no
+  assert.match(m.NOTA_ERROR, /^Error = predicho − real\./);
 });

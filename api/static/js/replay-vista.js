@@ -32,10 +32,12 @@ export function vistaReplay(r) {
   const filas = r.predicciones.map((p) => ({
     horizonte: `${p.horizon_hours} h`,
     hora: typeof p.target_local === "string" ? p.target_local.slice(5).replace("T", " ") : "—",
+    horaCorta: typeof p.target_local === "string" ? p.target_local.slice(11, 16) : "",   // celular: "4 h · 16:00"
     predicho: num(p.predicted_pm25),
     real: p.observed_pm25 == null ? "sin dato" : num(p.observed_pm25),
     persistencia: num(p.persistence_pm25),
     error: conSigno(p.error_modelo),
+    mejor: mejorQuePersistencia(p),
   }));
   const v = r.ventana || {};
   return {
@@ -46,6 +48,15 @@ export function vistaReplay(r) {
     mensaje: filas.length ? "" : "El modelo no tiene horizontes visibles.",
   };
 }
+
+// true si el modelo quedo mas cerca del real que la persistencia; null sin dato real.
+export function mejorQuePersistencia(p) {
+  const ok = (v) => typeof v === "number" && Number.isFinite(v);
+  if (!p || !ok(p.observed_pm25) || !ok(p.predicted_pm25) || !ok(p.persistence_pm25)) return null;
+  return Math.abs(p.predicted_pm25 - p.observed_pm25) < Math.abs(p.persistence_pm25 - p.observed_pm25);
+}
+
+export const NOTA_ERROR = "Error = predicho − real. ✓ = el modelo quedó más cerca del real que la persistencia.";
 
 // Error de la API -> texto (422 trae el motivo, p. ej. horas que faltan en la ventana).
 export function mensajeError(status, detalle) {
@@ -168,6 +179,24 @@ export function textoMetricasSerie(r) {
   const rango = (RANGOS.find((x) => x.horas === r.horas) || {}).label || `${r.horas} h`;
   return `Últimas ${rango}, a ${r.horizonte} h: MAE modelo ${num(m.mae_modelo, 2)} (RMSE ${num(m.rmse_modelo, 2)}) frente a ` +
          `persistencia ${num(m.mae_persistencia, 2)} (RMSE ${num(m.rmse_persistencia, 2)}) µg/m³, con n = ${m.n} horas.`;
+}
+
+// Tres chips bajo la grafica: MAE modelo, MAE persistencia y mejora % (1 - modelo / persistencia).
+// -> {chips: [{etiqueta, valor, tono}], pie} o null si no hay horas comparables.
+export function chipsMetricasSerie(r) {
+  const m = r && r.metricas;
+  if (!m || !m.n || typeof m.mae_modelo !== "number" || typeof m.mae_persistencia !== "number") return null;
+  const mejora = m.mae_persistencia > 0 ? (1 - m.mae_modelo / m.mae_persistencia) * 100 : null;
+  const rango = (RANGOS.find((x) => x.horas === r.horas) || {}).label || `${r.horas} h`;
+  return {
+    chips: [
+      { etiqueta: "MAE modelo", valor: `${num(m.mae_modelo, 2)} µg/m³`, tono: "modelo" },
+      { etiqueta: "MAE persistencia", valor: `${num(m.mae_persistencia, 2)} µg/m³`, tono: "neutro" },
+      { etiqueta: "Mejora", valor: mejora == null ? "—" : `${mejora > 0 ? "+" : ""}${num(mejora, 1)} %`,
+        tono: mejora == null ? "neutro" : mejora > 0 ? "mejor" : "peor" },
+    ],
+    pie: `Últimas ${rango}, a ${r.horizonte} h · n = ${m.n} horas`,
+  };
 }
 
 export function filasTooltip(p) {

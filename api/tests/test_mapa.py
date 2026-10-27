@@ -149,3 +149,41 @@ def test_mapa_replay_usa_el_arreglo_tactil():
     cuerpo = app[inicio:app.index("\n}\n", inicio)]
     assert "...interaccionTactil(tactil)" in cuerpo and "AYUDA_TACTIL" in cuerpo
     assert "for (const m of mapaVista.marcadores)" in cuerpo      # sigue dibujando las estaciones del IDEAM
+
+
+def test_modos_con_colores_distintos_y_nota_del_error():
+    css = (STATIC / "css" / "app.css").read_text()
+    assert "--replay: #a78bfa;" in css
+    banner = css[css.index(".replay-banner {"):css.index("}", css.index(".replay-banner {"))]
+    assert "var(--replay)" in banner and "--warn" not in banner          # replay en violeta
+    assert "border: 2px dashed var(--warn)" in css                        # SIMULACION sigue en ambar
+    assert ".status--replay .status__dot { background: var(--replay); }" in css
+    panel = (STATIC / "panel.html").read_text()
+    from_js = re.search(r'NOTA_ERROR = "([^"]+)"', (STATIC / "js" / "replay-vista.js").read_text()).group(1)
+    assert f'id="replay-nota">{from_js}</p>' in panel
+    assert '<details class="replay__detalles">' in panel and 'id="replay-chips"' in panel
+    # textos de los avisos sin cambios
+    assert "<strong>REPLAY HISTÓRICO</strong> · datos reales del IDEAM de una fecha pasada." in panel
+
+
+def test_texto_secundario_minimo_12px():
+    css = (STATIC / "css" / "app.css").read_text()
+    rems = [float(x) for x in re.findall(r"font-size: (\.\d+)rem", css)]
+    pxs = [float(x) for x in re.findall(r"font-size: (\d+(?:\.\d+)?)px", css)]
+    assert min(rems) >= 0.78, sorted(rems)[:3]                             # 0,78 x 16 px = 12,5 px
+    assert [p for p in pxs if p < 12] == [10.0]                            # solo el icono "!" de las alertas
+
+
+def test_tabla_replay_cabe_en_celular():
+    """A < 480 px se oculta "Hora objetivo" (la hora va en la celda del horizonte) y el texto no baja de 12,5 px."""
+    css = (STATIC / "css" / "app.css").read_text()
+    bloque = css[css.index("@media (max-width: 479px) {\n  .replay__tabla"):]
+    bloque = bloque[:bloque.index("\n}")]
+    assert ".replay__tabla .col-hora { display: none; }" in bloque
+    assert ".replay__tabla .solo-estrecho { display: inline; }" in bloque
+    assert float(re.search(r"\.replay__tabla \{ font-size: (\.\d+)rem", bloque).group(1)) >= 0.78
+    panel = (STATIC / "panel.html").read_text()
+    assert "@media (max-width: 379px) { .replay__tabla th, .replay__tabla td { padding: 6px 3px; } }" in css   # cabe a 360 px
+    assert '<th scope="col" class="col-hora"' in panel
+    app = (STATIC / "js" / "app.js").read_text()
+    assert 'el("td", { class: "col-hora" }, f.hora)' in app and '"solo-estrecho"' in app

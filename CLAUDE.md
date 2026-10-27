@@ -74,6 +74,13 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ubicación): un dedo desplaza la página, dos dedos mueven y amplían, con texto de ayuda; probado con
   eventos táctiles de DevTools (pellizco 11 -> 14, un dedo no mueve el mapa, toque en marcador cambia
   de estación).
+- [LOCAL] Ajustes visuales del panel (sin cambiar datos ni lógica): a >= 1200 px dos columnas que no se
+  estiran (align-items: start; la última fila es 1fr y absorbe la tarjeta alta). Modo replay: izquierda
+  ICA, PM, ambiente y recomendación; derecha Replay. SIMULACIÓN en ámbar (--warn), REPLAY HISTÓRICO
+  en violeta (--replay, banner y chip). Tendencia sin datos = una línea (js/tendencia-vista.js); oculta
+  en replay. Replay: chips MAE modelo / persistencia / mejora y "Detalles" plegable; fila resaltada con ✓
+  si el modelo quedó más cerca del real que la persistencia; nota "Error = predicho − real". "Sin datos
+  hace 1 día 7 h" (haceCuanto). Texto secundario >= 0,78rem (12,5 px), --muted #aeaca2 (7,6:1).
 - [LOCAL] Tarjeta "Ubicación de la estación" (panel en vivo): SOLO el rombo de EcoAir (las estaciones
   del IDEAM solo sirven para el encuadre, no se dibujan). Misma vista inicial, límites (Valle de
   Aburrá, ampliados si el punto quedara fuera), zoom 11–17, botones +/− y sin rueda que el mapa del

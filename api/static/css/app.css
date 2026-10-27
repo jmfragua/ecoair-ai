@@ -21,7 +21,7 @@
   --border: rgba(255, 255, 255, 0.08);
   --text: #f0efec;
   --text-2: #c3c2b7;
-  --muted: #9b998f;
+  --muted: #aeaca2;   /* texto secundario: contraste >= 7:1 sobre --surface */
   --grid: #2c2c2a;
   --axis: #383835;
   /* Series de la grafica (validadas con el skill dataviz, modo oscuro) */
@@ -30,6 +30,7 @@
   /* Estados (siempre con icono y texto, nunca solo color) */
   --ok: #0ca30c;
   --warn: #fab219;
+  --replay: #a78bfa;   /* modo replay historico (violeta; SIMULACION usa --warn) */
   --crit: #d03b3b;
   /* Categoria actual del ICA (la cambia app.js) */
   --cat: #6b6a63;
@@ -109,7 +110,7 @@ ol, ul { padding: 0; list-style: none; }
 
 .sim-badge {
   padding: 6px 12px; border-radius: 999px;
-  font-size: .75rem; font-weight: 800; letter-spacing: .08em;
+  font-size: .78rem; font-weight: 800; letter-spacing: .08em;
   color: #1a1400; background: var(--warn);
   border: 2px dashed #1a1400;
 }
@@ -121,9 +122,13 @@ ol, ul { padding: 0; list-style: none; }
   border: 2px dashed var(--warn); color: #ffe2a6; font-size: .9rem;
 }
 .sim-banner strong { color: var(--warn); letter-spacing: .08em; }
-/* Modo replay: mismo estilo que SIMULACION, fijo arriba para que siempre se vea */
-.replay-banner { position: sticky; top: 0; z-index: 30; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .8); }
-.status--replay .status__dot { background: var(--warn); }
+/* Modo replay: VIOLETA (SIMULACION es ambar), fijo arriba para que siempre se vea */
+.replay-banner { position: sticky; top: 0; z-index: 30; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .8);
+  background: repeating-linear-gradient(135deg, #221b3a 0 12px, #1c1631 12px 24px);
+  border-color: var(--replay); color: #e6deff; }
+.replay-banner strong { color: #c9b8ff; }
+.status--replay { color: #e6deff; background: rgba(167, 139, 250, .14); border-color: rgba(167, 139, 250, .55); }
+.status--replay .status__dot { background: var(--replay); }
 .device-select {
   font: inherit; font-weight: 600; color: var(--text-2); background: var(--surface);
   border: 1px solid var(--border); border-radius: 8px; padding: 2px 6px; max-width: 100%;
@@ -134,11 +139,11 @@ ol, ul { padding: 0; list-style: none; }
 .brand__device { display: flex; align-items: center; min-width: 0; }
 .device-select { min-width: 0; text-overflow: ellipsis; }
 .al__model {
-  font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;
   color: #c9b8ff; border: 1px solid rgba(163, 113, 247, .45); background: rgba(163, 113, 247, .12);
 }
 .al__sim {
-  font-size: .68rem; font-weight: 800; letter-spacing: .06em; padding: 1px 7px; border-radius: 999px;
+  font-size: .78rem; font-weight: 800; letter-spacing: .06em; padding: 1px 7px; border-radius: 999px;
   color: #1a1400; background: var(--warn);
 }
 
@@ -173,7 +178,7 @@ ol, ul { padding: 0; list-style: none; }
 .card__title { font-size: .8rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
 .card__sub { font-size: .8rem; color: var(--muted); margin-top: 2px; }
 .chip {
-  font-size: .72rem; font-weight: 600; color: var(--text-2);
+  font-size: .78rem; font-weight: 600; color: var(--text-2);
   padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -223,13 +228,13 @@ ol, ul { padding: 0; list-style: none; }
 /* Valores de la ultima medicion (2x2) dentro de la tarjeta del ICA */
 .now { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .now__item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; min-width: 0; }
-.now dt { font-size: .7rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.now dt { font-size: .78rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .now dd { margin: 2px 0 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .now__time { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 8px; }
 .now__warn { text-align: center; color: #ffe2a6; font-size: .8rem; font-weight: 600; margin-top: 2px; }
 .scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 16px; }
 .scale li {
-  position: relative; text-align: center; font-size: .62rem; line-height: 1.2; color: var(--muted);
+  position: relative; text-align: center; font-size: .78rem; line-height: 1.2; color: var(--muted);
   padding-top: 10px;
 }
 .scale li::before {
@@ -238,7 +243,9 @@ ol, ul { padding: 0; list-style: none; }
 }
 .scale li[aria-current="true"] { color: var(--text); font-weight: 700; }
 .scale li[aria-current="true"]::before { opacity: 1; height: 6px; }
-.scale__range { display: block; font-variant-numeric: tabular-nums; }
+.scale__range { display: block; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Celular: 3 x 2 para que los nombres y rangos no se partan con el texto de 12,5 px */
+@media (max-width: 479px) { .scale { grid-template-columns: repeat(3, 1fr); row-gap: 10px; } }
 
 /* Sin datos: el medidor se apaga */
 .is-nodata .gauge__arc { stroke: var(--axis); filter: none; }
@@ -249,9 +256,9 @@ ol, ul { padding: 0; list-style: none; }
 .rec__cat::before { content: ""; width: 12px; height: 12px; border-radius: 4px; background: var(--cat); flex: none; }
 .rec__vacio { color: var(--text-2); font-size: .95rem; }
 .rec__cat[hidden], .rec__src:empty { display: none; }
-.rec__label { font-size: .72rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-top: 12px; }
+.rec__label { font-size: .78rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-top: 12px; }
 .rec__text { color: var(--text-2); font-size: .92rem; margin-top: 4px; }
-.rec__src { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }
+.rec__src { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .78rem; color: var(--muted); }
 .rec__src li + li { margin-top: 2px; }
 .rec__resumen { color: var(--text); font-size: .95rem; font-weight: 600; margin-top: 10px; }
 .rec__resumen:empty, .rec__tag:empty { display: none; }
@@ -264,7 +271,7 @@ ol, ul { padding: 0; list-style: none; }
 .rec__sec .rec__nota { color: var(--muted); font-size: .8rem; }
 .rec__sec ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; color: var(--text-2); font-size: .9rem; }
 .rec__sec li + li { margin-top: 3px; }
-.rec__tag { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+.rec__tag { font-size: .78rem; color: var(--muted); margin-top: 6px; }
 
 /* ---------- Metricas ---------- */
 .metric__value { font-size: 2.6rem; font-weight: 750; letter-spacing: -0.03em; line-height: 1.05; }
@@ -282,7 +289,7 @@ ol, ul { padding: 0; list-style: none; }
 .bar[data-state="warn"] .bar__fill { background: var(--warn); }
 .bar[data-state="crit"] .bar__fill { background: var(--crit); }
 .bar__mark { position: absolute; top: 0; bottom: 0; left: calc(100% / 1.5); width: 2px; background: var(--text-2); opacity: .7; }
-.limit__note { font-size: .75rem; color: var(--muted); margin-top: 6px; }
+.limit__note { font-size: .78rem; color: var(--muted); margin-top: 6px; }
 
 .card--env { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; align-content: start; }
 .env { display: flex; gap: 10px; align-items: flex-start; }
@@ -301,21 +308,21 @@ ol, ul { padding: 0; list-style: none; }
   transition: left .9s cubic-bezier(.2, .7, .2, 1); opacity: 0;
 }
 .range.has-value .range__dot { opacity: 1; }
-.range__legend { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.range__state { font-size: .75rem; color: var(--text-2); margin-top: 2px; }
+.range__legend { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.range__state { font-size: .78rem; color: var(--text-2); margin-top: 2px; }
 .env__foot { grid-column: 1 / -1; display: grid; gap: 2px; }
-.env__time { font-size: .75rem; color: var(--muted); }
-.env__ref { font-size: .68rem; color: var(--muted); opacity: .85; }
+.env__time { font-size: .78rem; color: var(--muted); }
+.env__ref { font-size: .78rem; color: var(--muted); opacity: .85; }
 
 /* ---------- Grafica ---------- */
 .toggle {
-  font: inherit; font-size: .75rem; font-weight: 600; color: var(--text-2);
+  font: inherit; font-size: .78rem; font-weight: 600; color: var(--text-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
   padding: 5px 12px; cursor: pointer; min-height: 30px;
 }
 .toggle:hover { color: var(--text); border-color: rgba(255, 255, 255, .18); }
 .toggle[aria-pressed="true"] { color: var(--page); background: var(--text-2); border-color: var(--text-2); }
-.c-offscale { fill: var(--muted); font-size: 10.5px; font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.c-offscale { fill: var(--muted); font-size: 12px; font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--text-2); }
 .legend li { display: flex; align-items: center; gap: 6px; }
 .key { width: 16px; height: 2px; border-radius: 2px; display: inline-block; }
@@ -331,11 +338,18 @@ ol, ul { padding: 0; list-style: none; }
   background: rgba(250, 178, 25, .08); border: 1px solid rgba(250, 178, 25, .25);
   padding: 8px 10px; border-radius: 10px;
 }
+/* Tendencia sin datos: una sola linea, sin ejes ni caja grande ni controles */
+.card--chart.is-empty .chart, .card--chart.is-empty .chart__controls, .card--chart.is-empty .table-view,
+.card--chart.is-empty .card__sub { display: none; }
+.card--chart.is-empty .card__head { margin-bottom: 4px; }
+.card--chart.is-empty .chart__note { margin-top: 0; padding: 0; background: none; border: 0; color: var(--text-2); font-size: .9rem; }
+/* En modo replay la tendencia usa el sensor propio: no aplica */
+body.modo-replay .card--chart { display: none; }
 .c-grid { stroke: var(--grid); stroke-width: 1; }
 .c-axis { stroke: var(--axis); stroke-width: 1; }
-.c-tick { fill: var(--muted); font-size: 11px; font-family: var(--font); font-variant-numeric: tabular-nums; }
+.c-tick { fill: var(--muted); font-size: 12px; font-family: var(--font); font-variant-numeric: tabular-nums; }
 .c-ref { stroke: var(--muted); stroke-width: 1; opacity: .8; }
-.c-reflabel { fill: var(--text-2); font-size: 11px; font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.c-reflabel { fill: var(--text-2); font-size: 12px; font-family: var(--font); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
 .c-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .c-area { stroke: none; opacity: .1; }
 .c-pm25 { stroke: var(--series-pm25); }
@@ -345,7 +359,7 @@ ol, ul { padding: 0; list-style: none; }
 .c-dot { stroke: var(--surface); stroke-width: 2; }
 .c-dot.c-pm25 { fill: var(--series-pm25); }
 .c-dot.c-pm10 { fill: var(--series-pm10); }
-.c-endlabel { fill: var(--text-2); font-size: 11px; font-weight: 650; font-family: var(--font); }
+.c-endlabel { fill: var(--text-2); font-size: 12px; font-weight: 650; font-family: var(--font); }
 .c-cross { stroke: var(--text-2); stroke-width: 1; }
 .c-empty { fill: var(--muted); font-size: 13px; font-family: var(--font); }
 
@@ -389,8 +403,8 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .sev--info { background: var(--text-2); }
 .al__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .al__rule { font-weight: 650; font-size: .92rem; }
-.al__sev { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
-.al__state { font-size: .72rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.al__sev { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+.al__state { font-size: .78rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
 .al__state--open { color: var(--text); border-color: rgba(208, 59, 59, .6); background: rgba(208, 59, 59, .12); }
 .al__time { font-size: .78rem; color: var(--muted); margin-top: 2px; }
 .al__dur { color: var(--text-2); font-weight: 600; }
@@ -407,7 +421,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .pred__h { font-size: .8rem; font-weight: 650; color: var(--text-2); min-width: 64px; }
 .pred__v { font-size: 1.8rem; font-weight: 750; letter-spacing: -0.02em; }
 .pred__na { color: var(--muted); font-size: .9rem; }
-.pred__err { width: 100%; font-size: .72rem; color: var(--muted); }
+.pred__err { width: 100%; font-size: .78rem; color: var(--muted); }
 .pred__msg { color: var(--text-2); font-size: .92rem; margin-top: 4px; }
 .pred__msg:empty, .pred__src:empty, .pred__warn:empty { display: none; }
 .pred__src { font-size: .78rem; color: var(--muted); margin-top: 10px; }
@@ -435,18 +449,44 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .r-pred { fill: none; stroke: var(--series-pm10); stroke-width: 2; stroke-dasharray: 6 4; stroke-linecap: butt; }
 .r-pers { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 1.5 4; stroke-linecap: round; opacity: .8; }
 .r-ahora { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 3 3; }
-.r-ahora-txt { fill: var(--text); font-size: 11px; font-weight: 700; }
+.r-ahora-txt { fill: var(--text); font-size: 12px; font-weight: 700; }
 .r-dot-real { fill: var(--series-pm25); }
 .r-dot-pred { fill: var(--surface); stroke: var(--series-pm10); stroke-width: 2; }
 .r-dot-pers { fill: var(--muted); }
 .r-guia { stroke: var(--text-2); stroke-width: 1; opacity: .5; }
-.r-unidad { fill: var(--muted); font-size: 11px; }
+.r-unidad { fill: var(--muted); font-size: 12px; }
 @media (min-width: 600px) { .replay__form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; } }
 .replay__msg { color: var(--text-2); font-size: .9rem; margin: 6px 0; }
 .replay__msg:empty, .replay__src:empty { display: none; }
 .replay__tabla { width: 100%; font-variant-numeric: tabular-nums; font-size: .85rem; }
 .replay__tabla th, .replay__tabla td { padding: 6px 8px; white-space: nowrap; }
+.replay__tabla .solo-estrecho { display: none; }
+/* Celular: la tabla cabe entera, sin scroll interno (Error y ✓ siempre visibles): la hora objetivo
+   pasa a la celda del horizonte ("4 h · 16:00"), menos padding y texto de 12,8 px */
+@media (max-width: 479px) {
+  .replay__tabla { font-size: .8rem; }
+  .replay__tabla th, .replay__tabla td { padding: 6px 4px; }
+  .replay__tabla .col-hora { display: none; }
+  .replay__tabla .solo-estrecho { display: inline; }
+}
+@media (max-width: 379px) { .replay__tabla th, .replay__tabla td { padding: 6px 3px; } }
 .replay__src { font-size: .78rem; color: var(--muted); margin-top: 8px; }
+.replay__nota { font-size: .8rem; color: var(--text-2); margin-top: 6px; }
+.replay__tabla tr.fila--mejor td { background: rgba(12, 163, 12, .1); }
+.replay__tabla tr.fila--mejor td:last-child { color: #9be89b; font-weight: 650; }
+.fila__mejor { font-weight: 800; }
+.replay__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 0; list-style: none; }
+.mchip { display: grid; gap: 1px; padding: 6px 12px; border-radius: 12px; background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, .12); min-width: 0; }
+.mchip__k { font-size: .78rem; color: var(--text-2); }
+.mchip__v { font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--text); }
+.mchip--modelo { border-color: rgba(217, 89, 38, .55); }
+.mchip--mejor .mchip__v { color: #9be89b; }
+.mchip--peor .mchip__v { color: #ffb3b3; }
+.replay__pie { margin-top: 6px; }
+.replay__detalles { margin-top: 10px; }
+.replay__detalles summary { cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--text-2); width: fit-content; }
+.replay__detalles[open] summary { margin-bottom: 4px; }
 
 /* Mapa de estaciones (Leaflet). Seleccionada = mas grande y borde blanco; EcoAir = rombo, no circulo */
 .mapa { margin-top: 14px; min-width: 0; }
@@ -473,7 +513,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .mapa__caja .leaflet-tooltip { font: 600 12px var(--font); }
 .mapa__caja .leaflet-control-attribution { font: 11px var(--font); }
 .pred__fijo { font-size: .8rem; font-weight: 600; color: #ffe2a6; margin-bottom: 10px; }
-.pred__hasta { font-size: .75rem; color: var(--muted); }
+.pred__hasta { font-size: .78rem; color: var(--muted); }
 
 /* ---------- Suscripcion por correo ---------- */
 .subs { display: grid; gap: 12px; max-width: 760px; }
@@ -485,6 +525,13 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%;
 }
 .field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+/* Mismo estilo para los controles nativos fuera de .field (velocidad del replay, selector de estacion) */
+.replay__play select, .device-select {
+  font: inherit; font-size: .9rem; font-weight: 600; color: var(--text); background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 6px 10px; min-height: 40px;
+}
+.device-select { min-height: 34px; padding: 4px 8px; }
+.replay__play select:focus-visible, .device-select:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .8rem; color: var(--text-2); line-height: 1.45; }
 .consent input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--ok); }
 .subs__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -530,7 +577,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .brand__logo { width: 34px; height: 34px; padding: 6px; }
   .brand__name { font-size: 1.15rem; }
   .status { padding: 4px 10px; font-size: .8rem; }
-  .sim-badge { padding: 4px 9px; font-size: .68rem; }
+  .sim-badge { padding: 4px 9px; font-size: .78rem; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .card { grid-column: 1 / -1; padding: 13.5px; border-radius: 16px; } /* 18 px - 25 % */
   .card__head { margin-bottom: 6px; }
@@ -543,8 +590,8 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .card--pm .metric__value { font-size: 1.9rem; }
   .card--pm .metric__sub { font-size: .78rem; }
   .card--pm .limit { margin-top: 10px; }
-  .card--pm .limit__row { font-size: .72rem; }
-  .card--pm .limit__note { font-size: .68rem; line-height: 1.35; }
+  .card--pm .limit__row { font-size: .78rem; }
+  .card--pm .limit__note { font-size: .78rem; line-height: 1.35; }
   .chart__svg { height: 220px; }
 }
 
@@ -560,24 +607,25 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 }
 
 /* ---------- Pantalla grande (feria): 4 columnas ---------- */
+/* Dos columnas que se equilibran: ninguna tarjeta se estira para igualar a la de al lado
+   (align-self: start). La ultima fila es flexible (1fr) y absorbe lo que la tarjeta alta de la
+   izquierda (Replay) mide de mas, asi la columna derecha queda compacta, sin huecos entre tarjetas. */
 @media (min-width: 1200px) {
   body { font-size: 17px; }
-  /* fila 6 flexible: absorbe lo que la tarjeta Replay (filas 5-6) mide de mas y suscripcion no se estira */
-  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(5, auto) 1fr; }
-  /* fila 1-2: ICA | recomendacion / PM2.5 PM10 · fila 3: ambiente | alertas · fila 4: grafica */
-  .card--ica { grid-column: 1 / 3; grid-row: 1 / 3; display: flex; flex-direction: column; }
-  .card--ica .gauge { margin-top: auto; width: 100%; }
-  .card--ica .scale { margin-bottom: auto; }
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(7, auto) 1fr; align-items: start; }
+  /* filas 1-3: ICA | recomendacion, PM2.5 PM10, ambiente · fila 4: grafica ·
+     filas 5-8: Replay | alertas, suscripcion, ubicacion */
+  .card--ica { grid-column: 1 / 3; grid-row: 1 / 4; }
   .card--rec { grid-column: 3 / 5; grid-row: 1; }
   .card--pm:nth-of-type(3) { grid-column: 3; grid-row: 2; }
   .card--pm:nth-of-type(4) { grid-column: 4; grid-row: 2; }
-  .card--env { grid-column: 1 / 3; grid-row: 3; align-content: center; }
+  .card--env { grid-column: 3 / 5; grid-row: 3; }
   .card--env .env__value { font-size: 2.8rem; }
-  .card--alerts { grid-column: 3 / 5; grid-row: 3; max-height: 380px; overflow: auto; }
   .card--chart { grid-column: 1 / -1; grid-row: 4; }
-  .card--pred, .card--replay { grid-column: 1 / 3; grid-row: 5 / span 2; }
-  .card--subs { grid-column: 3 / 5; grid-row: 5; }
-  .card--ubicacion { grid-column: 3 / 5; grid-row: 6; align-self: start; }
+  .card--pred, .card--replay { grid-column: 1 / 3; grid-row: 5 / 9; }
+  .card--alerts { grid-column: 3 / 5; grid-row: 5; max-height: 380px; overflow: auto; }
+  .card--subs { grid-column: 3 / 5; grid-row: 6; }
+  .card--ubicacion { grid-column: 3 / 5; grid-row: 7; }
   .gauge { max-width: 420px; }
   .gauge__value { font-size: 5.4rem; }
   .chart__svg { height: 360px; }
@@ -594,14 +642,17 @@ body.modo-replay .card--chart { order: 6; }
 body.modo-replay .card--alerts { order: 7; }
 body.modo-replay .card--subs { order: 8; }
 @media (min-width: 1200px) {
-  body.modo-replay .card--replay { grid-column: 3 / 5; grid-row: 1; }
-  body.modo-replay .card--rec { grid-column: 3 / 5; grid-row: 2; }
-  body.modo-replay .card--pm:nth-of-type(3) { grid-column: 1; grid-row: 3; }
-  body.modo-replay .card--pm:nth-of-type(4) { grid-column: 2; grid-row: 3; }
-  body.modo-replay .card--env { grid-column: 3 / 5; grid-row: 3; }
-  body.modo-replay .card--chart { grid-column: 1 / -1; grid-row: 4; }
-  body.modo-replay .card--alerts { grid-column: 1 / 3; grid-row: 5; }
-  body.modo-replay .card--subs { grid-column: 3 / 5; grid-row: 5; }
+  /* izquierda: ICA, PM2.5 PM10, ambiente, recomendacion · derecha: Replay (filas 1-5; la 5 es flexible)
+     · fila 6: alertas | suscripcion. La tendencia y la ubicacion no se muestran en este modo. */
+  body.modo-replay .grid { grid-template-rows: repeat(4, auto) 1fr auto; }
+  body.modo-replay .card--ica { grid-column: 1 / 3; grid-row: 1; }
+  body.modo-replay .card--replay { grid-column: 3 / 5; grid-row: 1 / 6; }
+  body.modo-replay .card--pm:nth-of-type(3) { grid-column: 1; grid-row: 2; }
+  body.modo-replay .card--pm:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+  body.modo-replay .card--env { grid-column: 1 / 3; grid-row: 3; }
+  body.modo-replay .card--rec { grid-column: 1 / 3; grid-row: 4; }
+  body.modo-replay .card--alerts { grid-column: 1 / 3; grid-row: 6; }
+  body.modo-replay .card--subs { grid-column: 3 / 5; grid-row: 6; }
 }
 
 @media (forced-colors: active) {

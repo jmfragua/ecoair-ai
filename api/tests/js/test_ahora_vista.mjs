@@ -42,7 +42,7 @@ test("medicion antigua (mas de 10 min): aviso de nodo apagado, conserva los valo
   assert.equal(v.ultima, "Última medición: hace 25 min · 09:35 (hora de Colombia)");
   assert.equal(v.pm25, "12,0");
   const ayer = vistaAhora({ ...M, received_at: "2026-10-16T13:00:00Z" }, AHORA);
-  assert.match(ayer.ultima, /^Última medición: hace 1 d 2 h · 16 de oct\.? 08:00 \(hora de Colombia\)$/);
+  assert.match(ayer.ultima, /^Última medición: hace 1 día 2 h · 16 de oct\.? 08:00 \(hora de Colombia\)$/);
   assert.equal(ayer.antigua, true);
 });
 
@@ -62,8 +62,9 @@ test("fallo de red: sin datos previos lo dice; nunca 'Cargando…'", () => {
 });
 
 test("hace cuanto: minutos, horas y dias; reloj adelantado no da negativos", () => {
-  assert.deepEqual([0, 1, 59, 60, 61, 1440, 1500].map(haceCuanto),
-    ["hace menos de 1 min", "hace 1 min", "hace 59 min", "hace 1 h", "hace 1 h 1 min", "hace 1 d", "hace 1 d 1 h"]);
+  assert.deepEqual([0, 1, 59, 60, 61, 1440, 1500, 1860, 15491].map(haceCuanto),
+    ["hace menos de 1 min", "hace 1 min", "hace 59 min", "hace 1 h", "hace 1 h 1 min", "hace 1 día", "hace 1 día 1 h",
+     "hace 1 día 7 h", "hace 10 días 18 h"]);
   assert.match(vistaAhora({ ...M, received_at: "2026-10-17T15:03:00Z" }, AHORA).ultima, /hace menos de 1 min/);
 });
 
