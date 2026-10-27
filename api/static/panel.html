@@ -336,6 +336,24 @@
     </section>
   </main>
 
+  <!-- Franja del proyecto: ODS solo con numero y nombre (sin logos oficiales de la ONU); QR generado
+       en el navegador (vendor/qrcode-generator) con BASE_URL + /panel -->
+  <section class="proyecto" id="proyecto" aria-labelledby="proyecto-title">
+    <div class="proyecto__txt">
+      <h2 id="proyecto-title" class="proyecto__nombre">EcoAir AI</h2>
+      <p class="proyecto__desc">Estación de bajo costo que mide el aire (PM2.5, PM10, temperatura y humedad) y lo publica en este panel. Proyecto universitario de Ingeniería de Software.</p>
+      <ul class="proyecto__ods" aria-label="Objetivos de Desarrollo Sostenible relacionados">
+        <li><span class="ods__num">ODS 3</span> Salud y bienestar</li>
+        <li><span class="ods__num">ODS 11</span> Ciudades y comunidades sostenibles</li>
+        <li><span class="ods__num">ODS 13</span> Acción por el clima</li>
+      </ul>
+    </div>
+    <figure class="proyecto__qr">
+      <svg id="proyecto-qr" class="proyecto__qrsvg" role="img" aria-label="Código QR para abrir este panel en el celular"></svg>
+      <figcaption>Escanea para abrir el panel<br><span id="proyecto-url" class="proyecto__url"></span></figcaption>
+    </figure>
+  </section>
+
   <footer class="foot">
     <p class="foot__warn"><strong>Estación de bajo costo, no sustituye mediciones oficiales.</strong></p>
     <p>Normas: Resolución 2254 de 2017 (MinAmbiente, Colombia) · Recomendaciones: EPA AQI Technical Assistance Document (orientativo).</p>

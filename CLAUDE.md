@@ -74,6 +74,17 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ubicación): un dedo desplaza la página, dos dedos mueven y amplían, con texto de ayuda; probado con
   eventos táctiles de DevTools (pellizco 11 -> 14, un dedo no mueve el mapa, toque en marcador cambia
   de estación).
+- [LOCAL] Modo kiosco (pantalla de la feria): /panel?device=...&modo=kiosco y /panel?modo=replay,kiosco&station=
+  (modo admite varios valores con coma; js/modo-vista.js). Solo la tarjeta del ICA en letra grande (clamp):
+  medidor, número, categoría, PM2.5, PM10, temperatura, humedad, última medición y estado ("En línea" o
+  "Sin conexión desde hace X"), con los banners de SIMULACIÓN/REPLAY. Sin selectores, formularios, mapas
+  ni pie; no inicia ubicación, suscripción, /proyecto ni el Replay en vivo (comprobado en el log de
+  acceso). Cabe en 1920x1080 sin scroll.
+- [LOCAL] Franja del proyecto en el pie del panel normal: EcoAir AI, descripción, ODS 3, 11 y 13 (solo
+  número y nombre, sin logos de la ONU) y QR generado en el navegador con qrcode-generator 2.0.4 (MIT,
+  api/static/vendor/, integridad npm verificada, SHA256SUMS). URL = BASE_URL + /panel vía GET /proyecto
+  (api/proyecto.py; solo http/https); sin BASE_URL válida usa el origen del panel. QR leído con el
+  BarcodeDetector de Chrome (devolvió la URL exacta). La api ahora recibe BASE_URL en docker-compose.
 - [LOCAL] Ajustes visuales del panel (sin cambiar datos ni lógica): a >= 1200 px dos columnas que no se
   estiran (align-items: start; la última fila es 1fr y absorbe la tarjeta alta). Modo replay: izquierda
   ICA, PM, ambiente y recomendación; derecha Replay. SIMULACIÓN en ámbar (--warn), REPLAY HISTÓRICO

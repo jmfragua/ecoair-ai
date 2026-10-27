@@ -655,6 +655,70 @@ body.modo-replay .card--subs { order: 8; }
   body.modo-replay .card--subs { grid-column: 3 / 5; grid-row: 6; }
 }
 
+/* ---------- Franja del proyecto (pie del panel normal) ---------- */
+.proyecto {
+  max-width: 1440px; margin: 20px auto 0; padding: 18px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border);
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center;
+}
+.proyecto__nombre { font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; }
+.proyecto__desc { color: var(--text-2); font-size: .9rem; margin-top: 4px; max-width: 70ch; }
+.proyecto__ods { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.proyecto__ods li { font-size: .85rem; color: var(--text-2); padding: 5px 10px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border); }
+.ods__num { font-weight: 750; color: var(--text); margin-right: 4px; }
+.proyecto__qr { margin: 0; display: flex; align-items: center; gap: 12px; }
+.proyecto__qrsvg { width: 120px; height: 120px; flex: none; border-radius: 8px; background: #fff; }
+.proyecto__qr figcaption { font-size: .85rem; color: var(--text-2); min-width: 0; }
+.proyecto__url { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+@media (min-width: 720px) { .proyecto { grid-template-columns: minmax(0, 1fr) auto; } }
+
+/* ---------- Modo kiosco (?modo=kiosco): pantalla grande, legible a 2-3 m ---------- */
+/* Solo la tarjeta del ICA (medidor, numero, categoria, PM2.5, PM10, temperatura, humedad y ultima
+   medicion) + estado del nodo. Sin selectores, formularios, mapas ni pie. Tamaños con clamp(): crecen
+   con la pantalla (1920 px) y bajan a lo normal en el celular. */
+body.modo-kiosco { padding: clamp(12px, 2vw, 40px); }
+body.modo-kiosco .top, body.modo-kiosco .sim-banner, body.modo-kiosco .grid { max-width: none; }
+body.modo-kiosco .brand__device, body.modo-kiosco .foot, body.modo-kiosco .proyecto,
+body.modo-kiosco .grid > .card:not(.card--ica) { display: none; }
+body.modo-kiosco .brand__name { font-size: clamp(1.3rem, 2.4vw, 3rem); }
+body.modo-kiosco .brand__logo { width: clamp(34px, 3.2vw, 64px); height: clamp(34px, 3.2vw, 64px); }
+body.modo-kiosco .status, body.modo-kiosco .sim-badge { font-size: clamp(1rem, 1.7vw, 2.1rem); padding: .35em .9em; }
+body.modo-kiosco .status__dot { width: .65em; height: .65em; }
+body.modo-kiosco .sim-banner { font-size: clamp(1rem, 1.5vw, 1.9rem); }
+body.modo-kiosco .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+body.modo-kiosco .card--ica {
+  grid-column: 1 / -1; grid-row: auto; animation: none;
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "gauge" "by" "base" "now" "time" "warn" "scale";
+  padding: clamp(14px, 2vw, 40px);
+}
+body.modo-kiosco .card--ica .card__head { grid-area: head; }
+body.modo-kiosco .card--ica .card__title { font-size: clamp(.9rem, 1.3vw, 1.6rem); }
+body.modo-kiosco .card--ica .chip { font-size: clamp(.8rem, 1vw, 1.2rem); }
+body.modo-kiosco .gauge { grid-area: gauge; max-width: min(100%, 640px); width: 100%; margin: 0 auto; }
+body.modo-kiosco .gauge__value { font-size: clamp(4rem, 9vw, 11rem); }
+body.modo-kiosco .gauge__cat { font-size: clamp(1.4rem, 2.6vw, 3.2rem); }
+body.modo-kiosco .ica__by { grid-area: by; font-size: clamp(1rem, 1.5vw, 1.8rem); }
+body.modo-kiosco .ica__base { grid-area: base; font-size: clamp(.85rem, 1.05vw, 1.3rem); }
+body.modo-kiosco .now { grid-area: now; gap: clamp(8px, 1.2vw, 24px); }
+body.modo-kiosco .now__item { padding: clamp(10px, 1.2vw, 24px) clamp(12px, 1.4vw, 28px); border-radius: 16px; }
+body.modo-kiosco .now dt { font-size: clamp(.9rem, 1.4vw, 1.8rem); }
+body.modo-kiosco .now dd { font-size: clamp(1.9rem, 4.2vw, 5.2rem); line-height: 1.05; }
+body.modo-kiosco .now .unit { font-size: .45em; font-weight: 600; color: var(--text-2); }
+body.modo-kiosco .now__time { grid-area: time; font-size: clamp(1rem, 1.6vw, 2rem); color: var(--text-2); margin-top: clamp(8px, 1.4vw, 24px); }
+body.modo-kiosco .now__warn { grid-area: warn; font-size: clamp(.95rem, 1.4vw, 1.8rem); }
+body.modo-kiosco .now__warn[hidden] { display: none; }
+body.modo-kiosco .scale { grid-area: scale; font-size: clamp(.8rem, 1vw, 1.25rem); }
+body.modo-kiosco .scale li { font-size: inherit; }
+@media (min-width: 900px) {
+  /* Pantalla ancha: medidor a la izquierda, las cuatro mediciones a la derecha */
+  body.modo-kiosco .card--ica {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 4vw; align-items: center;
+    grid-template-areas: "head head" "gauge now" "by now" "base now" "time time" "warn warn" "scale scale";
+  }
+}
+
 @media (forced-colors: active) {
   .gauge__arc, .bar__fill, .c-line { forced-color-adjust: auto; }
 }

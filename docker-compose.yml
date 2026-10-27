@@ -66,6 +66,8 @@ services:
       ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
       # Punto APROXIMADO de la estacion EcoAir en el mapa ("lat,lon"; se redondea a ~1 km). Vacio = no se dibuja.
       ECOAIR_UBICACION_APROX: ${ECOAIR_UBICACION_APROX:-}
+      # URL publica del panel para el QR del pie (la misma BASE_URL del notifier). Vacia = el panel usa su origen.
+      BASE_URL: ${BASE_URL:-}
     ports:
       - "8000:8000"
     depends_on:

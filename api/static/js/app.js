@@ -10,15 +10,21 @@ import {
   ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
   AYUDA_TACTIL, ZOOM_UBICACION, encuadre, estiloMarcador, interaccionTactil, opcionesUbicacion, vistaMapa, vistaUbicacion,
 } from "./mapa-vista.js";
-import { vistaAhora, etiquetaMetrica, haceCuanto } from "./ahora-vista.js";
+import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 import { vistaTendencia } from "./tendencia-vista.js";
+import { modos, textoSinDatos } from "./modo-vista.js";
+import { matrizQr, pathQr, urlQr } from "./proyecto-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
 const PARAMS = new URLSearchParams(location.search);
 const DEVICE = PARAMS.get("device") || "ecoair-node-01";
 // Modo replay historico (?modo=replay): el panel se alimenta SOLO de /predictions/replay* (datos del
 // IDEAM en external_measurements). No consulta mediciones en vivo, alertas ni suscripciones.
-const MODO_REPLAY = PARAMS.get("modo") === "replay";
+const MODOS = modos(location.search);
+const MODO_REPLAY = MODOS.replay;
+// Modo kiosco (?modo=kiosco, combinable con replay): pantalla grande de la feria. Solo la tarjeta del ICA
+// en letra grande; sin formularios, selectores ni mapas (no se inician: ninguna tesela ni suscripcion).
+const MODO_KIOSCO = MODOS.kiosco;
 const REFRESH_MS = 10_000;          // calidad actual, ultima medicion y alertas
 const HISTORY_REFRESH_MS = 60_000;  // la grafica usa intervalos de 5 min: basta cada minuto
 const FETCH_TIMEOUT_MS = 8_000;
@@ -190,7 +196,7 @@ function renderCurrent(aq) {
     document.documentElement.style.setProperty("--cat", "#6b6a63");
     const u = aq.ultima_medicion;
     const min = u ? Math.floor(u.antiguedad_s / 60) : null;
-    setStatus("stale", u ? `Sin datos ${haceCuanto(min)}` : "Sin datos");
+    setStatus("stale", u ? textoSinDatos(min, MODO_KIOSCO) : "Sin datos");
     setGauge(null);
     $("ica-value").textContent = "—"; $("ica-value").dataset.v = "";
     $("ica-cat").textContent = "Sin datos recientes";
@@ -1038,6 +1044,26 @@ function iniciarModoReplay() {
   iniciarReplay();
 }
 
+// ---------- Modo kiosco ----------
+function iniciarKiosco() {
+  document.body.classList.add("modo-kiosco");
+  document.title = `${MODO_REPLAY ? "REPLAY HISTÓRICO · " : ""}EcoAir AI · pantalla grande`;
+}
+
+// ---------- Franja del proyecto (pie): QR generado aqui, sin servicios externos ----------
+async function iniciarProyecto() {
+  let info = null;
+  try { info = await getJSON("/proyecto"); } catch { /* sin BASE_URL: se usa el origen */ }
+  const q = urlQr(info, location.origin);
+  const { d, lado } = pathQr(matrizQr(q.url));
+  const svg = $("proyecto-qr");
+  svg.setAttribute("viewBox", `0 0 ${lado} ${lado}`);
+  svg.replaceChildren(svgEl("rect", { width: lado, height: lado, fill: "#fff" }),
+    svgEl("path", { d, fill: "#000", "shape-rendering": "crispEdges" }));
+  $("proyecto-url").textContent = q.url.replace(/^https?:\/\//, "");
+  $("proyecto-url").title = q.fuente === "BASE_URL" ? "URL pública (BASE_URL)" : "Dirección con la que se abrió este panel";
+}
+
 // ---------- Suscripcion por correo ----------
 async function loadConsent() {
   const span = $("subs-consent"), btn = $("subs-btn");
@@ -1120,9 +1146,21 @@ function start() {
   initGauge();
   initRanges();
   initScaleToggle();
+  if (MODO_KIOSCO) iniciarKiosco();
   // La tarjeta de ubicacion necesita saber si el dispositivo es simulado (lo dice /devices)
-  loadDevices().then(iniciarUbicacion);
+  loadDevices().then(() => { if (!MODO_KIOSCO) iniciarUbicacion(); });
+  if (!MODO_KIOSCO) iniciarProyecto();
   if (MODO_REPLAY) { iniciarModoReplay(); return; }
+  if (MODO_KIOSCO) {
+    // Solo lo que se ve: ICA y ultima medicion. La tendencia se sigue pidiendo porque dice si los
+    // datos son simulados (banner SIMULACION).
+    refresh();
+    refreshHistory();
+    setInterval(refresh, REFRESH_MS);
+    setInterval(refreshHistory, HISTORY_REFRESH_MS);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); refreshHistory(); } });
+    return;
+  }
   initSubscriptionForm();
   loadConsent();
   // /panel#suscripcion: al cargar los datos cambia la altura de las tarjetas; se vuelve a llevar

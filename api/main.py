@@ -39,6 +39,7 @@ from subscriptions import (
 )
 import replay  # noqa: E402
 import mapa  # noqa: E402
+import proyecto  # noqa: E402
 from predicciones import (  # noqa: E402
     SQL_METRICAS,
     SQL_ULTIMAS,
@@ -566,6 +567,12 @@ async def replay_serie(station: str, at: str, horas: int = 24, horizonte: int = 
         return replay.calcular_serie(station, serie, fuentes, modelo, t, horas, horizonte)
     except replay.ReplayError as e:
         raise HTTPException(status_code=422, detail=str(e))
+
+
+@app.get("/proyecto")
+async def proyecto_info():
+    """URL del QR del pie del panel (BASE_URL + /panel; None si no es valida). Sin base."""
+    return proyecto.info_desde_entorno()
 
 
 @app.get("/mapa/estaciones")
