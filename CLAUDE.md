@@ -113,7 +113,7 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     simuladas (se generan cada hora)". A >= 1200 px va encima de la tendencia (body.con-pred-sim). Revisada en
     Chrome a 1280 y 390 px con un Postgres desechable.
   - Las mismas predicciones (una sola petición) también van en pequeño y ámbar dentro de la tarjeta grande de
-    PM2.5, bajo "actual · media 1 h": etiqueta "predicción · simulado" + "En 4 h: X µg/m³ · hacia las HH:MM" y
+    PM2.5, bajo "actual · media 1 h": etiqueta "predicción" + "En 4 h: X µg/m³ · hacia las HH:MM" y
     5 h (lineasPm25Simulada). El valor grande sigue siendo el medido; PM10, temperatura y humedad no cambian
     (no se predice PM10). Sin predicciones o con la API caída, se omiten.
   - Servicio de Railway PROPUESTO, no desplegado (simulador/Dockerfile + simulador/railway.toml, contexto en la
