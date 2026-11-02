@@ -34,6 +34,11 @@ export const TEXTOS = {
   oficial: [
     "No. Es una estación de bajo costo con sensor SDS011; no sustituye mediciones oficiales ni es un equipo certificado.",
   ],
+  // Estacion SIMULADA: la primera linea de toda respuesta con datos lo dice; nunca "medicion real".
+  simulacion: "SIMULACIÓN · datos inventados para demostración, no son mediciones de un sensor real.",
+  oficialSimulada: [
+    "No. Esta es una estación SIMULADA: sus datos son inventados para demostración y no los mide ningún sensor.",
+  ],
 };
 
 export const MIN_LECTURAS_HOY = 6;
@@ -47,8 +52,16 @@ const aqValida = (aq) => !!(aq && aq.estado === "ok" && aq.ica && aq.ica.general
 const recValida = (aq) => aqValida(aq) && aq.recomendacion && typeof aq.recomendacion.efectos === "string";
 const fuente = (f) => (f && f.documento ? `Fuente: ${f.documento} · pág. ${f.pagina}` : "");
 
-// datos: {aq, ultima, historia}; ahora: ms o Date. -> {titulo, lineas: [texto], fuente: texto}
+// datos: {aq, ultima, historia, simulado}; ahora: ms o Date. -> {titulo, lineas: [texto], fuente: texto}
 export function responder(id, datos = {}, ahora = Date.now()) {
+  const r = responderBase(id, datos, ahora);
+  if (!(datos && datos.simulado)) return r;
+  if (id === "oficial") return { ...r, lineas: [...TEXTOS.oficialSimulada] };
+  if (id === "pm25") return r;                                   // texto general, no habla de la estacion
+  return { ...r, lineas: [TEXTOS.simulacion, ...r.lineas.filter((l) => l !== TEXTOS.simulados)] };
+}
+
+function responderBase(id, datos, ahora) {
   const p = TEXTOS.preguntas.find((x) => x.id === id);
   const r = { titulo: p ? p.etiqueta : "", lineas: [], fuente: "" };
   const { aq = null, ultima = null, historia = null } = datos || {};

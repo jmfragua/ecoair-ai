@@ -44,3 +44,40 @@ test("sin predicciones, desactualizada y ninguna visible", () => {
   assert.deepEqual(ninguna.items, []);
   assert.match(ninguna.mensaje, /Ningún horizonte/);
 });
+
+// ---------- Tarjeta "Prediccion de PM2.5 · SIMULACION" (solo ecoair-sim-NN) ----------
+import { vistaPrediccionSimulada, TITULO_SIMULADA, SIN_PREDICCIONES_SIMULADAS } from "../../static/js/predicciones-vista.js";
+import { secciones, modos } from "../../static/js/modo-vista.js";
+
+const AVISO_API = "SIMULACIÓN · predicción calculada sobre datos inventados para demostración; sin métricas de precisión ni comparación con mediciones reales.";
+const SIM = { ...OK, is_simulated: true, simulacion: AVISO_API, regla_en_vivo: null };
+
+test("simulada: 4 y 5 h con el aviso de la API, sin metricas", () => {
+  const v = vistaPrediccionSimulada(SIM);
+  assert.equal(v.titulo, "Predicción de PM2.5 · SIMULACIÓN");
+  assert.equal(TITULO_SIMULADA, v.titulo);
+  assert.deepEqual(v.items.map((i) => [i.etiqueta, i.valor, i.hasta]), [["En 4 h", "12,0", "hacia las 14:00"], ["En 5 h", "12,5", "hacia las 15:00"]]);
+  assert.equal(v.aviso, AVISO_API);                       // el mismo texto que devuelve la API
+  assert.equal(v.mensaje, "");
+  assert.doesNotMatch(JSON.stringify(v), /MAE|RMSE|persistencia|IDEAM/);   // sin metricas de precision
+});
+
+test("simulada: sin predicciones, fallo, o respuesta NO marcada como simulada", () => {
+  assert.equal(SIN_PREDICCIONES_SIMULADAS, "Aún no hay predicciones simuladas (se generan cada hora)");
+  assert.equal(vistaPrediccionSimulada({ estado: "sin_predicciones", predicciones: [], is_simulated: false }).mensaje, SIN_PREDICCIONES_SIMULADAS);
+  assert.equal(vistaPrediccionSimulada({ ...SIM, predicciones: [OK.predicciones[0]] }).mensaje, SIN_PREDICCIONES_SIMULADAS);
+  for (const r of [null, undefined, {}, "x"]) assert.equal(vistaPrediccionSimulada(r).mensaje, NO_DISPONIBLE_POR_AHORA);
+  const real = vistaPrediccionSimulada({ ...OK, is_simulated: false });     // nunca valores reales en esta tarjeta
+  assert.deepEqual(real.items, []) ;
+  assert.equal(real.aviso, "");
+});
+
+test("la tarjeta solo existe para ecoair-sim-NN, fuera del replay y del kiosco", () => {
+  const ver = (search, device) => secciones({ ...modos(search), device }).prediccionSim;
+  assert.equal(ver("?device=ecoair-sim-01", "ecoair-sim-01"), true);
+  assert.equal(ver("?device=ecoair-node-01", "ecoair-node-01"), false);
+  assert.equal(ver("", "ecoair-node-01"), false);
+  assert.equal(ver("?device=ecoair-sim-01&modo=kiosco", "ecoair-sim-01"), false);
+  assert.equal(ver("?modo=replay", "ecoair-sim-01"), false);
+  assert.equal(secciones().prediccionSim, false);
+});

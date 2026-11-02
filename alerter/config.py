@@ -37,8 +37,10 @@ ANOMALIAS_MODELO_PATH = os.getenv("ANOMALIAS_MODELO_PATH") or None
 ANOMALIAS_VENTANA_MIN = _int("ANOMALIAS_VENTANA_MIN", 60)
 
 # Predicciones EXPERIMENTALES de PM2.5 a 3, 4 y 5 h (modelo v4) y sus metricas diarias. Apagadas por
-# defecto. Solo dispositivos reales de la lista (el simulado nunca genera predicciones).
+# defecto. Solo dispositivos de la lista. Uno con datos simulados se omite, salvo con
+# PREDICCION_INCLUIR_SIMULADOS=true (demo): sus predicciones quedan con is_simulated=true y sin metricas.
 PREDICCION_ACTIVA = _bool("PREDICCION_ACTIVA", False)
+PREDICCION_INCLUIR_SIMULADOS = _bool("PREDICCION_INCLUIR_SIMULADOS", False)
 PREDICCION_MINUTO = _int("PREDICCION_MINUTO", 5)
 PREDICCION_DISPOSITIVOS = [d.strip() for d in os.getenv("PREDICCION_DISPOSITIVOS", "ecoair-node-01").split(",")
                            if d.strip()]

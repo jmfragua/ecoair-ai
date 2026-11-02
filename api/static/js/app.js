@@ -7,8 +7,9 @@ import {
 } from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 import { vistaTendencia } from "./tendencia-vista.js";
-import { OPCION_REPLAY, modos, secciones, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
+import { OPCION_REPLAY, esDispositivoSimulado, modos, secciones, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
 import { TEXTOS as PREGUNTAS, responder } from "./preguntas-vista.js";
+import { vistaPrediccionSimulada } from "./predicciones-vista.js";
 import { matrizQr, pathQr, urlQr } from "./proyecto-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
@@ -21,7 +22,7 @@ const MODO_REPLAY = MODOS.replay;
 // Modo kiosco (?modo=kiosco, combinable con replay): pantalla grande de la feria. Solo la tarjeta del ICA
 // en letra grande; sin formularios, selectores ni mapas (no se inician: ninguna tesela ni suscripcion).
 const MODO_KIOSCO = MODOS.kiosco;
-const VISTA = secciones(MODOS);
+const VISTA = secciones({ ...MODOS, device: DEVICE });
 // replay-vista.js (y todo /predictions/replay*) SOLO en modo replay: la vista del nodo es solo en vivo.
 const RV = MODO_REPLAY ? await import("./replay-vista.js") : null;
 const REFRESH_MS = 10_000;          // calidad actual, ultima medicion y alertas
@@ -1005,7 +1006,7 @@ async function iniciarUbicacion() {
   const card = $("ubicacion"), caja = $("ubicacion-mapa"), msg = $("ubicacion-msg");
   let r = null;
   try { r = await getJSON("/mapa/estaciones"); } catch { /* se trata como sin configurar */ }
-  const v = vistaUbicacion(r, { device: DEVICE, simulado: simDispositivo || /^ecoair-sim-/.test(DEVICE), replay: MODO_REPLAY });
+  const v = vistaUbicacion(r, { device: DEVICE, simulado: simDispositivo || esDispositivoSimulado(DEVICE), replay: MODO_REPLAY });
   if (v.estado === "oculta") { card.hidden = true; return; }
   msg.textContent = v.texto;
   msg.classList.toggle("ubicacion__msg--sim", v.estado === "simulacion");
@@ -1060,7 +1061,8 @@ function iniciarModoReplay() {
 let ultimoAq = null, preguntaActiva = null, preguntaTexto = "";
 
 function datosPreguntas() {
-  return { aq: ultimoAq, ultima: ultimaMedicion, historia: lastHistory };
+  return { aq: ultimoAq, ultima: ultimaMedicion, historia: lastHistory,
+    simulado: simDispositivo || simDatos || esDispositivoSimulado(DEVICE) };
 }
 
 function pintarPregunta() {
@@ -1163,12 +1165,38 @@ function initSubscriptionForm() {
   });
 }
 
+// ---------- Prediccion de PM2.5 · SIMULACION (solo ecoair-sim-NN; ni nodo real, ni replay, ni kiosco) ----------
+// Predicciones del alerter sobre datos inventados. Texto solo con textContent/el() (nunca innerHTML).
+function pintarPrediccionSim(r) {
+  const v = vistaPrediccionSimulada(r);
+  $("predsim-lista").replaceChildren(...v.items.map((i) => el("li", { class: "pred__item" },
+    el("span", { class: "pred__h" }, i.etiqueta),
+    el("span", { class: "pred__v" }, i.valor, el("span", { class: "unit" }, " µg/m³")),
+    el("span", { class: "pred__hasta" }, i.hasta))));
+  $("predsim-msg").textContent = v.mensaje;
+  $("predsim-emision").textContent = v.emision;
+  $("predsim-aviso").textContent = v.aviso;
+}
+
+async function refreshPrediccionSim() {
+  let r = null;
+  try { r = await getJSON(`/devices/${dev}/predictions/latest`); } catch { /* sin respuesta: "no disponible" */ }
+  pintarPrediccionSim(r);
+}
+
+function iniciarPrediccionSim() {
+  document.body.classList.add("con-pred-sim");
+  $("predsim").hidden = false;
+  refreshPrediccionSim();
+  setInterval(refreshPrediccionSim, HISTORY_REFRESH_MS);   // se emiten cada hora: basta cada minuto
+}
+
 // Aviso de SIMULACION: se activa si el dispositivo o sus datos son simulados. Nunca se presenta
 // una lectura simulada como si fuera del sensor real.
 let simDispositivo = false, simDatos = false;
 function setSimulacion() {
   if (MODO_REPLAY) return;                 // el modo replay tiene su propio banner
-  const sim = simDispositivo || simDatos;
+  const sim = simDispositivo || simDatos || esDispositivoSimulado(DEVICE);
   $("sim-badge").hidden = !sim;
   $("sim-banner").hidden = !sim;
   document.title = `${sim ? "SIMULACIÓN · " : ""}EcoAir AI · Calidad del aire`;
@@ -1203,6 +1231,7 @@ function start() {
   initRanges();
   initScaleToggle();
   if (MODO_KIOSCO) iniciarKiosco();
+  setSimulacion();                 // ecoair-sim-NN: banner desde el primer momento, aunque la API falle
   // La tarjeta de ubicacion necesita saber si el dispositivo es simulado (lo dice /devices)
   loadDevices().then(() => { if (!MODO_KIOSCO) iniciarUbicacion(); });
   if (!MODO_KIOSCO) iniciarProyecto();
@@ -1224,6 +1253,7 @@ function start() {
   refresh().finally(() => { if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });
   refreshHistory();
   if (VISTA.preguntas) iniciarPreguntas();
+  if (VISTA.prediccionSim) iniciarPrediccionSim();
   setInterval(refresh, REFRESH_MS);
   setInterval(refreshHistory, HISTORY_REFRESH_MS);
   let rt;

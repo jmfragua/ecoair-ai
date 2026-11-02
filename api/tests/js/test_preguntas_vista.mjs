@@ -99,3 +99,20 @@ test("(a)(b)(c) que se ve: replay solo con ?modo=replay; preguntas solo en la vi
   const ambos = secciones(modos("?modo=replay,kiosco"));
   assert.deepEqual([ambos.replay, ambos.preguntas], [true, false]);
 });
+
+test("estacion simulada: toda respuesta con datos empieza por SIMULACIÓN y ninguna la presenta como real", () => {
+  const datos = { aq: AQ, ultima: MED(2), historia: HIST([1, 2, 3, 4, 5, 6], { is_simulated: true }), simulado: true };
+  for (const p of TEXTOS.preguntas) {
+    const r = responder(p.id, datos, AHORA);
+    const texto = r.lineas.join(" ");
+    assert.doesNotMatch(texto.replace(TEXTOS.simulacion, ""), /SDS011|sensor real/, p.id);   // solo "NO son de un sensor real"
+    if (p.id !== "pm25") assert.match(texto, /SIMULACI[ÓO]N|SIMULADA/, p.id);
+  }
+  assert.equal(responder("ahora", datos, AHORA).lineas[0], TEXTOS.simulacion);
+  assert.match(responder("oficial", datos).lineas[0], /^No\. Esta es una estación SIMULADA/);
+  assert.equal(responder("hoy", datos).lineas.filter((l) => /simula[cd]/i.test(l)).length, 1);   // sin aviso duplicado
+  // sin datos tambien lo dice; y la estacion real no cambia
+  assert.deepEqual(responder("ahora", { simulado: true }, AHORA).lineas, [TEXTOS.simulacion, "Sin datos recientes", "La estación aún no tiene mediciones."]);
+  assert.equal(responder("oficial", { simulado: false }).lineas[0], TEXTOS.oficial[0]);
+  assert.equal(responder("ahora", { aq: AQ, ultima: MED(2) }, AHORA).lineas[0].startsWith("PM2.5"), true);
+});

@@ -9,6 +9,9 @@
   ICA actual (media de 1 h, igual que el dashboard), la recomendacion de texto fijo de la norma y
   la seccion "Prediccion experimental". welcome_sent_at se marca en la misma transaccion del
   envio: abrir el enlace de confirmacion dos veces no genera un segundo correo.
+- Estacion SIMULADA: sus correos (alertas y bienvenida) NUNCA salen a un buzon, ni fuera de DRY_RUN
+  ni con NOTIFIER_INCLUIR_SIMULADOS=true: solo queda en el log una linea con el asunto y el correo
+  enmascarado (estado 'dry_run'). Asi una demostracion con datos inventados no llega a suscriptores.
 - DRY_RUN (por defecto activo): el correo completo se escribe en el log y no se envia.
   Fuera de DRY_RUN el log nunca lleva tokens ni correos completos (a***@gmail.com).
 Requiere db/migrations/005_subscriptions.sql; si falta, lo registra y espera sin morirse.
@@ -91,6 +94,21 @@ class Mailer:
         log.info("Correo enviado (brevo) a %s: %s (messageId %s)", enmascarar_email(destino),
                  msg["Subject"], respuesta.get("messageId", "?"))
         return "sent"
+
+
+class SoloRegistroSimulacion:
+    """Mailer para los correos de una estacion SIMULADA: nunca envia. Solo registra el asunto y el destino
+    enmascarado (sin cuerpo ni enlaces, que llevan el token de baja de un suscriptor real)."""
+
+    def enviar(self, msg):
+        log.info("SIMULACIÓN: correo NO enviado (estación simulada) a %s: %s",
+                 enmascarar_email(str(msg["To"])), msg["Subject"])
+        return "dry_run"
+
+
+def mailer_para(mailer, simulado):
+    """El mailer normal, o uno que nunca envia si el correo es de una estacion simulada."""
+    return SoloRegistroSimulacion() if simulado else mailer
 
 
 def get_db():
@@ -261,7 +279,7 @@ def procesar_bienvenidas(conn, mailer):
                 )
                 baja = token_baja(config.SUBSCRIPTION_SECRET, s["id"], s["created_at"])
                 links = enlaces(config.BASE_URL, s["device_id"], token_baja=baja)
-                mailer.enviar(correo_bienvenida(
+                mailer_para(mailer, simulado).enviar(correo_bienvenida(
                     config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>", s["email"], s["device_id"],
                     resp, links, prediccion=obtener_prediccion(conn, s["device_id"]), simulado=simulado))
                 enviados += 1
@@ -386,7 +404,7 @@ def enviar_pendientes(conn, mailer):
                   "severity": f["severity"], "message": f["message"],
                   "started_at": f["started_at"], "ended_at": f["ended_at"], "details": f["details"]}
         try:
-            estado = mailer.enviar(correo_alerta(config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>",
+            estado = mailer_para(mailer, bool(f["is_simulated"])).enviar(correo_alerta(config.EMAIL_FROM or "EcoAir AI <noreply@ecoair.local>",
                                                  f["email"], alerta, f["kind"], links,
                                                  simulado=bool(f["is_simulated"])))
             conn.execute(

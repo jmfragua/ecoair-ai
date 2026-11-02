@@ -106,3 +106,41 @@ def test_devices_con_un_dispositivo_sin_mediciones_no_da_500():
     os.environ.setdefault("POSTGRES_PASSWORD", "solo-para-tests")
     import main
     assert "d.location = 'Simulado', false) AS is_simulated" in main.SQL_DEVICES
+
+
+def test_banner_simulacion_en_todas_las_vistas_y_distinto_del_replay():
+    i = PANEL.index('id="sim-banner"')
+    banner = PANEL[i:PANEL.index("</div>", i)]
+    assert "<strong>SIMULACIÓN</strong> · datos inventados para demostración." in banner
+    assert 'role="note"' in banner
+    # se activa por /devices, por la tendencia o por el nombre ecoair-sim-NN (aunque la API falle), desde el arranque
+    assert "const sim = simDispositivo || simDatos || esDispositivoSimulado(DEVICE);" in APP
+    assert "setSimulacion();" in _funcion("start").split("if (MODO_REPLAY)")[0]
+    # kiosco: el banner se muestra (solo se oculta lo que no es el ICA dentro de .grid; el banner va fuera)
+    assert PANEL.index('id="sim-banner"') < PANEL.index('<main id="principal" class="grid">')
+    assert "body.modo-kiosco .sim-banner" in CSS
+    # ambar (--warn) frente al violeta (--replay) del replay
+    sim_css = CSS[CSS.index(".sim-banner {"):CSS.index("}", CSS.index(".sim-banner {"))]
+    rep_css = CSS[CSS.index(".replay-banner {"):CSS.index("}", CSS.index(".replay-banner {"))]
+    assert "var(--warn)" in sim_css and "var(--replay)" in rep_css and "var(--warn)" not in rep_css
+    # las preguntas rapidas saben si la estacion es simulada
+    assert "simulado: simDispositivo || simDatos || esDispositivoSimulado(DEVICE)" in _funcion("datosPreguntas")
+
+
+def test_tarjeta_prediccion_simulada_solo_en_ecoair_sim():
+    sec = _seccion("card--pred card--pred-sim")
+    assert " hidden" in sec and 'id="predsim"' in sec                      # oculta hasta que la vista la active
+    assert "Predicción de PM2.5 · SIMULACIÓN" in PANEL
+    assert 'id="predsim-msg" role="status" aria-live="polite"' in PANEL
+    assert "const VISTA = secciones({ ...MODOS, device: DEVICE });" in APP
+    assert "if (VISTA.prediccionSim) iniciarPrediccionSim();" in APP
+    # en replay y kiosco start() vuelve antes de llegar a ella
+    vivo = _funcion("start")
+    assert vivo.index("iniciarPrediccionSim") > vivo.index("if (MODO_KIOSCO) {") > vivo.index("if (MODO_REPLAY)")
+    pinta = _funcion("pintarPrediccionSim")
+    assert "textContent" in pinta and "innerHTML" not in pinta
+    assert "/predictions/latest" in _funcion("refreshPrediccionSim")
+    # ambar de la simulacion; a >= 1200 px encima de la tendencia sin mover nada en el nodo real
+    assert ".card--pred-sim { border: 2px dashed var(--warn);" in CSS
+    assert "body.con-pred-sim .card--pred-sim { grid-column: 1 / -1; grid-row: 4; }" in CSS
+    assert ".card--chart { grid-column: 1 / -1; grid-row: 4; }" in CSS                   # nodo real igual que antes

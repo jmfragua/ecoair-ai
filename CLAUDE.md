@@ -91,6 +91,32 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   la API (efectos: Res. 2254 Tabla 5; acciones: EPA, marcadas "orientativo"). > 10 min sin datos: "Sin
   datos recientes · última lectura hace X (fecha)". "¿Cómo estuvo hoy?": mín/máx/promedio de los
   intervalos de 5 min (< 6 = "Datos insuficientes"; indicativo, no la media normativa).
+- [LOCAL] Simulador continuo para la demo (tools/simular_continuo.py; reutiliza simular_estacion.py): una fila
+  por minuto en ecoair-sim-NN con is_simulated=true, NUNCA con hora futura, solo los minutos que faltan (no
+  duplica), valores deterministas por semilla + minuto (relleno y modo continuo dan la misma serie). Horas
+  pico, ciclo diario de temperatura/humedad, ruido suave y ~1 episodio cada 3 días. --backfill-horas 48,
+  --continuo cada 5 min hasta --hasta (por defecto viernes 2026-11-06 17:00 de Colombia). Rechaza cualquier
+  dispositivo que no sea ecoair-sim-NN o que tenga datos reales. --local = solo DB_*; sin --local exige
+  DATABASE_URL, muestra host:puerto/base (sin usuario ni clave) y pide escribir el host (o
+  --confirmar-destino HOST). Probado en un Postgres desechable: 2880 filas, repetir = 0, node-01 idéntico.
+  - Predicciones del simulado: PREDICCION_INCLUIR_SIMULADOS=true (false por defecto) + ecoair-sim-01 en
+    PREDICCION_DISPOSITIVOS -> filas con is_simulated=true; las métricas nunca las usan; /predictions/latest
+    las devuelve con is_simulated y el aviso "SIMULACIÓN · ..." y sin regla en vivo. docker-compose ya pasa
+    PREDICCION_* al alerter.
+  - Tarjeta "Predicción de PM2.5 · SIMULACIÓN" (solo ecoair-sim-NN; ni node-01, ni replay, ni kiosco;
+    secciones().prediccionSim): 4 y 5 h de /predictions/latest, aviso de la API, sin métricas, ámbar; si la
+    respuesta no viene con is_simulated=true no muestra valores. Sin predicciones: "Aún no hay predicciones
+    simuladas (se generan cada hora)". A >= 1200 px va encima de la tendencia (body.con-pred-sim). Revisada en
+    Chrome a 1280 y 390 px con un Postgres desechable.
+  - Servicio de Railway PROPUESTO, no desplegado (simulador/Dockerfile + simulador/railway.toml, contexto en la
+    raíz): `simular_continuo.py --servicio`. Sin SIM_ACTIVO=true sale con 0 sin hacer nada. Con true: relleno de
+    48 h, bucle cada 5 min hasta el viernes 17:00 y termina (ON_FAILURE: no se reinicia al terminar). Usa
+    DATABASE_URL sin imprimirla y sin confirmación interactiva; mismas protecciones. Imagen probada en Docker local.
+  - Correos de una estación simulada (alertas y bienvenida): NUNCA se envían, aunque NOTIFIER_DRY_RUN=false
+    y NOTIFIER_INCLUIR_SIMULADOS=true; solo una línea en el log (asunto + correo enmascarado), estado dry_run.
+  - Panel: banner "SIMULACIÓN · datos inventados para demostración" (ámbar; replay violeta) también por el
+    nombre ecoair-sim-NN desde el arranque; las preguntas rápidas empiezan por SIMULACIÓN y "¿Es un equipo
+    oficial?" dice que es una estación SIMULADA.
 - [LOCAL] Vista del nodo >= 900 px: izquierda "Alertas recientes" (máx. 420 px con scroll) y debajo la
   suscripción; derecha el mapa de ubicación en las dos filas, con su caja estirada (mín. 340 px; el
   ResizeObserver de app.js ya llama a invalidateSize). Las dos columnas terminan a la misma altura (medido

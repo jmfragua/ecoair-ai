@@ -9,6 +9,10 @@ Visibilidad de un horizonte (panel y respuesta por defecto):
    predicciones evaluadas de esa version y horizonte, y el MAE del modelo (ponderado por n) NO es menor
    que el de la persistencia, el horizonte se oculta ("dejo de superar a la persistencia en vivo").
 Con ?incluir_ocultos=true se devuelven todos, con visible=false y el motivo.
+
+Estacion SIMULADA (predicciones con is_simulated=true, PREDICCION_INCLUIR_SIMULADOS en el alerter): se
+devuelven con is_simulated=true y el aviso SIMULACION; sin metricas ni regla en vivo (no hay realidad
+con que compararlas). Las metricas (SQL_METRICAS) nunca incluyen nada simulado.
 """
 
 import math
@@ -17,11 +21,13 @@ from datetime import timedelta
 N_MIN_VIVO = 168
 HORAS_DESACTUALIZADA = 2
 DIAS_REGLA_VIVO = 30
+AVISO_SIMULACION = ("SIMULACIÓN · predicción calculada sobre datos inventados para demostración; "
+                    "sin métricas de precisión ni comparación con mediciones reales.")
 
 SQL_ULTIMAS = (
-    "SELECT created_at, target_time, horizon_hours, predicted_pm25, baseline_pm25, model_version, last_reading_at "
-    "FROM predictions WHERE device_id = %(device_id)s AND NOT is_simulated AND created_at = ("
-    "  SELECT max(created_at) FROM predictions WHERE device_id = %(device_id)s AND NOT is_simulated) "
+    "SELECT created_at, target_time, horizon_hours, predicted_pm25, baseline_pm25, model_version, last_reading_at, "
+    "is_simulated FROM predictions WHERE device_id = %(device_id)s AND created_at = ("
+    "  SELECT max(created_at) FROM predictions WHERE device_id = %(device_id)s) "
     "ORDER BY horizon_hours"
 )
 SQL_METRICAS = (
@@ -73,7 +79,7 @@ def ocultos_en_vivo(metricas_30d, version, n_min=N_MIN_VIVO):
 
 
 def construir_latest(device_id, filas, modelo, metricas_30d, ahora, incluir_ocultos=False):
-    base = {"device_id": device_id, "experimental": True,
+    base = {"device_id": device_id, "experimental": True, "is_simulated": False,
             "aviso": (modelo or {}).get("aviso_publico"), "fuentes": (modelo or {}).get("texto_fuentes"),
             "regla_en_vivo": f"se oculta un horizonte si con >= {N_MIN_VIVO} predicciones evaluadas en "
                              f"{DIAS_REGLA_VIVO} dias no supera a la persistencia"}
@@ -83,8 +89,11 @@ def construir_latest(device_id, filas, modelo, metricas_30d, ahora, incluir_ocul
                 "mensaje": "Todavía no hay predicciones para esta estación."}
     created_at = filas[0]["created_at"]
     version = filas[0]["model_version"]
+    simulada = any(f.get("is_simulated") for f in filas)
+    if simulada:
+        base = {**base, "is_simulated": True, "simulacion": AVISO_SIMULACION, "regla_en_vivo": None}
     visibles_modelo = set((modelo or {}).get("horizontes_visibles") or [])
-    vivo = ocultos_en_vivo(metricas_30d, version)
+    vivo = {} if simulada else ocultos_en_vivo(metricas_30d, version)
     preds = []
     for f in filas:
         h = int(f["horizon_hours"])

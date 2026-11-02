@@ -38,3 +38,11 @@ test("QR: matriz cuadrada, patrones de posicion y path con zona de silencio", ()
   assert.ok(d.startsWith(`M${MARGEN_QR} ${MARGEN_QR}h1v1h-1z`));
   assert.equal((d.match(/z/g) || []).length, m.flat().filter(Boolean).length);
 });
+
+test("esDispositivoSimulado: solo ecoair-sim-NN (el banner SIMULACIÓN sale por el nombre)", async () => {
+  const { esDispositivoSimulado } = await import("../../static/js/modo-vista.js");
+  assert.equal(esDispositivoSimulado("ecoair-sim-01"), true);
+  for (const d of ["ecoair-node-01", "ecoair-sim-", "x-ecoair-sim-01", "ecoair-sim-01x", "", null, undefined]) {
+    assert.equal(esDispositivoSimulado(d), false, String(d));
+  }
+});

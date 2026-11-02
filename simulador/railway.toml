@@ -1,0 +1,12 @@
+# Servicio "simulador" en Railway (config as code). En el servicio: Settings -> Config-as-code ->
+# Railway Config File = /simulador/railway.toml. Root Directory vacio (contexto = raiz del repo).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "simulador/Dockerfile"
+watchPatterns = ["simulador/**", "tools/simular_*.py", "shared/**", "api/ica.py"]
+
+[deploy]
+# Al terminar (viernes 17:00) o con SIM_ACTIVO distinto de true sale con codigo 0 y NO se reinicia.
+# Si falla (p. ej. la base no responde al conectar) se reinicia y el relleno de 48 h cubre el hueco.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

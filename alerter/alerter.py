@@ -38,7 +38,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("alerter")
 
 estados = defaultdict(EstadoRegla)  # (device_id, rule_code) -> EstadoRegla
-emisor = EmisorHorario(config.PREDICCION_MODELO_PATH, config.PREDICCION_DISPOSITIVOS, config.PREDICCION_MINUTO)
+emisor = EmisorHorario(config.PREDICCION_MODELO_PATH, config.PREDICCION_DISPOSITIVOS, config.PREDICCION_MINUTO,
+                      config.PREDICCION_INCLUIR_SIMULADOS)
 metricas = CalculadorMetricas(config.PREDICCION_DISPOSITIVOS)
 db = None
 
@@ -268,9 +269,9 @@ def revisar_predicciones(conn, ahora):
 
 def main():
     log.info("Alerter iniciado: intervalo %ss, abrir tras %d, cerrar tras %d, simulados=%s, anomalias=%s, "
-             "prediccion=%s (minuto %d, %s), alerta dispositivo caido=%s", config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
+             "prediccion=%s (minuto %d, %s, simulados=%s), alerta dispositivo caido=%s", config.INTERVALO_S, config.REVISIONES_ABRIR, config.REVISIONES_CERRAR,
              config.INCLUIR_SIMULADOS, config.ANOMALIAS_ACTIVAS, config.PREDICCION_ACTIVA,
-             config.PREDICCION_MINUTO, ",".join(config.PREDICCION_DISPOSITIVOS),
+             config.PREDICCION_MINUTO, ",".join(config.PREDICCION_DISPOSITIVOS), config.PREDICCION_INCLUIR_SIMULADOS,
              config.ALERTA_DISPOSITIVO_CAIDO_ACTIVA)
     while True:
         inicio = time.monotonic()

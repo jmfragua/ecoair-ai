@@ -187,9 +187,18 @@ def test_si_el_envio_falla_no_se_marca_y_se_reintenta():
 
 
 def test_estacion_simulada_va_marcada_en_la_bienvenida():
-    mailer = MailerFalso()
-    notifier.procesar_bienvenidas(BaseFalsa(simulado=True), mailer)
-    assert mailer.enviados[0]["Subject"].startswith("[SIMULACIÓN]")
+    msg = correo_bienvenida("r@x.co", EMAIL, "ecoair-sim-01", _resp(), LINKS, simulado=True)
+    assert msg["Subject"].startswith("[SIMULACIÓN]") and AVISO_SIMULACION in _texto(msg)
+
+
+def test_bienvenida_de_estacion_simulada_nunca_sale_a_un_buzon(caplog):
+    caplog.set_level("INFO", logger="notifier")
+    base, mailer = BaseFalsa(simulado=True), MailerFalso()
+    assert notifier.procesar_bienvenidas(base, mailer) == 1
+    assert mailer.enviados == []                                  # el mailer real nunca la recibe
+    assert base.subs[1]["welcome_sent_at"] is not None            # marcada: no se repite en cada ciclo
+    assert "SIMULACIÓN: correo NO enviado (estación simulada) a a***@gmail.com: [SIMULACIÓN]" in caplog.text
+    assert EMAIL not in caplog.text
 
 
 def test_sin_migracion_007_no_envia_ni_falla(caplog):

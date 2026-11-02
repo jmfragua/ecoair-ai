@@ -1,8 +1,9 @@
 """Emision horaria de predicciones EXPERIMENTALES de PM2.5 (prediccion_pm25_v4) dentro del alerter.
 
 - Se activa con PREDICCION_ACTIVA=true (apagado por defecto). Solo dispositivos de
-  PREDICCION_DISPOSITIVOS (por defecto ecoair-node-01); un dispositivo con datos simulados en la
-  ventana se omite: el simulado nunca genera predicciones.
+  PREDICCION_DISPOSITIVOS (por defecto ecoair-node-01). Un dispositivo con datos simulados en la
+  ventana se omite, salvo con PREDICCION_INCLUIR_SIMULADOS=true (demostracion): entonces sus
+  predicciones se guardan con is_simulated=true y nunca entran en las metricas de precision.
 - Una vez por hora, a partir del minuto PREDICCION_MINUTO (5) de la hora: created_at = la hora en
   punto (UTC) y se usan SOLO mediciones con received_at <= created_at (24 h, shared/prediccion.py).
 - Guarda los 3 horizontes del modelo (3, 4 y 5 h), tambien los ocultos en el panel, para evaluarlos
@@ -30,7 +31,7 @@ SQL_INSERT = (
     "INSERT INTO predictions (device_id, created_at, target_time, horizon_hours, predicted_pm25, baseline_pm25, "
     "model_version, inputs, last_reading_at, is_simulated) "
     "VALUES (%(device_id)s, %(created_at)s, %(target_time)s, %(horizon_hours)s, %(predicted_pm25)s, "
-    "%(baseline_pm25)s, %(model_version)s, %(inputs)s, %(last_reading_at)s, false) "
+    "%(baseline_pm25)s, %(model_version)s, %(inputs)s, %(last_reading_at)s, %(is_simulated)s) "
     "ON CONFLICT (device_id, created_at, horizon_hours) DO NOTHING"
 )
 SQL_SIMULADO = (
@@ -75,8 +76,9 @@ def calcular(modelo, version, device_id, serie, created_at):
 class EmisorHorario:
     """Estado entre revisiones: ultima hora emitida por dispositivo, modelo cargado y conteo de recortes."""
 
-    def __init__(self, ruta_modelo, dispositivos, minuto=5):
+    def __init__(self, ruta_modelo, dispositivos, minuto=5, incluir_simulados=False):
         self.ruta, self.dispositivos, self.minuto = Path(ruta_modelo), list(dispositivos), minuto
+        self.incluir_simulados = incluir_simulados
         self.modelo = self.version = None
         self.ultima = {}            # device_id -> created_at ya procesada
         self.recortes_total = 0
@@ -109,7 +111,8 @@ class EmisorHorario:
         for device_id in pendientes:
             self.ultima[device_id] = created_at        # una sola vez por hora, aunque falten datos
             params = {"device_id": device_id, "ahora": created_at}
-            if conn.execute(SQL_SIMULADO, params).fetchone()["sim"]:
+            simulado = bool(conn.execute(SQL_SIMULADO, params).fetchone()["sim"])
+            if simulado and not self.incluir_simulados:
                 log.info("Prediccion %s %s: omitida (datos simulados en la ventana)", device_id, created_at)
                 continue
             filas = conn.execute(pr.SQL_SERIE_PM25_24H, params).fetchall()
@@ -123,9 +126,11 @@ class EmisorHorario:
                 log.info("Prediccion %s %s a %d h recortada a 0 (valor crudo %.3f); recortes acumulados: %d",
                          device_id, created_at, horas, crudo, self.recortes_total)
             with conn.cursor() as cur:
-                cur.executemany(SQL_INSERT, [{**f, "inputs": Jsonb(f["inputs"])} for f in resultado])
+                cur.executemany(SQL_INSERT, [{**f, "inputs": Jsonb(f["inputs"]), "is_simulated": simulado}
+                                             for f in resultado])
                 insertadas = max(cur.rowcount, 0)
             total += insertadas
-            log.info("Prediccion %s %s: %d filas nuevas (%s)", device_id, created_at, insertadas,
+            log.info("Prediccion %s%s %s: %d filas nuevas (%s)", "[SIMULACIÓN] " if simulado else "",
+                     device_id, created_at, insertadas,
                      ", ".join(f"{f['horizon_hours']} h = {f['predicted_pm25']}" for f in resultado))
         return total

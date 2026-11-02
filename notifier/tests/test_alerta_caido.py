@@ -80,3 +80,22 @@ def test_pendientes_de_caido_se_omiten_y_las_demas_salen(monkeypatch):
     notifier.enviar_pendientes(con, m)
     omitidas = [p for s, p in con.sql if "SET status = 'skipped'" in s]
     assert omitidas == [(1,), (2,)] and len(m.enviados) == 1      # solo sale el de ica_1h
+
+
+def test_alertas_de_estacion_simulada_nunca_salen_a_un_buzon(monkeypatch, caplog):
+    """Aunque NOTIFIER_INCLUIR_SIMULADOS=true y DRY_RUN=false: el correo simulado solo queda en el log."""
+    caplog.set_level("INFO", logger="notifier")
+    monkeypatch.setattr(notifier.config, "ALERTA_DISPOSITIVO_CAIDO_ACTIVA", True)
+    monkeypatch.setattr(notifier.config, "SUBSCRIPTION_SECRET", "secreto")
+    monkeypatch.setattr(notifier.config, "BASE_URL", "https://ecoair.example")
+    monkeypatch.setattr(notifier.config, "MAX_INTENTOS", 5)
+    sim = {**pendiente(7, "open", "threshold", "ica_1h"), "device_id": "ecoair-sim-01", "is_simulated": True,
+           "email": "ana.perez@gmail.com"}
+    con = Conexion([sim, pendiente(8, "open", "threshold", "ica_1h")])
+    m = Mailer()
+    notifier.enviar_pendientes(con, m)
+    assert len(m.enviados) == 1 and m.enviados[0]["To"] == "a@b.co"          # solo sale la real
+    estados = [p for s, p in con.sql if s.startswith("UPDATE notifications_sent SET status = %s")]
+    assert ("dry_run", 7) in estados                                           # la simulada: registrada, no enviada
+    assert "SIMULACIÓN: correo NO enviado (estación simulada) a a***@gmail.com: [SIMULACIÓN]" in caplog.text
+    assert "ana.perez@gmail.com" not in caplog.text and "token" not in caplog.text.lower()

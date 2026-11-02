@@ -89,6 +89,11 @@ services:
       ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
       # Capa EXPERIMENTAL de anomalias (Isolation Forest). Solo aplica a dispositivos simulados.
       ANOMALIAS_ACTIVAS: ${ANOMALIAS_ACTIVAS:-false}
+      # Predicciones experimentales. Demo: PREDICCION_DISPOSITIVOS=ecoair-node-01,ecoair-sim-01 y
+      # PREDICCION_INCLUIR_SIMULADOS=true (las del simulado quedan is_simulated=true, sin metricas).
+      PREDICCION_ACTIVA: ${PREDICCION_ACTIVA:-false}
+      PREDICCION_DISPOSITIVOS: ${PREDICCION_DISPOSITIVOS:-ecoair-node-01}
+      PREDICCION_INCLUIR_SIMULADOS: ${PREDICCION_INCLUIR_SIMULADOS:-false}
     depends_on:
       - postgres
     restart: unless-stopped

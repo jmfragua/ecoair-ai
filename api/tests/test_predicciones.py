@@ -66,6 +66,19 @@ def test_regla_en_vivo_oculta_tras_n_168_si_no_supera_a_la_persistencia():
     assert pz.ocultos_en_vivo(metricas, "otra@00000000") == {}
 
 
+def test_latest_de_estacion_simulada_va_marcada_y_sin_regla_en_vivo():
+    sim = [{**f, "is_simulated": True} for f in ULTIMAS]
+    # aunque hubiera metricas que ocultaran 4 h, a la simulacion no se le aplican (no hay realidad)
+    metricas = [fila_m(4, 200, 9.0, 5.0)]
+    r = pz.construir_latest("ecoair-sim-01", sim, MODELO, metricas, AHORA)
+    assert r["is_simulated"] is True and r["simulacion"].startswith("SIMULACIÓN · ")
+    assert "datos inventados para demostración" in r["simulacion"] and "sin métricas" in r["simulacion"]
+    assert r["regla_en_vivo"] is None and [p["horizon_hours"] for p in r["predicciones"]] == [4, 5]
+    real = pz.construir_latest("ecoair-node-01", [{**f, "is_simulated": False} for f in ULTIMAS], MODELO, [], AHORA)
+    assert real["is_simulated"] is False and "simulacion" not in real
+    assert "is_simulated" in pz.SQL_ULTIMAS and "NOT is_simulated" in pz.SQL_METRICAS   # metricas: nunca simuladas
+
+
 def test_agregar_pondera_por_n():
     a = pz.agregar([fila_m(3, 10, 2.0, 4.0), fila_m(3, 30, 4.0, 4.0, fecha=date(2026, 10, 18))])[0]
     assert (a["n"], a["dias"], a["mae_model"], a["mae_baseline"]) == (40, 2, 3.5, 4.0)
@@ -142,7 +155,12 @@ def test_panel_sin_tarjeta_de_prediccion_en_vivo_y_con_replay():
     for id_ in ("replay-estacion", "replay-at", "replay-filas", "replay-mae"):
         assert f'id="{id_}"' in tarjeta
     app_js = client.get("/js/app.js").text
-    assert "/predictions/replay" in app_js and "/predictions/latest" not in app_js and "/forecast`" not in app_js
+    assert "/predictions/replay" in app_js and "/forecast`" not in app_js
+    # /predictions/latest solo lo pide la tarjeta de la estacion SIMULADA (ecoair-sim-NN), nunca el nodo real
+    assert app_js.count("/predictions/latest") == 1
+    i = app_js.index("async function refreshPrediccionSim(")
+    assert i < app_js.index("/predictions/latest") < app_js.index("\n}\n", i)
+    assert "if (VISTA.prediccionSim) iniciarPrediccionSim();" in app_js
 
 
 def test_replay_vista_con_node():

@@ -12,9 +12,11 @@ export function modos(search) {
 
 // Que se ve en cada modo. La vista del nodo (sin ?modo=replay) es SOLO en vivo: sin tarjeta de replay,
 // sin mapa de las estaciones del IDEAM y sin replay-vista.js. Las preguntas rapidas solo en la vista del
-// nodo y fuera del kiosco (nadie puede pulsar en la pantalla de la feria).
-export function secciones({ replay = false, kiosco = false } = {}) {
+// nodo y fuera del kiosco (nadie puede pulsar en la pantalla de la feria). La tarjeta de prediccion solo
+// existe para la estacion SIMULADA (ecoair-sim-NN), fuera del replay y del kiosco: el nodo real no la muestra.
+export function secciones({ replay = false, kiosco = false, device = "" } = {}) {
   return {
+    prediccionSim: !replay && !kiosco && esDispositivoSimulado(device),   // "Prediccion de PM2.5 · SIMULACION"
     replay,                                   // tarjeta Replay historico + mapa de estaciones del IDEAM
     preguntas: !replay && !kiosco,            // fila "Preguntas rapidas"
     ubicacion: !replay && !kiosco,            // mapa "Ubicacion de la estacion" (solo EcoAir)
@@ -23,6 +25,12 @@ export function secciones({ replay = false, kiosco = false } = {}) {
 }
 
 // ---------- Selector de estacion: cambiar entre vista del nodo y replay ----------
+// Dispositivos de simulacion (tools/simular_continuo.py solo escribe en ecoair-sim-NN). El banner
+// SIMULACION se muestra por el nombre aunque /devices o la tendencia aun no hayan respondido.
+export function esDispositivoSimulado(device) {
+  return /^ecoair-sim-\d+$/.test(String(device || ""));
+}
+
 export const OPCION_REPLAY = "__replay__";
 
 export function urlModoReplay(href, station, at) {

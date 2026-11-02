@@ -137,11 +137,30 @@ def test_emisor_sin_tabla_simulado_o_sin_datos(caplog):
     sim = ConexionFalsa(serie=filas_minuto(HORA), simulado=True)
     assert ph.EmisorHorario(RUTA_V4, ["ecoair-sim-01"], 5).revisar(sim, HORA.replace(minute=5)) == 0
     assert sim.predicciones == {}
+    assert "omitida (datos simulados en la ventana)" in caplog.text
     vacia = ConexionFalsa(serie=filas_minuto(HORA, minutos=120))
     e2 = ph.EmisorHorario(RUTA_V4, ["ecoair-node-01"], 5)
     assert e2.revisar(vacia, HORA.replace(minute=5)) == 0 and "omitida, faltan datos" in caplog.text
     n = len(vacia.consultas)
     assert e2.revisar(vacia, HORA.replace(minute=40)) == 0 and len(vacia.consultas) == n   # no reintenta en la hora
+
+
+def test_simulado_con_incluir_simulados_queda_marcado_y_el_real_no(caplog):
+    caplog.set_level("INFO", logger="alerter.prediccion")
+    sim = ConexionFalsa(serie=filas_minuto(HORA), simulado=True)
+    e = ph.EmisorHorario(RUTA_V4, ["ecoair-sim-01"], 5, incluir_simulados=True)
+    assert e.revisar(sim, HORA.replace(minute=5)) == 3
+    assert {k[0] for k in sim.predicciones} == {"ecoair-sim-01"}
+    assert all(f["is_simulated"] is True for f in sim.predicciones.values())
+    assert "[SIMULACIÓN] ecoair-sim-01" in caplog.text
+    real = ConexionFalsa(serie=filas_minuto(HORA))
+    ph.EmisorHorario(RUTA_V4, ["ecoair-node-01"], 5, incluir_simulados=True).revisar(real, HORA.replace(minute=5))
+    assert len(real.predicciones) == 3 and all(f["is_simulated"] is False for f in real.predicciones.values())
+    assert "%(is_simulated)s)" in ph.SQL_INSERT
+
+
+def test_metricas_nunca_usan_predicciones_ni_mediciones_simuladas():
+    assert "NOT p.is_simulated" in mp.SQL_FILAS and "NOT m.is_simulated" in mp.SQL_FILAS
 
 
 # ---------- Metricas diarias ----------

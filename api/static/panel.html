@@ -41,8 +41,7 @@
   </header>
 
   <div id="sim-banner" class="sim-banner" role="note" hidden>
-    <strong>SIMULACIÓN</strong> · Esta estación usa datos inventados para demostración.
-    No son mediciones de un sensor real.
+    <strong>SIMULACIÓN</strong> · datos inventados para demostración. No son mediciones de un sensor real.
   </div>
 
   <div id="replay-banner" class="sim-banner replay-banner" role="note" hidden>
@@ -177,6 +176,18 @@
         <p class="env__time" id="env-time">&nbsp;</p>
         <p class="env__ref">La franja es una referencia de confort orientativa, no un límite normativo.</p>
       </div>
+    </section>
+
+    <!-- Prediccion de PM2.5 sobre datos SIMULADOS: solo ecoair-sim-NN (iniciarPrediccionSim la muestra) -->
+    <section class="card card--pred card--pred-sim" id="predsim" aria-labelledby="predsim-title" style="--i:5" hidden>
+      <header class="card__head">
+        <h2 id="predsim-title" class="card__title">Predicción de PM2.5 · SIMULACIÓN</h2>
+        <span class="chip chip--muted">experimental</span>
+      </header>
+      <ul class="pred__list" id="predsim-lista"></ul>
+      <p class="pred__msg" id="predsim-msg" role="status" aria-live="polite">Cargando…</p>
+      <p class="pred__src" id="predsim-emision"></p>
+      <p class="pred__warn predsim__aviso" id="predsim-aviso"></p>
     </section>
 
     <!-- Tendencia -->
