@@ -239,6 +239,25 @@ def test_devices_indica_si_es_simulado(monkeypatch):
     assert [(d["device_id"], d["is_simulated"]) for d in r] == [("ecoair-node-01", False), ("ecoair-sim-01", True)]
 
 
+def test_devices_nombre_lugar_solo_para_ecoair_sim_01(monkeypatch):
+    async def query_falsa(sql, params=()):
+        return [{"device_id": "ecoair-node-01", "name": "Nodo 01", "location": None, "created_at": AHORA, "is_simulated": False},
+                {"device_id": "ecoair-sim-01", "name": "Estación simulada", "location": "Simulado", "created_at": AHORA, "is_simulated": True},
+                {"device_id": "ecoair-sim-02", "name": "Otra", "location": "Simulado", "created_at": AHORA, "is_simulated": True}]
+
+    monkeypatch.setattr(main, "query", query_falsa)
+    monkeypatch.delenv("ECOAIR_SIM_NOMBRE_LUGAR", raising=False)
+    sin = TestClient(main.app).get("/devices").json()
+    assert [d["nombre_lugar"] for d in sin] == [None, None, None]          # sin variable: como antes
+    monkeypatch.setenv("ECOAIR_SIM_NOMBRE_LUGAR", "  La   Candelaria ")
+    con = TestClient(main.app).get("/devices").json()
+    assert [d["nombre_lugar"] for d in con] == [None, "La Candelaria", None]   # solo ecoair-sim-01, recortado
+    assert [d["name"] for d in con] == ["Nodo 01", "Estación simulada", "Otra"] and con[1]["is_simulated"] is True
+    monkeypatch.setenv("ECOAIR_SIM_NOMBRE_LUGAR", "   ")
+    assert TestClient(main.app).get("/devices").json()[1]["nombre_lugar"] is None
+    assert main.nombre_lugar("ecoair-sim-01", {"ECOAIR_SIM_NOMBRE_LUGAR": "x" * 100}) == "x" * 60
+
+
 def test_lecturas_ignoran_filas_futuras():
     import inspect
     fuente = inspect.getsource(main.latest_measurement) + inspect.getsource(main.list_measurements) + main.SQL_DEVICES

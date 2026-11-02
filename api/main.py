@@ -97,6 +97,8 @@ class Device(BaseModel):
     created_at: datetime
     # True si sus datos son simulados (segun la medicion mas reciente). El dashboard muestra SIMULACION.
     is_simulated: bool = False
+    # Solo ecoair-sim-01 con ECOAIR_SIM_NOMBRE_LUGAR: nombre del lugar para el selector de estacion.
+    nombre_lugar: Optional[str] = None
 
 
 class Measurement(BaseModel):
@@ -151,9 +153,20 @@ SQL_DEVICES = (
 )
 
 
+DISPOSITIVO_NOMBRE_LUGAR = "ecoair-sim-01"
+MAX_NOMBRE_LUGAR = 60
+
+
+def nombre_lugar(device_id, env=None):
+    """ECOAIR_SIM_NOMBRE_LUGAR (recortado) para ecoair-sim-01; None para cualquier otro o si esta vacia."""
+    env = os.environ if env is None else env
+    valor = " ".join((env.get("ECOAIR_SIM_NOMBRE_LUGAR") or "").split())[:MAX_NOMBRE_LUGAR]
+    return valor if device_id == DISPOSITIVO_NOMBRE_LUGAR and valor else None
+
+
 @app.get("/devices", response_model=list[Device])
 async def list_devices():
-    return await query(SQL_DEVICES)
+    return [{**d, "nombre_lugar": nombre_lugar(d["device_id"])} for d in await query(SQL_DEVICES)]
 
 
 @app.get("/devices/{device_id}/measurements/latest", response_model=Measurement)

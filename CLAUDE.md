@@ -164,6 +164,11 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   la etiqueta SIMULACIÓN y el popup marcado SIMULACIÓN. Sin la variable: "SIMULACIÓN, sin ubicación real". El
   mapa del nodo real y el del replay no la usan. Revisado en Chrome a 1280 y 390 px con puntos de ejemplo; la
   variable NO está configurada en ningún entorno.
+- Selector de estación: con ECOAIR_SIM_NOMBRE_LUGAR en la api (p. ej. "La Candelaria"), /devices manda
+  nombre_lugar SOLO para ecoair-sim-01 y la opción dice "La Candelaria (ecoair-sim-01)" (textoOpcionEstacion en
+  js/modo-vista.js). Vacía = "Estación simulada (ecoair-sim-01) · SIMULACIÓN". La etiqueta SIMULACIÓN, el
+  título de la pestaña, la tarjeta de predicción y el mapa siguen marcando la simulación. No configurada en
+  ningún entorno.
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base

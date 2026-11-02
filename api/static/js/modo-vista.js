@@ -31,6 +31,13 @@ export function esDispositivoSimulado(device) {
   return /^ecoair-sim-\d+$/.test(String(device || ""));
 }
 
+// Texto de una estacion en el selector. Con nombre_lugar (solo ecoair-sim-01 y ECOAIR_SIM_NOMBRE_LUGAR en la
+// api): "<lugar> (<id>)". Sin el: como siempre, "<nombre> (<id>)" y " · SIMULACIÓN" si es simulada.
+export function textoOpcionEstacion(d) {
+  if (d && typeof d.nombre_lugar === "string" && d.nombre_lugar.trim()) return `${d.nombre_lugar.trim()} (${d.device_id})`;
+  return `${d.name ? `${d.name} (${d.device_id})` : d.device_id}${d.is_simulated ? " · SIMULACIÓN" : ""}`;
+}
+
 export const OPCION_REPLAY = "__replay__";
 
 export function urlModoReplay(href, station, at) {

@@ -7,7 +7,7 @@ import {
 } from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 import { vistaTendencia } from "./tendencia-vista.js";
-import { OPCION_REPLAY, esDispositivoSimulado, modos, secciones, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
+import { OPCION_REPLAY, esDispositivoSimulado, modos, secciones, textoOpcionEstacion, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
 import { TEXTOS as PREGUNTAS, responder } from "./preguntas-vista.js";
 import { ETIQUETA_PM25_SIMULADA, lineasPm25Simulada, vistaPrediccionSimulada } from "./predicciones-vista.js";
 import { matrizQr, pathQr, urlQr } from "./proyecto-vista.js";
@@ -1215,7 +1215,7 @@ async function loadDevices() {
   try {
     const lista = await getJSON("/devices");
     const opciones = lista.map((d) => {
-      const nombre = `${d.name ? `${d.name} (${d.device_id})` : d.device_id}${d.is_simulated ? " · SIMULACIÓN" : ""}`;
+      const nombre = textoOpcionEstacion(d);
       const o = el("option", { value: d.device_id }, nombre);
       if (d.device_id === DEVICE) { o.selected = true; simDispositivo = !!d.is_simulated; }
       return o;

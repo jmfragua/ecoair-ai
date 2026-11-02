@@ -161,3 +161,8 @@ def test_prediccion_simulada_dentro_de_la_tarjeta_de_pm25():
     assert "pintarPrediccionSim(r);" in _funcion("refreshPrediccionSim")
     assert "if (VISTA.prediccionSim) iniciarPrediccionSim();" in APP
     assert ".pm-pred[hidden] { display: none; }" in CSS and "color: #ffe2a6" in CSS[CSS.index(".pm-pred__lista li"):]
+
+
+def test_selector_usa_el_nombre_del_lugar_de_la_api():
+    cuerpo = _funcion("loadDevices")
+    assert "const nombre = textoOpcionEstacion(d);" in cuerpo and "innerHTML" not in cuerpo

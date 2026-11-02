@@ -68,6 +68,8 @@ services:
       ECOAIR_UBICACION_APROX: ${ECOAIR_UBICACION_APROX:-}
       # Punto aproximado de la estacion SIMULADA (ecoair-sim-01) para su mapa; vacio = sin mapa
       ECOAIR_SIM_UBICACION_APROX: ${ECOAIR_SIM_UBICACION_APROX:-}
+      # Nombre del lugar de ecoair-sim-01 en el selector (p. ej. La Candelaria); vacio = texto de siempre
+      ECOAIR_SIM_NOMBRE_LUGAR: ${ECOAIR_SIM_NOMBRE_LUGAR:-}
       # URL publica del panel para el QR del pie (la misma BASE_URL del notifier). Vacia = el panel usa su origen.
       BASE_URL: ${BASE_URL:-}
     ports:

@@ -46,3 +46,14 @@ test("esDispositivoSimulado: solo ecoair-sim-NN (el banner SIMULACIÓN sale por 
     assert.equal(esDispositivoSimulado(d), false, String(d));
   }
 });
+
+test("selector de estacion: nombre del lugar solo si la api lo manda; si no, el texto de siempre", async () => {
+  const { textoOpcionEstacion } = await import("../../static/js/modo-vista.js");
+  const sim = { device_id: "ecoair-sim-01", name: "Estación simulada", is_simulated: true, nombre_lugar: null };
+  assert.equal(textoOpcionEstacion(sim), "Estación simulada (ecoair-sim-01) · SIMULACIÓN");
+  assert.equal(textoOpcionEstacion({ ...sim, nombre_lugar: "La Candelaria" }), "La Candelaria (ecoair-sim-01)");
+  assert.equal(textoOpcionEstacion({ ...sim, nombre_lugar: "  " }), "Estación simulada (ecoair-sim-01) · SIMULACIÓN");
+  assert.equal(textoOpcionEstacion({ ...sim, nombre_lugar: undefined }), "Estación simulada (ecoair-sim-01) · SIMULACIÓN");
+  assert.equal(textoOpcionEstacion({ device_id: "ecoair-node-01", name: "Nodo 01", is_simulated: false, nombre_lugar: null }), "Nodo 01 (ecoair-node-01)");
+  assert.equal(textoOpcionEstacion({ device_id: "x", name: null, is_simulated: false }), "x");
+});
