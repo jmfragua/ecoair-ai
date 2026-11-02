@@ -99,6 +99,9 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   dispositivo que no sea ecoair-sim-NN o que tenga datos reales. --local = solo DB_*; sin --local exige
   DATABASE_URL, muestra host:puerto/base (sin usuario ni clave) y pide escribir el host (o
   --confirmar-destino HOST). Probado en un Postgres desechable: 2880 filas, repetir = 0, node-01 idéntico.
+  --episodio-en "AAAA-MM-DD HH:MM" (hora de Colombia; por defecto "2026-11-06 15:00"; "ninguno" lo quita;
+  en servicio SIM_EPISODIO_EN): episodio de 90 min con pico de 95 µg/m³, parte de la serie determinista y
+  escrito solo cuando llega cada minuto.
   - Predicciones del simulado: PREDICCION_INCLUIR_SIMULADOS=true (false por defecto) + ecoair-sim-01 en
     PREDICCION_DISPOSITIVOS -> filas con is_simulated=true; las métricas nunca las usan; /predictions/latest
     las devuelve con is_simulated y el aviso "SIMULACIÓN · ..." y sin regla en vivo. docker-compose ya pasa

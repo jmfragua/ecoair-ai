@@ -182,6 +182,48 @@ def test_main_rechaza_node_01_y_dispositivo_con_datos_reales(capsys):
     assert base.filas == [] and "REALES" in capsys.readouterr().out
 
 
+# ---------- Episodio programado (--episodio-en) ----------
+
+def test_episodio_en_programado_reproducible_y_sin_filas_futuras():
+    ep = sc.parsear_episodio_en(sc.EPISODIO_EN_POR_DEFECTO)
+    inicio = datetime(2026, 11, 6, 20, 0, tzinfo=timezone.utc)                # viernes 15:00 en Colombia
+    assert ep == (inicio, timedelta(minutes=90), sc.EPISODIO_PICO)
+    assert sc.parsear_episodio_en("ninguno") is None and sc.parsear_episodio_en("") is None
+    for malo in ("2026-11-06T15:00", "6 nov 15h", "2026-11-06 25:00"):
+        with pytest.raises(ValueError, match="AAAA-MM-DD HH:MM"):
+            sc.parsear_episodio_en(malo)
+    # pico ~95 en la meseta, subida y bajada suaves, nada fuera de los 90 min
+    dia = sc.generar(inicio - timedelta(hours=2), HASTA, HASTA, programados=(ep,))
+    pm = {f["received_at"]: f["pm25"] for f in dia}
+    assert pm[inicio + timedelta(minutes=45)] == pytest.approx(95, abs=3)
+    assert pm[inicio - timedelta(minutes=30)] < 40 and pm[inicio + timedelta(minutes=120)] < 40
+    sin = {f["received_at"]: f["pm25"] for f in sc.generar(inicio - timedelta(hours=2), HASTA, HASTA)}
+    assert all(pm[t] == sin[t] for t in pm if not inicio <= t <= inicio + timedelta(minutes=90))
+    assert max(abs(b["pm25"] - a["pm25"]) for a, b in zip(dia, dia[1:])) < 10   # sin saltos bruscos
+    # reproducible
+    assert dia == sc.generar(inicio - timedelta(hours=2), HASTA, HASTA, programados=(ep,))
+    # a mitad del episodio solo existen los minutos ya pasados: el resto no se inserta antes de tiempo
+    a_mitad = inicio + timedelta(minutes=30, seconds=10)
+    parcial = sc.generar(inicio - timedelta(hours=2), HASTA, a_mitad, programados=(ep,))
+    assert parcial[-1]["received_at"] == inicio + timedelta(minutes=30)
+    assert parcial == dia[:len(parcial)]                                       # mismos valores que luego
+
+
+def test_main_episodio_por_defecto_y_servicio(capsys):
+    base, relojes = BaseFalsa(), iter([AHORA, AHORA, HASTA + timedelta(hours=1)])
+    rc = sc.main(["--local", "--continuo"], conectar=lambda: base, reloj=lambda: next(relojes), dormir=lambda s: None, env=LOCAL)
+    out = capsys.readouterr().out
+    assert rc == 0 and "programado con --episodio-en): 2026-11-06 15:00 -> 2026-11-06 16:30 · pico PM2.5 95" in out
+    assert all(sim for _, _, sim in base.filas) and max(t for _, t, _ in base.filas) == HASTA   # simulados, nada futuro
+    assert sc.main(["--episodio-en", "ninguno", "--dry-run"], reloj=lambda: AHORA, env=LOCAL) == 0
+    assert "programado" not in capsys.readouterr().out
+    assert sc.main(["--episodio-en", "mañana", "--dry-run"], reloj=lambda: AHORA, env=LOCAL) == 2
+    argv = sc.argumentos_servicio({"SIM_ACTIVO": "true", "SIM_EPISODIO_EN": "2026-11-05 10:00"})
+    assert argv[argv.index("--episodio-en") + 1] == "2026-11-05 10:00"
+    argv = sc.argumentos_servicio({"SIM_ACTIVO": "true"})
+    assert argv[argv.index("--episodio-en") + 1] == "2026-11-06 15:00"
+
+
 # ---------- Modo servicio (Railway) ----------
 
 def test_servicio_sin_sim_activo_no_hace_nada(capsys):

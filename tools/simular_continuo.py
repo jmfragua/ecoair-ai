@@ -14,6 +14,10 @@ Garantias:
 - Patron diario plausible: PM mas alto en las horas pico (7-9 h y 17-20 h de Colombia), temperatura y
   humedad con ciclo diario, ruido pequeno y suave, y algun episodio de PM alto (~1 de cada 3 dias,
   decidido por la semilla) con subida y bajada en coseno.
+- Episodio PROGRAMADO (--episodio-en "AAAA-MM-DD HH:MM", hora de Colombia; por defecto el viernes 6 nov a las
+  15:00): ~90 min con pico de PM2.5 de ~95 ug/m3 (como el episodio de la semilla del jueves 5). Es parte de
+  la serie determinista (mismos parametros -> mismos valores) y, como todo, solo se inserta cuando llega su
+  hora: nunca se escriben filas futuras por adelantado. "ninguno" lo desactiva.
 - Base de datos: con --local usa SOLO DB_* (localhost:5433 por defecto) aunque exista DATABASE_URL.
   Sin --local exige DATABASE_URL (p. ej. Railway): muestra el destino (host:puerto/base, nunca usuario
   ni clave) y pide escribir el host para confirmar (o --confirmar-destino HOST para dejarlo corriendo).
@@ -23,7 +27,7 @@ Entonces lee DATABASE_URL (obligatoria; nunca se imprime, solo host:puerto/base)
 (48) al arrancar y sigue cada SIM_CADA_MIN (5) hasta SIM_HASTA (viernes 6 nov 17:00 de Colombia) y termina.
 Sin confirmacion interactiva (SIM_ACTIVO=true es la confirmacion), con las mismas protecciones:
 solo ecoair-sim-NN, se detiene si el dispositivo tiene datos reales y nunca escribe horas futuras.
-Opcionales: SIM_DEVICE (ecoair-sim-01), SIM_SEMILLA (2026).
+Opcionales: SIM_DEVICE (ecoair-sim-01), SIM_SEMILLA (2026), SIM_EPISODIO_EN ("2026-11-06 15:00"; "ninguno").
 
 Ejemplos:
   python tools/simular_continuo.py --local --backfill-horas 48 --dry-run
@@ -60,6 +64,10 @@ from simular_estacion import (  # noqa: E402
 DEVICE_POR_DEFECTO = "ecoair-sim-01"
 PATRON_DEVICE = re.compile(r"ecoair-sim-\d+")
 HASTA_POR_DEFECTO = "2026-11-06T17:00-05:00"     # viernes 6 de noviembre, 17:00 de Colombia
+EPISODIO_EN_POR_DEFECTO = "2026-11-06 15:00"     # viernes 6 de noviembre, 15:00 de Colombia
+EPISODIO_DURACION = timedelta(minutes=90)
+EPISODIO_PICO = 95.0                             # similar al episodio de la semilla (95,6 el jueves 5)
+SIN_EPISODIO = ("", "ninguno", "no")
 SEMILLA_POR_DEFECTO = 2026
 NODO_MIN = 20                                    # nudos del ruido suave cada 20 min
 PROB_EPISODIO = 0.35                             # ~1 de cada 3 dias
@@ -104,8 +112,21 @@ def episodio_del_dia(dia, semilla):
     return inicio.astimezone(timezone.utc).replace(second=0, microsecond=0), dur, pico
 
 
-def valores(t, semilla=SEMILLA_POR_DEFECTO):
-    """Medicion simulada del minuto t (UTC). Mismo t y semilla -> mismo resultado, siempre."""
+def parsear_episodio_en(texto):
+    """'AAAA-MM-DD HH:MM' (hora de Colombia) -> episodio programado (inicio UTC, duracion, pico), o None con
+    'ninguno'. Lanza ValueError si el formato no es ese."""
+    texto = (texto or "").strip()
+    if texto.lower() in SIN_EPISODIO:
+        return None
+    try:
+        inicio = datetime.strptime(texto, "%Y-%m-%d %H:%M").replace(tzinfo=COLOMBIA)
+    except ValueError:
+        raise ValueError(f"--episodio-en debe ser 'AAAA-MM-DD HH:MM' (hora de Colombia) o 'ninguno': {texto!r}") from None
+    return inicio.astimezone(timezone.utc), EPISODIO_DURACION, EPISODIO_PICO
+
+
+def valores(t, semilla=SEMILLA_POR_DEFECTO, programados=()):
+    """Medicion simulada del minuto t (UTC). Mismo t, semilla y episodios programados -> mismo resultado."""
     t = t.replace(second=0, microsecond=0)
     minuto = int(t.timestamp() // 60)
     local = t.astimezone(COLOMBIA)
@@ -118,6 +139,8 @@ def valores(t, semilla=SEMILLA_POR_DEFECTO):
         ep = episodio_del_dia(d, semilla)
         if ep:
             pm25 += max(0.0, ep[2] - pm25) * perfil_episodio(t, ep[0], ep[1])
+    for ini, dur, pico_ep in programados:                               # --episodio-en
+        pm25 += max(0.0, pico_ep - pm25) * perfil_episodio(t, ini, dur)
     pm25 = min(1000.0, max(1.0, pm25))
     pm10 = min(1000.0, max(pm25, pm25 * (1.55 + 0.08 * _suave(semilla, "pm10", minuto)) + 0.4 * _g(semilla, "pm10-b", minuto)))
     temp = 21 + 5 * math.cos(2 * math.pi * (hora - 14.5) / 24) + 0.8 * _suave(semilla, "temp", minuto, paso=180) \
@@ -128,7 +151,7 @@ def valores(t, semilla=SEMILLA_POR_DEFECTO):
             "pm25": round(pm25, 1), "pm10": round(pm10, 1)}
 
 
-def generar(desde, hasta, ahora, semilla=SEMILLA_POR_DEFECTO):
+def generar(desde, hasta, ahora, semilla=SEMILLA_POR_DEFECTO, programados=()):
     """Una fila por minuto en [desde, min(hasta, ahora)]. NUNCA devuelve minutos posteriores a 'ahora'."""
     fin = min(hasta, ahora)
     t = desde.replace(second=0, microsecond=0)
@@ -136,7 +159,7 @@ def generar(desde, hasta, ahora, semilla=SEMILLA_POR_DEFECTO):
         t += timedelta(minutes=1)
     filas = []
     while t <= fin:
-        filas.append(valores(t, semilla))
+        filas.append(valores(t, semilla, programados))
         t += timedelta(minutes=1)
     return filas
 
@@ -147,15 +170,16 @@ def faltantes(filas, existentes):
     return [f for f in filas if f["received_at"] not in ya]
 
 
-def episodios_entre(desde, hasta, semilla):
-    """Episodios programados por la semilla que tocan [desde, hasta] (para avisar en la salida)."""
+def episodios_entre(desde, hasta, semilla, programados=()):
+    """Episodios (de la semilla y --episodio-en) que tocan [desde, hasta], para avisar en la salida."""
     out, d = [], desde.astimezone(COLOMBIA).date() - timedelta(days=1)
     while d <= hasta.astimezone(COLOMBIA).date():
         ep = episodio_del_dia(d, semilla)
         if ep and ep[0] + ep[1] >= desde and ep[0] <= hasta:
             out.append(ep)
         d += timedelta(days=1)
-    return out
+    out += [ep for ep in programados if ep[0] + ep[1] >= desde and ep[0] <= hasta]
+    return sorted(out)
 
 
 # ---------- Comprobaciones de seguridad ----------
@@ -197,14 +221,15 @@ def argumentos_servicio(env):
             "--backfill-horas", env.get("SIM_BACKFILL_HORAS") or "48",
             "--continuo", "--cada-min", env.get("SIM_CADA_MIN") or "5",
             "--hasta", env.get("SIM_HASTA") or HASTA_POR_DEFECTO,
-            "--semilla", env.get("SIM_SEMILLA") or str(SEMILLA_POR_DEFECTO)]
+            "--semilla", env.get("SIM_SEMILLA") or str(SEMILLA_POR_DEFECTO),
+            "--episodio-en", env.get("SIM_EPISODIO_EN") or EPISODIO_EN_POR_DEFECTO]
 
 
 # ---------- Escritura ----------
 
-def pasada(conn, device_id, desde, hasta, ahora, semilla):
+def pasada(conn, device_id, desde, hasta, ahora, semilla, programados=()):
     """Inserta los minutos que faltan en [desde, min(hasta, ahora)]. Devuelve cuantas filas inserto."""
-    filas = generar(desde, hasta, ahora, semilla)
+    filas = generar(desde, hasta, ahora, semilla, programados)
     if not filas:
         return 0
     assert all(f["received_at"] <= ahora for f in filas), "nunca filas con hora futura"
@@ -234,6 +259,9 @@ def main(argv=None, conectar=None, reloj=None, dormir=time.sleep, preguntar=inpu
     p.add_argument("--cada-min", type=float, default=5)
     p.add_argument("--hasta", default=HASTA_POR_DEFECTO, help="ISO 8601 con zona (por defecto viernes 6 nov 17:00 de Colombia)")
     p.add_argument("--semilla", type=int, default=SEMILLA_POR_DEFECTO)
+    p.add_argument("--episodio-en", default=EPISODIO_EN_POR_DEFECTO, metavar="'AAAA-MM-DD HH:MM'",
+                   help="episodio de PM alto simulado (~90 min, hora de Colombia); 'ninguno' lo desactiva "
+                        "(por defecto viernes 6 nov 15:00)")
     p.add_argument("--local", action="store_true", help="base local con DB_* (ignora DATABASE_URL)")
     p.add_argument("--confirmar-destino", metavar="HOST", help="host de DATABASE_URL, para correr sin preguntar")
     p.add_argument("--dry-run", action="store_true", help="genera y resume, sin conectar a la base")
@@ -258,19 +286,23 @@ def main(argv=None, conectar=None, reloj=None, dormir=time.sleep, preguntar=inpu
             raise ValueError("--hasta debe llevar zona (p. ej. 2026-11-06T17:00-05:00)")
         if args.backfill_horas < 0 or args.cada_min <= 0:
             raise ValueError("--backfill-horas >= 0 y --cada-min > 0")
+        programado = parsear_episodio_en(args.episodio_en)
     except ValueError as e:
         print(f"ERROR: {e}")
         return 2
     hasta = hasta.astimezone(timezone.utc)
+    programados = (programado,) if programado else ()
     ahora = reloj()
     desde = ahora - timedelta(hours=args.backfill_horas) if args.backfill_horas else ahora - timedelta(minutes=args.cada_min)
 
     print(AVISO)
     print(f"Dispositivo: {args.device} · semilla {args.semilla} · hasta {_col(hasta)} (hora de Colombia)")
-    for ini, dur, pico in episodios_entre(desde, hasta, args.semilla):
-        print(f"  Episodio simulado: {_col(ini)} -> {_col(ini + dur)} · pico PM2.5 {pico:g} µg/m³")
+    for ep in episodios_entre(desde, hasta, args.semilla, programados):
+        ini, dur, pico = ep
+        tipo = " (programado con --episodio-en)" if ep in programados else ""
+        print(f"  Episodio simulado{tipo}: {_col(ini)} -> {_col(ini + dur)} · pico PM2.5 {pico:g} µg/m³")
     if args.dry_run:
-        filas = generar(desde, hasta, ahora, args.semilla)
+        filas = generar(desde, hasta, ahora, args.semilla, programados)
         if filas:
             pm = [f["pm25"] for f in filas]
             print(f"Modo --dry-run: {len(filas)} filas {_col(filas[0]['received_at'])} -> "
@@ -307,7 +339,7 @@ def main(argv=None, conectar=None, reloj=None, dormir=time.sleep, preguntar=inpu
                     if futuras:
                         print(f"  AVISO: {args.device} ya tiene {futuras} filas con hora futura (de "
                               "tools/simular_estacion.py); este script no las crea ni las borra.")
-                n = pasada(conn, args.device, desde, hasta, ahora, args.semilla)
+                n = pasada(conn, args.device, desde, hasta, ahora, args.semilla, programados)
                 print(f"{_col(ahora)} · {n} filas simuladas nuevas (hasta {_col(min(ahora, hasta))})", flush=True)
                 desde = ahora - timedelta(minutes=10)      # la siguiente pasada cubre tambien los ultimos minutos
             except ValueError as e:                        # dispositivo con datos reales: se detiene
