@@ -112,6 +112,10 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     respuesta no viene con is_simulated=true no muestra valores. Sin predicciones: "Aún no hay predicciones
     simuladas (se generan cada hora)". A >= 1200 px va encima de la tendencia (body.con-pred-sim). Revisada en
     Chrome a 1280 y 390 px con un Postgres desechable.
+  - Las mismas predicciones (una sola petición) también van en pequeño y ámbar dentro de la tarjeta grande de
+    PM2.5, bajo "actual · media 1 h": etiqueta "predicción · simulado" + "En 4 h: X µg/m³ · hacia las HH:MM" y
+    5 h (lineasPm25Simulada). El valor grande sigue siendo el medido; PM10, temperatura y humedad no cambian
+    (no se predice PM10). Sin predicciones o con la API caída, se omiten.
   - Servicio de Railway PROPUESTO, no desplegado (simulador/Dockerfile + simulador/railway.toml, contexto en la
     raíz): `simular_continuo.py --servicio`. Sin SIM_ACTIVO=true sale con 0 sin hacer nada. Con true: relleno de
     48 h, bucle cada 5 min hasta el viernes 17:00 y termina (ON_FAILURE: no se reinicia al terminar). Usa
@@ -153,6 +157,13 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   ecoair-node-01; otro dispositivo o variable vacía/inválida = "Ubicación no configurada" sin mapa;
   dispositivo simulado = "SIMULACIÓN, sin ubicación real" sin mapa; en modo replay la tarjeta se oculta.
   ECOAIR_UBICACION_APROX acepta signos menos Unicode (−, –, —, －) y los normaliza a "-".
+- [LOCAL] Ubicación de la estación SIMULADA (solo ecoair-sim-01): con ECOAIR_SIM_UBICACION_APROX="lat,lon" en la
+  api (mismo parseo, signos menos Unicode y redondeo a 2 decimales; va en "simulada" de /mapa/estaciones, aparte
+  de "ecoair") la tarjeta muestra el mismo mapa que el nodo (círculo ~1 km, vista del Valle de Aburrá, +/−,
+  "Centrar en la estación", sin rueda, ayuda táctil), rotulado "Ubicación aproximada · estación simulada", con
+  la etiqueta SIMULACIÓN y el popup marcado SIMULACIÓN. Sin la variable: "SIMULACIÓN, sin ubicación real". El
+  mapa del nodo real y el del replay no la usan. Revisado en Chrome a 1280 y 390 px con puntos de ejemplo; la
+  variable NO está configurada en ningún entorno.
 - [LOCAL] Predicciones v4 (3, 4 y 5 h): emision horaria y metricas diarias en el alerter, rutas
   /predictions/latest y /predictions/metrics y tarjeta del panel. Probado de punta a punta en un
   Postgres desechable con datos SINTETICOS (sus MAE no son metricas del modelo) y contra la base

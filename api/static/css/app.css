@@ -517,7 +517,16 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .mapa__caja .leaflet-popup-content strong { display: block; margin-bottom: 2px; }
 .mapa__caja .leaflet-tooltip { font: 600 12px var(--font); }
 .mapa__caja .leaflet-control-attribution { font: 11px var(--font); }
-/* Prediccion de PM2.5 · SIMULACION (solo ecoair-sim-NN): ambar como el banner de simulacion */
+/* Prediccion simulada dentro de la tarjeta de PM2.5 (solo ecoair-sim-NN): pequena y ambar */
+.pm-pred[hidden] { display: none; }
+.pm-pred { margin-top: 8px; display: grid; gap: 2px; min-width: 0; }
+.pm-pred__tag { justify-self: start; font-size: .78rem; font-weight: 700; letter-spacing: .04em; color: #1a1400;
+  background: var(--warn); border-radius: 6px; padding: 1px 7px; line-height: 1.35; }   /* si se parte (390 px), sigue siendo etiqueta */
+.pm-pred__lista { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; }
+.pm-pred__lista li { font-size: .78rem; line-height: 1.35; color: #ffe2a6; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; }
+.pm-pred__parte { white-space: nowrap; }
+/* Prediccion de PM2.5 · SIMULACION (solo ecoair-sim-NN): ambar, el color de la simulacion */
 .card--pred-sim[hidden] { display: none; }
 .card--pred-sim { border: 2px dashed var(--warn);
   background: linear-gradient(180deg, rgba(250, 178, 25, .07), transparent 60%), var(--surface); }
@@ -666,6 +675,7 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   body.con-pred-sim .card--alerts { grid-row: 6; }
   body.con-pred-sim .card--ubicacion { grid-row: 6 / 8; }
   body.con-pred-sim .card--subs { grid-row: 7; }
+  body.con-pred-sim .card--pm { align-self: stretch; }   /* PM10 a la altura de PM2.5 (que lleva la prediccion) */
   .gauge { max-width: 420px; }
   .gauge__value { font-size: 5.4rem; }
   .chart__svg { height: 360px; }

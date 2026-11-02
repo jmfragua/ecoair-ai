@@ -116,6 +116,11 @@
       </header>
       <p class="metric__value" id="pm25-now">—</p>
       <p class="metric__sub"><span class="t-long" id="pm25-lbl-l">actual · media 1 h </span><span class="t-short" id="pm25-lbl-s">media 1 h </span><strong id="pm25-1h">—</strong></p>
+      <!-- Solo ecoair-sim-NN: prediccion simulada de PM2.5 a 4 y 5 h (pintarPrediccionSim); el valor grande sigue siendo el medido -->
+      <div class="pm-pred" id="pm25-pred" hidden>
+        <span class="pm-pred__tag" id="pm25-pred-tag"></span>
+        <ul class="pm-pred__lista" id="pm25-pred-lista"></ul>
+      </div>
       <div class="limit" id="pm25-limit">
         <div class="limit__row"><span><span class="t-long">Media 24 h vs. límite diario</span><span class="t-short">24 h / límite</span></span><strong id="pm25-24h">—</strong></div>
         <div class="bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="PM2.5: media de 24 h respecto al límite diario de 37 µg/m³" id="pm25-bar">

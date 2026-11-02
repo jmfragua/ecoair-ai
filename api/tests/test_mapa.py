@@ -80,6 +80,27 @@ def test_ecoair_aproximada_y_sin_configurar():
     assert sin["ecoair"] is None and "no está configurada" in sin["mensaje_ecoair"]
 
 
+@pytest.mark.parametrize("valor", ["6.2312,-75.6012", "6.2312,−75.6012", " 6.2312 , －75.6012 "])
+def test_estacion_simulada_aparte_redondeada_y_con_menos_unicode(valor):
+    r = mapa.construir_mapa("6.25,-75.57", valor)
+    s = r["simulada"]
+    assert (s["lat"], s["lon"]) == (6.23, -75.6) and s["simulada"] is True and s["aproximada"] is True
+    assert s["nombre"] == "Estación simulada (ecoair-sim-01)" and "simulada" in s["fuente"]
+    assert r["ecoair"]["lat"] == 6.25 and r["ecoair"]["tipo"] == "ecoair"     # el punto del nodo real no cambia
+    assert all(e["tipo"] == "referencia" for e in r["estaciones"])           # el replay no la recibe como estacion
+    for sin in (None, "", "6.23", "a,b", "95,-75"):
+        assert mapa.construir_mapa("6.25,-75.57", sin)["simulada"] is None   # sin variable: el panel deja el texto
+
+
+def test_ruta_lee_ecoair_sim_ubicacion_aprox(monkeypatch):
+    monkeypatch.setenv("ECOAIR_SIM_UBICACION_APROX", "6.2312,−75.6012")
+    monkeypatch.delenv("ECOAIR_UBICACION_APROX", raising=False)
+    j = client.get("/mapa/estaciones").json()
+    assert (j["simulada"]["lat"], j["simulada"]["lon"]) == (6.23, -75.6) and j["ecoair"] is None
+    monkeypatch.delenv("ECOAIR_SIM_UBICACION_APROX")
+    assert client.get("/mapa/estaciones").json()["simulada"] is None
+
+
 def test_ruta_sin_base(monkeypatch):
     async def sin_base(*a, **k):
         raise AssertionError("/mapa/estaciones no debe consultar la base")

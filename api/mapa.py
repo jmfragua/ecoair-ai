@@ -5,6 +5,9 @@
 - Estación EcoAir: punto APROXIMADO que define el equipo con la variable ECOAIR_UBICACION_APROX
   ("lat,lon"). Se redondea a 2 decimales (~1 km) para no publicar una dirección exacta. Si falta o
   no es válida, no se dibuja.
+- Estación SIMULADA (ecoair-sim-01): punto APROXIMADO para la demostración con ECOAIR_SIM_UBICACION_APROX
+  (mismo formato, mismos signos menos Unicode y mismo redondeo). Va en "simulada", aparte de "ecoair":
+  el mapa del replay y el del nodo real no lo usan. Si falta, el panel conserva "SIMULACIÓN, sin ubicación real".
 """
 import os
 
@@ -28,6 +31,8 @@ COORDENADAS = {
 DECIMALES_ECOAIR = 2
 NOMBRE_ECOAIR = "Estación EcoAir (ecoair-node-01)"
 SIN_ECOAIR = "La ubicación de la estación EcoAir no está configurada: no se dibuja."
+NOMBRE_SIMULADA = "Estación simulada (ecoair-sim-01)"
+FUENTE_SIMULADA = "Ubicación aproximada elegida para la demostración; estación simulada (redondeada a ~1 km)"
 
 
 # Signos menos Unicode que aparecen al copiar coordenadas de una web o un documento -> "-"
@@ -51,7 +56,7 @@ def ubicacion_ecoair(valor):
     return {"lat": round(lat, DECIMALES_ECOAIR), "lon": round(lon, DECIMALES_ECOAIR)}
 
 
-def construir_mapa(valor_ecoair=None):
+def construir_mapa(valor_ecoair=None, valor_simulada=None):
     referencia, faltantes = [], []
     for codigo, info in replay.ESTACIONES.items():
         c = COORDENADAS.get(codigo)
@@ -65,13 +70,19 @@ def construir_mapa(valor_ecoair=None):
     if punto:
         ecoair = {**punto, "nombre": NOMBRE_ECOAIR, "tipo": "ecoair", "aproximada": True,
                   "fuente": "Ubicación aproximada definida por el equipo EcoAir (redondeada a ~1 km)"}
+    punto_sim = ubicacion_ecoair(valor_simulada)
+    simulada = None
+    if punto_sim:
+        simulada = {**punto_sim, "nombre": NOMBRE_SIMULADA, "tipo": "simulada", "aproximada": True,
+                    "simulada": True, "fuente": FUENTE_SIMULADA}
     return {
         "estaciones": referencia,
         "faltantes": faltantes,
         "ecoair": ecoair,
         "mensaje_ecoair": "" if ecoair else SIN_ECOAIR,
+        "simulada": simulada,
     }
 
 
 def mapa_desde_entorno():
-    return construir_mapa(os.getenv("ECOAIR_UBICACION_APROX"))
+    return construir_mapa(os.getenv("ECOAIR_UBICACION_APROX"), os.getenv("ECOAIR_SIM_UBICACION_APROX"))

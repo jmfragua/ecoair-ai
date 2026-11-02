@@ -577,7 +577,8 @@ async def proyecto_info():
 
 @app.get("/mapa/estaciones")
 async def mapa_estaciones():
-    """Coordenadas del mapa del panel (tabla fija en api/mapa.py + ECOAIR_UBICACION_APROX). Sin base."""
+    """Coordenadas del mapa del panel (tabla fija en api/mapa.py + ECOAIR_UBICACION_APROX y
+    ECOAIR_SIM_UBICACION_APROX). Sin base."""
     return mapa.mapa_desde_entorno()
 
 

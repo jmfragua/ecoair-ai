@@ -92,3 +92,27 @@ test("arreglo tactil comun a los dos mapas (Replay y ubicacion)", async () => {
   const u = m.opcionesUbicacion(true);
   assert.deepEqual([u.dragging, u.touchZoom], [false, true]);
 });
+
+test("ubicacion de la estacion SIMULADA: mismo mapa que el nodo solo para ecoair-sim-01 con punto configurado", async () => {
+  const m = await import("../../static/js/mapa-vista.js");
+  const eco = { lat: 6.25, lon: -75.57, nombre: "Estación EcoAir", fuente: "~1 km" };
+  const sim = { lat: 6.23, lon: -75.6, nombre: "Estación simulada (ecoair-sim-01)", fuente: "demostración", simulada: true };
+  const r = { ...R, ecoair: eco, mensaje_ecoair: "", simulada: sim };
+  const v = m.vistaUbicacion(r, { device: "ecoair-sim-01", simulado: true });
+  assert.deepEqual([v.estado, v.simulada, v.texto], ["mapa", true, "Ubicación aproximada · estación simulada"]);
+  assert.deepEqual([v.ecoair.lat, v.ecoair.lon], [6.23, -75.6]);                       // su punto, no el del nodo
+  assert.equal(v.ecoair.tooltip, "Estación simulada · ubicación aproximada");
+  assert.deepEqual(v.ecoair.popup.lineas, ["SIMULACIÓN", "ubicación aproximada", "demostración"]);
+  assert.deepEqual(v.vista, m.encuadre({ ...m.vistaMapa(r, ""), ecoair: v.ecoair }));   // misma logica de encuadre
+  assert.deepEqual(v.limites, m.limitesCon(v.ecoair));
+  assert.ok(!("marcadores" in v));                                                     // sin estaciones del IDEAM
+  // sin variable (simulada null), otro simulado o replay: como antes
+  assert.equal(m.vistaUbicacion({ ...r, simulada: null }, { device: "ecoair-sim-01", simulado: true }).texto, "SIMULACIÓN, sin ubicación real");
+  assert.equal(m.vistaUbicacion(r, { device: "ecoair-sim-02", simulado: true }).estado, "simulacion");
+  assert.equal(m.vistaUbicacion(r, { device: "ecoair-sim-01", simulado: true, replay: true }).estado, "oculta");
+  // el nodo real no cambia: sigue usando r.ecoair y su texto
+  const n = m.vistaUbicacion(r, { device: "ecoair-node-01" });
+  assert.deepEqual([n.ecoair.lat, n.texto, n.simulada, n.ecoair.tooltip], [6.25, "ubicación aproximada · radio de ~1 km", undefined, undefined]);
+  // el mapa del Replay tampoco: vistaMapa ignora "simulada"
+  assert.deepEqual(m.vistaMapa(r, "29509"), m.vistaMapa({ ...r, simulada: null }, "29509"));
+});

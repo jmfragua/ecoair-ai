@@ -146,3 +146,18 @@ def test_tarjeta_prediccion_simulada_solo_en_ecoair_sim():
     assert ".card--pred-sim { border: 2px dashed var(--warn);" in CSS
     assert "body.con-pred-sim .card--pred-sim { grid-column: 1 / -1; grid-row: 4; }" in CSS
     assert ".card--chart { grid-column: 1 / -1; grid-row: 4; }" in CSS                   # nodo real igual que antes
+
+
+def test_prediccion_simulada_dentro_de_la_tarjeta_de_pm25():
+    pm25 = PANEL[PANEL.index('class="card card--pm card--pm25"'):PANEL.index('class="card card--pm card--pm10"')]
+    pm10 = PANEL[PANEL.index('class="card card--pm card--pm10"'):PANEL.index('class="card card--env"')]
+    # debajo de "actual · media 1 h", oculta por defecto; el valor grande (pm25-now) sigue siendo el medido
+    assert pm25.index('id="pm25-1h"') < pm25.index('id="pm25-pred" hidden') < pm25.index('id="pm25-limit"')
+    assert "pred" not in pm10                                                # PM10 no cambia (no se predice)
+    pinta = _funcion("pintarPrediccionSim")
+    assert "lineasPm25Simulada(r)" in pinta and '$("pm25-pred").hidden = !lineas.length;' in pinta
+    assert "innerHTML" not in pinta and "pm25-now" not in pinta and "pm10" not in pinta
+    # misma respuesta que la tarjeta simulada: solo se pinta en esa vista (ecoair-sim-NN, sin replay ni kiosco)
+    assert "pintarPrediccionSim(r);" in _funcion("refreshPrediccionSim")
+    assert "if (VISTA.prediccionSim) iniciarPrediccionSim();" in APP
+    assert ".pm-pred[hidden] { display: none; }" in CSS and "color: #ffe2a6" in CSS[CSS.index(".pm-pred__lista li"):]

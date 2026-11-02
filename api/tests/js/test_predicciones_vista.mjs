@@ -81,3 +81,15 @@ test("la tarjeta solo existe para ecoair-sim-NN, fuera del replay y del kiosco",
   assert.equal(ver("?modo=replay", "ecoair-sim-01"), false);
   assert.equal(secciones().prediccionSim, false);
 });
+
+test("lineas de la tarjeta de PM2.5 (simulada): 4 y 5 h; sin predicciones o con fallo, ninguna", async () => {
+  const { lineasPm25Simulada, ETIQUETA_PM25_SIMULADA } = await import("../../static/js/predicciones-vista.js");
+  assert.equal(ETIQUETA_PM25_SIMULADA, "predicción · simulado");
+  assert.deepEqual(lineasPm25Simulada(SIM), ["En 4 h: 12,0 µg/m³ · hacia las 14:00", "En 5 h: 12,5 µg/m³ · hacia las 15:00"]);
+  for (const r of [null, undefined, {}, "x", { estado: "sin_predicciones", predicciones: [] },
+    { ...SIM, predicciones: [OK.predicciones[0]] },          // solo 3 h (oculto): nada
+    { ...OK, is_simulated: false }]) {                        // nunca valores no simulados
+    assert.deepEqual(lineasPm25Simulada(r), []);
+  }
+  assert.doesNotMatch(lineasPm25Simulada(SIM).join(" "), /PM10/);
+});

@@ -63,11 +63,22 @@ export const DISPOSITIVO_UBICACION = "ecoair-node-01";
 export const ZOOM_UBICACION = 14;            // barrio (~1 km de radio visible), no calle; fijo
 export const SIN_UBICACION = "Ubicación no configurada";
 export const SIM_UBICACION = "SIMULACIÓN, sin ubicación real";
+// Estacion simulada con punto de demostracion (ECOAIR_SIM_UBICACION_APROX en la api): mismo mapa que el nodo.
+export const DISPOSITIVO_SIM_UBICACION = "ecoair-sim-01";
+export const TEXTO_SIM_UBICACION = "Ubicación aproximada · estación simulada";
 
 // -> {estado: "oculta" | "simulacion" | "sin_config" | "mapa", texto, ecoair}
 export function vistaUbicacion(r, { device, simulado = false, replay = false } = {}) {
   if (replay) return { estado: "oculta", texto: "", ecoair: null };
-  if (simulado) return { estado: "simulacion", texto: SIM_UBICACION, ecoair: null };
+  if (simulado) {
+    const s = r && r.simulada;
+    if (device !== DISPOSITIVO_SIM_UBICACION || !valida(s)) return { estado: "simulacion", texto: SIM_UBICACION, ecoair: null };
+    const punto = { lat: s.lat, lon: s.lon, nombre: s.nombre, tooltip: `Estación simulada · ${TEXTO_APROX}`,
+      popup: { titulo: s.nombre, lineas: ["SIMULACIÓN", TEXTO_APROX, s.fuente].filter(Boolean) } };
+    // Misma vista inicial, limites y radio que el mapa del nodo real; el punto es el de la demostracion.
+    const vista = encuadre({ ...vistaMapa(r, ""), ecoair: punto });
+    return { estado: "mapa", simulada: true, texto: TEXTO_SIM_UBICACION, ecoair: punto, vista, limites: limitesCon(punto) };
+  }
   const e = r && r.ecoair;
   if (device !== DISPOSITIVO_UBICACION || !valida(e)) return { estado: "sin_config", texto: SIN_UBICACION, ecoair: null };
   const ecoair = { lat: e.lat, lon: e.lon, nombre: e.nombre,

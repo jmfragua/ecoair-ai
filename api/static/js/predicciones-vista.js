@@ -62,3 +62,12 @@ export function vistaPrediccionSimulada(r) {
   return { ...base, items, emision: v.emision, aviso: typeof r.simulacion === "string" ? r.simulacion : "",
            mensaje: items.length ? "" : SIN_PREDICCIONES_SIMULADAS };
 }
+
+// ---------- Lineas dentro de la tarjeta grande de PM2.5 (solo ecoair-sim-NN) ----------
+// Solo PM2.5: el modelo no predice PM10. El valor grande de la tarjeta sigue siendo el medido. Sin
+// predicciones simuladas validas (o si la API fallo) -> [] y la tarjeta no muestra nada.
+export const ETIQUETA_PM25_SIMULADA = "predicción · simulado";
+
+export function lineasPm25Simulada(r) {
+  return vistaPrediccionSimulada(r).items.map((i) => `${i.etiqueta}: ${i.valor} µg/m³ · ${i.hasta}`);
+}

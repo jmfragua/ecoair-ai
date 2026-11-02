@@ -9,7 +9,7 @@ import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 import { vistaTendencia } from "./tendencia-vista.js";
 import { OPCION_REPLAY, esDispositivoSimulado, modos, secciones, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
 import { TEXTOS as PREGUNTAS, responder } from "./preguntas-vista.js";
-import { vistaPrediccionSimulada } from "./predicciones-vista.js";
+import { ETIQUETA_PM25_SIMULADA, lineasPm25Simulada, vistaPrediccionSimulada } from "./predicciones-vista.js";
 import { matrizQr, pathQr, urlQr } from "./proyecto-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
@@ -944,7 +944,7 @@ function dibujarEcoair(L, m, eco) {
   L.marker([eco.lat, eco.lon], { icon: L.divIcon({ className: "mapa-eco", iconSize: [22, 22],
     html: '<span class="mapa-eco__rombo"></span>' }),
     keyboard: true, title: `${eco.nombre} · ubicación aproximada` })
-    .bindPopup(popupMapa(eco.popup)).bindTooltip("EcoAir · ubicación aproximada", { direction: "top", offset: [0, -10] })
+    .bindPopup(popupMapa(eco.popup)).bindTooltip(eco.tooltip || "EcoAir · ubicación aproximada", { direction: "top", offset: [0, -10] })
     .addTo(m);
 }
 
@@ -1010,9 +1010,10 @@ async function iniciarUbicacion() {
   if (v.estado === "oculta") { card.hidden = true; return; }
   msg.textContent = v.texto;
   msg.classList.toggle("ubicacion__msg--sim", v.estado === "simulacion");
-  $("ubicacion-chip").textContent = v.estado === "simulacion" ? "SIMULACIÓN" : "ubicación aproximada";
+  $("ubicacion-chip").textContent = v.estado === "simulacion" || v.simulada ? "SIMULACIÓN" : "ubicación aproximada";
   $("ubicacion-chip").hidden = v.estado === "sin_config";
   if (v.estado !== "mapa") return;
+  if (v.simulada) caja.setAttribute("aria-label", "Mapa con la ubicación aproximada de la estación simulada (demostración)");
   caja.hidden = false;
   cuandoSeVea(caja, async () => {
     let L;
@@ -1174,6 +1175,13 @@ function pintarPrediccionSim(r) {
     el("span", { class: "pred__hasta" }, i.hasta))));
   $("predsim-msg").textContent = v.mensaje;
   $("predsim-emision").textContent = v.emision;
+  // Las mismas predicciones, en pequeno dentro de la tarjeta de PM2.5 (sin predicciones: se omiten)
+  const lineas = lineasPm25Simulada(r);
+  $("pm25-pred-tag").textContent = lineas.length ? ETIQUETA_PM25_SIMULADA : "";
+  // cada parte ("En 4 h: X µg/m³" y "· hacia las HH:MM") se mantiene unida al partir la linea en el celular
+  $("pm25-pred-lista").replaceChildren(...lineas.map((t) => el("li", {},
+    ...t.split(" · ").flatMap((parte, i) => [i ? " " : null, el("span", { class: "pm-pred__parte" }, i ? `· ${parte}` : parte)]))));
+  $("pm25-pred").hidden = !lineas.length;
 }
 
 async function refreshPrediccionSim() {
