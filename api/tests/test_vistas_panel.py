@@ -108,22 +108,21 @@ def test_devices_con_un_dispositivo_sin_mediciones_no_da_500():
     assert "d.location = 'Simulado', false) AS is_simulated" in main.SQL_DEVICES
 
 
-def test_banner_simulacion_en_todas_las_vistas_y_distinto_del_replay():
-    i = PANEL.index('id="sim-banner"')
-    banner = PANEL[i:PANEL.index("</div>", i)]
-    assert "<strong>SIMULACIÓN</strong> · datos inventados para demostración." in banner
-    assert 'role="note"' in banner
+def test_simulacion_sin_banner_grande_pero_con_etiqueta_compacta():
+    # el banner grande punteado se quito (panel normal y kiosco); queda la etiqueta SIMULACIÓN junto al estado
+    assert 'id="sim-banner"' not in PANEL and '"sim-banner"' not in APP
+    assert "datos inventados para demostración. No son mediciones" not in PANEL
+    assert '<span id="sim-badge" class="sim-badge" hidden>SIMULACIÓN</span>' in PANEL
     # se activa por /devices, por la tendencia o por el nombre ecoair-sim-NN (aunque la API falle), desde el arranque
-    assert "const sim = simDispositivo || simDatos || esDispositivoSimulado(DEVICE);" in APP
+    cuerpo = _funcion("setSimulacion")
+    assert "const sim = simDispositivo || simDatos || esDispositivoSimulado(DEVICE);" in cuerpo
+    assert '$("sim-badge").hidden = !sim;' in cuerpo and 'SIMULACIÓN · ' in cuerpo   # etiqueta y titulo de la pestana
     assert "setSimulacion();" in _funcion("start").split("if (MODO_REPLAY)")[0]
-    # kiosco: el banner se muestra (solo se oculta lo que no es el ICA dentro de .grid; el banner va fuera)
-    assert PANEL.index('id="sim-banner"') < PANEL.index('<main id="principal" class="grid">')
-    assert "body.modo-kiosco .sim-banner" in CSS
-    # ambar (--warn) frente al violeta (--replay) del replay
-    sim_css = CSS[CSS.index(".sim-banner {"):CSS.index("}", CSS.index(".sim-banner {"))]
+    # el replay conserva su banner violeta (usa la clase .sim-banner para la forma)
+    assert 'id="replay-banner" class="sim-banner replay-banner"' in PANEL
     rep_css = CSS[CSS.index(".replay-banner {"):CSS.index("}", CSS.index(".replay-banner {"))]
-    assert "var(--warn)" in sim_css and "var(--replay)" in rep_css and "var(--warn)" not in rep_css
-    # las preguntas rapidas saben si la estacion es simulada
+    assert "var(--replay)" in rep_css and "var(--warn)" not in rep_css
+    # las preguntas rapidas siguen sabiendo si la estacion es simulada
     assert "simulado: simDispositivo || simDatos || esDispositivoSimulado(DEVICE)" in _funcion("datosPreguntas")
 
 
@@ -132,6 +131,9 @@ def test_tarjeta_prediccion_simulada_solo_en_ecoair_sim():
     assert " hidden" in sec and 'id="predsim"' in sec                      # oculta hasta que la vista la active
     assert "Predicción de PM2.5 · SIMULACIÓN" in PANEL
     assert 'id="predsim-msg" role="status" aria-live="polite"' in PANEL
+    # sin la linea larga del aviso de la API (el titulo y la etiqueta "experimental" se quedan)
+    assert 'id="predsim-aviso"' not in PANEL and "v.aviso" not in _funcion("pintarPrediccionSim")
+    assert '<span class="chip chip--muted">experimental</span>' in PANEL
     assert "const VISTA = secciones({ ...MODOS, device: DEVICE });" in APP
     assert "if (VISTA.prediccionSim) iniciarPrediccionSim();" in APP
     # en replay y kiosco start() vuelve antes de llegar a ella

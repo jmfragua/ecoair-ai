@@ -526,7 +526,6 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
 .card--pred-sim .pred__item { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px;
   border-radius: 12px; background: var(--surface-2); border: 1px solid rgba(250, 178, 25, .35); min-width: 0; }
 .card--pred-sim .pred__v { color: #ffe2a6; }
-.predsim__aviso { font-weight: 600; }
 .pred__fijo { font-size: .8rem; font-weight: 600; color: #ffe2a6; margin-bottom: 10px; }
 .pred__hasta { font-size: .78rem; color: var(--muted); }
 

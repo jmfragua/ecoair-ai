@@ -1039,7 +1039,6 @@ function iniciarModoReplay() {
   document.body.classList.add("modo-replay");
   document.querySelector(".card--replay").hidden = false;   // oculta por defecto: la vista del nodo es solo en vivo
   $("replay-banner").hidden = false;
-  $("sim-banner").hidden = true;
   $("sim-badge").hidden = true;
   document.title = "REPLAY HISTÓRICO · EcoAir AI";
   setStatus("replay", "Replay histórico");
@@ -1175,7 +1174,6 @@ function pintarPrediccionSim(r) {
     el("span", { class: "pred__hasta" }, i.hasta))));
   $("predsim-msg").textContent = v.mensaje;
   $("predsim-emision").textContent = v.emision;
-  $("predsim-aviso").textContent = v.aviso;
 }
 
 async function refreshPrediccionSim() {
@@ -1191,14 +1189,13 @@ function iniciarPrediccionSim() {
   setInterval(refreshPrediccionSim, HISTORY_REFRESH_MS);   // se emiten cada hora: basta cada minuto
 }
 
-// Aviso de SIMULACION: se activa si el dispositivo o sus datos son simulados. Nunca se presenta
-// una lectura simulada como si fuera del sensor real.
+// Aviso de SIMULACION (etiqueta compacta junto al estado y titulo de la pestana): se activa si el
+// dispositivo o sus datos son simulados. Nunca se presenta una lectura simulada como si fuera real.
 let simDispositivo = false, simDatos = false;
 function setSimulacion() {
   if (MODO_REPLAY) return;                 // el modo replay tiene su propio banner
   const sim = simDispositivo || simDatos || esDispositivoSimulado(DEVICE);
   $("sim-badge").hidden = !sim;
-  $("sim-banner").hidden = !sim;
   document.title = `${sim ? "SIMULACIÓN · " : ""}EcoAir AI · Calidad del aire`;
 }
 
@@ -1231,7 +1228,7 @@ function start() {
   initRanges();
   initScaleToggle();
   if (MODO_KIOSCO) iniciarKiosco();
-  setSimulacion();                 // ecoair-sim-NN: banner desde el primer momento, aunque la API falle
+  setSimulacion();                 // ecoair-sim-NN: etiqueta SIMULACIÓN desde el arranque, aunque la API falle
   // La tarjeta de ubicacion necesita saber si el dispositivo es simulado (lo dice /devices)
   loadDevices().then(() => { if (!MODO_KIOSCO) iniciarUbicacion(); });
   if (!MODO_KIOSCO) iniciarProyecto();

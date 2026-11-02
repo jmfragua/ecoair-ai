@@ -107,7 +107,8 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     las devuelve con is_simulated y el aviso "SIMULACIÓN · ..." y sin regla en vivo. docker-compose ya pasa
     PREDICCION_* al alerter.
   - Tarjeta "Predicción de PM2.5 · SIMULACIÓN" (solo ecoair-sim-NN; ni node-01, ni replay, ni kiosco;
-    secciones().prediccionSim): 4 y 5 h de /predictions/latest, aviso de la API, sin métricas, ámbar; si la
+    secciones().prediccionSim): 4 y 5 h de /predictions/latest, sin métricas, ámbar (la línea larga del aviso
+    de la API se quitó de la tarjeta; la API la sigue devolviendo); si la
     respuesta no viene con is_simulated=true no muestra valores. Sin predicciones: "Aún no hay predicciones
     simuladas (se generan cada hora)". A >= 1200 px va encima de la tendencia (body.con-pred-sim). Revisada en
     Chrome a 1280 y 390 px con un Postgres desechable.
@@ -117,8 +118,9 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
     DATABASE_URL sin imprimirla y sin confirmación interactiva; mismas protecciones. Imagen probada en Docker local.
   - Correos de una estación simulada (alertas y bienvenida): NUNCA se envían, aunque NOTIFIER_DRY_RUN=false
     y NOTIFIER_INCLUIR_SIMULADOS=true; solo una línea en el log (asunto + correo enmascarado), estado dry_run.
-  - Panel: banner "SIMULACIÓN · datos inventados para demostración" (ámbar; replay violeta) también por el
-    nombre ecoair-sim-NN desde el arranque; las preguntas rápidas empiezan por SIMULACIÓN y "¿Es un equipo
+  - Panel: etiqueta compacta SIMULACIÓN (ámbar) junto a "En línea" y en el título de la pestaña, también por
+    el nombre ecoair-sim-NN desde el arranque. El banner grande punteado se QUITÓ (2026-11-02, a pedido); el
+    replay conserva su banner violeta. Las preguntas rápidas empiezan por SIMULACIÓN y "¿Es un equipo
     oficial?" dice que es una estación SIMULADA.
 - [LOCAL] Vista del nodo >= 900 px: izquierda "Alertas recientes" (máx. 420 px con scroll) y debajo la
   suscripción; derecha el mapa de ubicación en las dos filas, con su caja estirada (mín. 340 px; el

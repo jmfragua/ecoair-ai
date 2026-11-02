@@ -25,7 +25,7 @@ export function secciones({ replay = false, kiosco = false, device = "" } = {}) 
 }
 
 // ---------- Selector de estacion: cambiar entre vista del nodo y replay ----------
-// Dispositivos de simulacion (tools/simular_continuo.py solo escribe en ecoair-sim-NN). El banner
+// Dispositivos de simulacion (tools/simular_continuo.py solo escribe en ecoair-sim-NN). La etiqueta
 // SIMULACION se muestra por el nombre aunque /devices o la tendencia aun no hayan respondido.
 export function esDispositivoSimulado(device) {
   return /^ecoair-sim-\d+$/.test(String(device || ""));
