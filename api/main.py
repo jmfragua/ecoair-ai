@@ -146,7 +146,7 @@ SQL_DEVICES = (
     "SELECT d.device_id, d.name, d.location, d.created_at, "
     "COALESCE((SELECT m.is_simulated FROM measurements m WHERE m.device_id = d.device_id "
     "          AND m.received_at <= now() ORDER BY m.received_at DESC LIMIT 1), "
-    "         d.location = 'Simulado') AS is_simulated "
+    "         d.location = 'Simulado', false) AS is_simulated "   # sin mediciones ni location: false, no NULL (500)
     "FROM devices d ORDER BY d.device_id"
 )
 

@@ -10,6 +10,37 @@ export function modos(search) {
   return { replay: valores.has("replay"), kiosco: valores.has("kiosco") };
 }
 
+// Que se ve en cada modo. La vista del nodo (sin ?modo=replay) es SOLO en vivo: sin tarjeta de replay,
+// sin mapa de las estaciones del IDEAM y sin replay-vista.js. Las preguntas rapidas solo en la vista del
+// nodo y fuera del kiosco (nadie puede pulsar en la pantalla de la feria).
+export function secciones({ replay = false, kiosco = false } = {}) {
+  return {
+    replay,                                   // tarjeta Replay historico + mapa de estaciones del IDEAM
+    preguntas: !replay && !kiosco,            // fila "Preguntas rapidas"
+    ubicacion: !replay && !kiosco,            // mapa "Ubicacion de la estacion" (solo EcoAir)
+    proyecto: !kiosco,                        // franja del proyecto con el QR
+  };
+}
+
+// ---------- Selector de estacion: cambiar entre vista del nodo y replay ----------
+export const OPCION_REPLAY = "__replay__";
+
+export function urlModoReplay(href, station, at) {
+  const u = new URL(href);
+  u.searchParams.set("modo", "replay");
+  u.searchParams.delete("device");
+  if (station) u.searchParams.set("station", station);
+  if (at) u.searchParams.set("at", at);
+  return u.toString();
+}
+
+export function urlModoVivo(href, device) {
+  const u = new URL(href);
+  for (const k of ["modo", "station", "at"]) u.searchParams.delete(k);
+  u.searchParams.set("device", device);
+  return u.toString();
+}
+
 // Texto del chip de estado cuando la ultima medicion es vieja. En kiosco se lee de lejos.
 export function textoSinDatos(minutos, kiosco = false) {
   if (typeof minutos !== "number" || !Number.isFinite(minutos)) return kiosco ? "Sin conexión" : "Sin datos";

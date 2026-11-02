@@ -80,6 +80,19 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   "Sin conexión desde hace X"), con los banners de SIMULACIÓN/REPLAY. Sin selectores, formularios, mapas
   ni pie; no inicia ubicación, suscripción, /proyecto ni el Replay en vivo (comprobado en el log de
   acceso). Cabe en 1920x1080 sin scroll.
+- [LOCAL] Vista del nodo SOLO en vivo (/panel?device=..., sin ?modo=replay): la tarjeta Replay y el mapa
+  de estaciones del IDEAM están ocultos y replay-vista.js se importa de forma dinámica solo en modo
+  replay (comprobado en Chrome: ni replay-vista.js ni /predictions/* en la vista del nodo). Con
+  ?modo=replay todo sigue igual. OPCION_REPLAY y urlModoReplay/urlModoVivo viven en modo-vista.js.
+  Las tarjetas PM se ubican por clase (card--pm25/pm10), no con nth-of-type.
+- [LOCAL] Preguntas rápidas (solo vista del nodo; ni replay ni kiosco): 6 botones bajo el ICA, una
+  respuesta a la vez (aria-live). Sin IA ni llamadas nuevas: usan /air-quality/current, /measurements/latest
+  y la tendencia ya cargados. Textos fijos en TEXTOS de js/preguntas-vista.js; los de la norma vienen de
+  la API (efectos: Res. 2254 Tabla 5; acciones: EPA, marcadas "orientativo"). > 10 min sin datos: "Sin
+  datos recientes · última lectura hace X (fecha)". "¿Cómo estuvo hoy?": mín/máx/promedio de los
+  intervalos de 5 min (< 6 = "Datos insuficientes"; indicativo, no la media normativa).
+- /devices daba 500 si un dispositivo no tenía mediciones ni location (is_simulated NULL); corregido
+  con COALESCE(..., false).
 - [LOCAL] Nodo sin enviar más de 10 min (vistaAhora.antigua, mismo umbral del aviso): PM2.5, PM10,
   temperatura y humedad atenuados (--muted) con "última lectura · hora" bajo cada valor, en la
   cuadrícula del ICA (panel y kiosco) y en temperatura/humedad; las tarjetas PM ya lo decían en su

@@ -1,10 +1,5 @@
 // EcoAir AI - dashboard publico. Sin CDN: la unica libreria (Leaflet, para el mapa) se sirve desde
 // /vendor/ y el unico recurso externo son las teselas de OpenStreetMap del mapa.
-import {
-  HORIZONTES_GRAFICA, OPCION_REPLAY, chipsMetricasSerie, RANGOS, VELOCIDADES, avisoSalto, filasTooltip, mensajeError, msLocal, pathTramos,
-  periodoMetricas, siguienteHora, textoMetricasSerie, urlModoReplay, urlModoVivo, vistaActualReplay, vistaEstaciones,
-  vistaMetricas, vistaReplay,
-} from "./replay-vista.js";
 import { vistaRecomendacion, SIN_DATOS_RECIENTES } from "./recomendaciones-vista.js";
 import {
   ATRIBUCION_OSM, LEAFLET_CSS, LEAFLET_JS, LIMITES, OPCIONES_TESELAS, RADIO_APROX_M, SIN_LEAFLET, SIN_TESELAS, URL_TESELAS,
@@ -12,7 +7,8 @@ import {
 } from "./mapa-vista.js";
 import { vistaAhora, etiquetaMetrica } from "./ahora-vista.js";
 import { vistaTendencia } from "./tendencia-vista.js";
-import { modos, textoSinDatos } from "./modo-vista.js";
+import { OPCION_REPLAY, modos, secciones, textoSinDatos, urlModoReplay, urlModoVivo } from "./modo-vista.js";
+import { TEXTOS as PREGUNTAS, responder } from "./preguntas-vista.js";
 import { matrizQr, pathQr, urlQr } from "./proyecto-vista.js";
 // Todo el texto que viene de la API se inserta con textContent (nunca innerHTML).
 
@@ -25,6 +21,9 @@ const MODO_REPLAY = MODOS.replay;
 // Modo kiosco (?modo=kiosco, combinable con replay): pantalla grande de la feria. Solo la tarjeta del ICA
 // en letra grande; sin formularios, selectores ni mapas (no se inician: ninguna tesela ni suscripcion).
 const MODO_KIOSCO = MODOS.kiosco;
+const VISTA = secciones(MODOS);
+// replay-vista.js (y todo /predictions/replay*) SOLO en modo replay: la vista del nodo es solo en vivo.
+const RV = MODO_REPLAY ? await import("./replay-vista.js") : null;
 const REFRESH_MS = 10_000;          // calidad actual, ultima medicion y alertas
 const HISTORY_REFRESH_MS = 60_000;  // la grafica usa intervalos de 5 min: basta cada minuto
 const FETCH_TIMEOUT_MS = 8_000;
@@ -581,8 +580,8 @@ async function refresh() {
     return;
   }
   let fallos = 0;
-  if (aq.status === "fulfilled") renderCurrent(aq.value);
-  else { fallos++; if (!recCargada) renderRec(null); }
+  if (aq.status === "fulfilled") { ultimoAq = aq.value; renderCurrent(aq.value); }
+  else { ultimoAq = null; fallos++; if (!recCargada) renderRec(null); }   // sin respuesta: nada se da por actual
   if (latest.status === "fulfilled") { ultimaMedicion = latest.value; renderAhora(false); renderLatest(latest.value); }
   else if (latest.reason?.status === 404) { ultimaMedicion = null; renderAhora(false); } // 404 aqui = aun no hay mediciones
   else { fallos++; renderAhora(true); }
@@ -590,6 +589,7 @@ async function refresh() {
   else if (alerts.reason?.status === 503) { $("alerts-empty").hidden = false; $("alerts-empty").textContent = "Las alertas no están disponibles en este momento."; }
   else fallos++;
 
+  actualizarPregunta();
   if (fallos === 0) {
     lastOk = new Date();
     $("updated").textContent = `${fmtHora.format(lastOk)} (hora de Colombia)`;
@@ -606,6 +606,7 @@ async function refreshHistory() {
   box.classList.add("is-refreshing");
   try {
     renderChart(await getJSON(`/devices/${dev}/air-quality/history?hours=24&bucket_min=5`));
+    actualizarPregunta();
   } catch {
     /* se conserva la grafica anterior; el aviso lo da refresh() */
   } finally {
@@ -618,12 +619,12 @@ async function refreshHistory() {
 // mediciones del sensor propio, para que funcione con el hardware desconectado. Siempre pide
 // buscar=siguiente: si a la hora elegida falta parte de la ventana, la API salta a la siguiente
 // hora valida y la tarjeta lo avisa.
-let replayTimer = null, replayVelocidad = VELOCIDADES[0].ms, metricasClave = "";
+let replayTimer = null, replayVelocidad = 0, metricasClave = "";   // la velocidad se fija en iniciarReplay
 let replaySerie = null, replayGeom = null;
 
 // Chips MAE modelo / MAE persistencia / mejora; el texto completo queda en "Detalles".
 function renderChipsReplay(r) {
-  const c = chipsMetricasSerie(r);
+  const c = RV.chipsMetricasSerie(r);
   $("replay-chips").replaceChildren(...(c ? c.chips : []).map((x) => el("li", {
     class: `mchip mchip--${x.tono}`, title: x.etiqueta === "Mejora" ? "Mejora = 1 − MAE modelo / MAE persistencia" : null },
     el("span", { class: "mchip__k" }, x.etiqueta), el("strong", { class: "mchip__v" }, x.valor))));
@@ -641,7 +642,7 @@ async function cargarSerieReplay(at) {
   } catch (e) {
     replaySerie = null;
     $("replay-svg").replaceChildren();
-    $("replay-gmet").textContent = mensajeError(e.status, e.message);
+    $("replay-gmet").textContent = RV.mensajeError(e.status, e.message);
     renderChipsReplay(null);
   }
 }
@@ -656,7 +657,7 @@ function renderSerieReplay(r) {
   svg.replaceChildren();
   const pts = r.puntos || [];
   const n = pts.length;
-  const ts = pts.map((p) => msLocal(p.target_local));
+  const ts = pts.map((p) => RV.msLocal(p.target_local));
   const t0 = ts[0], t1 = ts[n - 1] ?? t0 + 3_600_000;
   const valores = (k) => pts.map((p) => (p[k] == null ? null : Number(p[k])));
   const real = valores("real"), pred = valores("predicho"), pers = valores("persistencia");
@@ -692,7 +693,7 @@ function renderSerieReplay(r) {
   svg.append(ex);
 
   // Marca de la hora del replay (la emision actual)
-  const tAt = msLocal(r.at_local);
+  const tAt = RV.msLocal(r.at_local);
   if (tAt >= t0 && tAt <= t1) {
     const xa = xT(tAt);
     svg.append(svgEl("line", { x1: xa, x2: xa, y1: M.t - 6, y2: M.t + ih, class: "r-ahora" }));
@@ -703,7 +704,7 @@ function renderSerieReplay(r) {
   }
   // Series: persistencia (fondo), predicho, real (encima). Huecos sin conectar; puntos aislados como marca.
   for (const [vals, cls, dot] of [[pers, "r-pers", "r-dot-pers"], [pred, "r-pred", "r-dot-pred"], [real, "r-real", "r-dot-real"]]) {
-    const { d, aislados } = pathTramos(vals, x, y);
+    const { d, aislados } = RV.pathTramos(vals, x, y);
     if (d) svg.append(svgEl("path", { d, class: cls }));
     for (const i of aislados) svg.append(svgEl("circle", { cx: x(i), cy: y(vals[i]), r: 2.5, class: dot }));
   }
@@ -712,7 +713,7 @@ function renderSerieReplay(r) {
     t.textContent = "Sin datos en este rango";
     svg.append(t);
   }
-  $("replay-gmet").textContent = textoMetricasSerie(r);
+  $("replay-gmet").textContent = RV.textoMetricasSerie(r);
   renderChipsReplay(r);
   $("replay-tip").hidden = true;
 }
@@ -724,7 +725,7 @@ function tipSerieReplay(ev) {
   const px = (ev.clientX - rect.left) * escala;
   let mejor = 0;
   for (let i = 1; i < replayGeom.n; i++) if (Math.abs(replayGeom.x(i) - px) < Math.abs(replayGeom.x(mejor) - px)) mejor = i;
-  const t = filasTooltip(replaySerie.puntos[mejor]);
+  const t = RV.filasTooltip(replaySerie.puntos[mejor]);
   const tip = $("replay-tip");
   tip.replaceChildren(el("div", { class: "tip__time" }, t.titulo),
     ...t.filas.map(([k, v]) => el("div", { class: "tip__row" }, el("span", {}, k), el("strong", {}, v))),
@@ -747,11 +748,11 @@ async function cargarReplay() {
   } catch (e) {
     $("replay-filas").replaceChildren();
     $("replay-ventana").textContent = "";
-    $("replay-msg").textContent = mensajeError(e.status, e.message);
+    $("replay-msg").textContent = RV.mensajeError(e.status, e.message);
     return false;
   }
   if (r.at_local) $("replay-at").value = r.at_local;
-  const v = vistaReplay(r);
+  const v = RV.vistaReplay(r);
   $("replay-filas").replaceChildren(...v.filas.map((f) => el("tr", { class: f.mejor ? "fila--mejor" : null },
     el("td", {}, f.horizonte, f.horaCorta ? el("span", { class: "solo-estrecho" }, ` · ${f.horaCorta}`) : null),
     el("td", { class: "col-hora" }, f.hora), el("td", {}, f.predicho), el("td", {}, f.real),
@@ -760,22 +761,22 @@ async function cargarReplay() {
   $("replay-msg").textContent = v.mensaje;
   $("replay-ventana").textContent = v.ventana;
   $("replay-fuentes").textContent = v.fuentes;
-  $("replay-salto").textContent = avisoSalto(r);
+  $("replay-salto").textContent = RV.avisoSalto(r);
   cargarSerieReplay(r.at_local || at);
   if (MODO_REPLAY) {
     renderReplayPanel(r);
     history.replaceState(null, "", urlModoReplay(location.href, st, r.at_local));
   }
-  const per = periodoMetricas(r.at_local || at);
+  const per = RV.periodoMetricas(r.at_local || at);
   const clave = per ? `${st}|${per.desde}|${per.hasta}` : "";
   if (per && clave !== metricasClave) {        // el MAE del periodo solo se pide al cambiar de dia o estacion
     metricasClave = clave;
     try {
-      $("replay-mae").textContent = vistaMetricas(await getJSON(
+      $("replay-mae").textContent = RV.vistaMetricas(await getJSON(
         `/predictions/replay/metrics?station=${encodeURIComponent(st)}&desde=${per.desde}&hasta=${per.hasta}`));
     } catch {
       metricasClave = "";
-      $("replay-mae").textContent = vistaMetricas(null);
+      $("replay-mae").textContent = RV.vistaMetricas(null);
     }
   }
   return true;
@@ -784,7 +785,7 @@ async function cargarReplay() {
 // Panel principal en modo replay: ICA solo con PM2.5; PM10, temperatura y humedad no existen en el
 // historico importado (solo PM2.5): se dice, no se inventan.
 function renderReplayPanel(r) {
-  const a = vistaActualReplay(r);
+  const a = RV.vistaActualReplay(r);
   if (!a) return;
   const cat = CATS.find((c) => c.code === a.codigo) || CATS[0];
   document.querySelector(".card--ica").classList.remove("is-nodata");
@@ -835,7 +836,7 @@ function detenerReplay(msg) {
 }
 
 async function pasoReplay() {
-  const sig = siguienteHora($("replay-at").value);
+  const sig = RV.siguienteHora($("replay-at").value);
   if (!sig) { detenerReplay(); return; }
   $("replay-at").value = sig;
   if (!(await cargarReplay())) { detenerReplay("Fin de los datos disponibles: el replay quedó en pausa."); return; }
@@ -850,8 +851,9 @@ function alternarPlay() {
 }
 
 async function iniciarReplay() {
-  $("replay-rango").replaceChildren(...RANGOS.map((o) => el("option", { value: String(o.horas) }, o.label)));
-  $("replay-horizonte").replaceChildren(...HORIZONTES_GRAFICA.map((h) => el("option", { value: String(h) }, `${h} h`)));
+  replayVelocidad = RV.VELOCIDADES[0].ms;
+  $("replay-rango").replaceChildren(...RV.RANGOS.map((o) => el("option", { value: String(o.horas) }, o.label)));
+  $("replay-horizonte").replaceChildren(...RV.HORIZONTES_GRAFICA.map((h) => el("option", { value: String(h) }, `${h} h`)));
   for (const id of ["replay-rango", "replay-horizonte"]) {
     $(id).addEventListener("change", () => cargarSerieReplay($("replay-at").value));
   }
@@ -861,7 +863,7 @@ async function iniciarReplay() {
   caja.addEventListener("pointerleave", () => { $("replay-tip").hidden = true; $("replay-svg").querySelector(".r-guia")?.remove(); });
   let rr;
   new ResizeObserver(() => { clearTimeout(rr); rr = setTimeout(() => replaySerie && renderSerieReplay(replaySerie), 120); }).observe(caja);
-  $("replay-velocidad").replaceChildren(...VELOCIDADES.map((v) => el("option", { value: String(v.ms) }, v.label)));
+  $("replay-velocidad").replaceChildren(...RV.VELOCIDADES.map((v) => el("option", { value: String(v.ms) }, v.label)));
   $("replay-velocidad").addEventListener("change", () => { replayVelocidad = Number($("replay-velocidad").value); });
   $("replay-play").addEventListener("click", alternarPlay);
   iniciarMapaCuandoSeVea();      // no espera a /predictions/replay/estaciones (consulta lenta)
@@ -874,7 +876,7 @@ async function iniciarReplay() {
     cargarReplay();
   });
   try {
-    const v = vistaEstaciones(await getJSON("/predictions/replay/estaciones"));
+    const v = RV.vistaEstaciones(await getJSON("/predictions/replay/estaciones"));
     $("replay-estacion").replaceChildren(...v.opciones.map((o) => el("option", { value: o.value, "data-at": o.at }, o.label)));
     const pedida = MODO_REPLAY && v.opciones.find((o) => o.value === PARAMS.get("station"));
     $("replay-estacion").value = pedida ? pedida.value : v.station;
@@ -883,7 +885,7 @@ async function iniciarReplay() {
     actualizarMapa();
     await cargarReplay();
   } catch (e) {
-    $("replay-msg").textContent = mensajeError(e.status, e.message);
+    $("replay-msg").textContent = RV.mensajeError(e.status, e.message);
   }
 }
 
@@ -1034,6 +1036,7 @@ async function iniciarUbicacion() {
 // Modo replay: nada en vivo (ni mediciones, ni grafica, ni alertas, ni suscripcion -> ningun correo).
 function iniciarModoReplay() {
   document.body.classList.add("modo-replay");
+  document.querySelector(".card--replay").hidden = false;   // oculta por defecto: la vista del nodo es solo en vivo
   $("replay-banner").hidden = false;
   $("sim-banner").hidden = true;
   $("sim-badge").hidden = true;
@@ -1048,6 +1051,53 @@ function iniciarModoReplay() {
   $("subs-form").hidden = true;
   $("subs-form").after(el("p", { class: "empty" }, "En modo replay histórico no hay suscripciones ni se envían correos."));
   iniciarReplay();
+}
+
+// ---------- Preguntas rapidas (solo vista del nodo en vivo, fuera del kiosco) ----------
+// Sin IA ni llamadas nuevas: usa lo que el panel ya cargo. Una sola respuesta visible a la vez; el
+// texto se inserta con textContent. Si los datos cambian, la respuesta abierta se actualiza (solo si
+// cambia, para que aria-live no repita lo mismo cada 10 s).
+let ultimoAq = null, preguntaActiva = null, preguntaTexto = "";
+
+function datosPreguntas() {
+  return { aq: ultimoAq, ultima: ultimaMedicion, historia: lastHistory };
+}
+
+function pintarPregunta() {
+  const caja = $("preguntas-resp");
+  if (!preguntaActiva) { caja.hidden = true; caja.replaceChildren(); preguntaTexto = ""; return; }
+  const r = responder(preguntaActiva, datosPreguntas(), Date.now());
+  const texto = JSON.stringify(r);
+  if (texto === preguntaTexto && !caja.hidden) return;
+  preguntaTexto = texto;
+  const nodos = [el("p", { class: "preguntas__titulo" }, r.titulo),
+    ...r.lineas.map((l) => el("p", { class: "preguntas__linea" }, l))];
+  if (r.fuente) nodos.push(el("p", { class: "preguntas__fuente" }, r.fuente));   // replaceChildren(null) pintaria "null"
+  caja.replaceChildren(...nodos);
+  caja.hidden = false;
+}
+
+function actualizarPregunta() {
+  if (VISTA.preguntas && preguntaActiva) pintarPregunta();
+}
+
+function iniciarPreguntas() {
+  const card = $("preguntas");
+  $("preguntas-title").textContent = PREGUNTAS.titulo;
+  $("preguntas-chip").textContent = PREGUNTAS.chip;
+  const fila = $("preguntas-botones");
+  fila.replaceChildren(...PREGUNTAS.preguntas.map((p) => {
+    const b = el("button", { type: "button", class: "pregunta", "aria-pressed": "false",
+      "aria-controls": "preguntas-resp", "data-pregunta": p.id }, p.etiqueta);
+    b.addEventListener("click", () => {
+      preguntaActiva = preguntaActiva === p.id ? null : p.id;   // otro clic en la misma la cierra
+      for (const x of fila.children) x.setAttribute("aria-pressed", String(x.dataset.pregunta === preguntaActiva));
+      preguntaTexto = "";
+      pintarPregunta();
+    });
+    return b;
+  }));
+  card.hidden = false;
 }
 
 // ---------- Modo kiosco ----------
@@ -1173,7 +1223,7 @@ function start() {
   // la vista al ancla cuando termina la primera actualizacion.
   refresh().finally(() => { if (location.hash) document.querySelector(location.hash)?.scrollIntoView(); });
   refreshHistory();
-  iniciarReplay();
+  if (VISTA.preguntas) iniciarPreguntas();
   setInterval(refresh, REFRESH_MS);
   setInterval(refreshHistory, HISTORY_REFRESH_MS);
   let rt;

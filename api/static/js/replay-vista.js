@@ -2,6 +2,9 @@
 // /predictions/replay y /predictions/replay/metrics: SOLO datos externos del IDEAM (datos.gov.co y
 // SISAIRE), nunca las mediciones del sensor propio. Nunca se queda en "Cargando…".
 
+// Selector y URLs de modo: viven en modo-vista.js (la vista en vivo los usa sin cargar este modulo).
+export { OPCION_REPLAY, urlModoReplay, urlModoVivo } from "./modo-vista.js";
+
 export const AVISO_REPLAY =
   "Replay histórico con datos de estaciones de referencia del IDEAM. No es un pronóstico en tiempo real ni un equipo certificado.";
 export const ESTACION_PREFERIDA = "29509";
@@ -86,7 +89,6 @@ export function vistaMetricas(m) {
 export const BANNER_REPLAY =
   "REPLAY HISTÓRICO · datos reales del IDEAM de una fecha pasada.";
 export const NO_DISPONIBLE = "no disponible en el histórico";
-export const OPCION_REPLAY = "__replay__";
 export const VELOCIDADES = [
   { ms: 3000, label: "1 h cada 3 s" },
   { ms: 1000, label: "1 h cada 1 s" },
@@ -121,22 +123,6 @@ export function avisoSalto(r) {
   const s = r && r.salto;
   if (!s) return "";
   return `Faltaban horas en la ventana de ${local(s.pedida_local)}: se saltó ${s.horas} h hasta ${local(r.at_local)}.`;
-}
-
-export function urlModoReplay(href, station, at) {
-  const u = new URL(href);
-  u.searchParams.set("modo", "replay");
-  u.searchParams.delete("device");
-  if (station) u.searchParams.set("station", station);
-  if (at) u.searchParams.set("at", at);
-  return u.toString();
-}
-
-export function urlModoVivo(href, device) {
-  const u = new URL(href);
-  for (const k of ["modo", "station", "at"]) u.searchParams.delete(k);
-  u.searchParams.set("device", device);
-  return u.toString();
 }
 
 // ---------- Grafica real frente a predicho (/predictions/replay/serie) ----------

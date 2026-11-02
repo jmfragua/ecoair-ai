@@ -84,6 +84,16 @@
       <ol class="scale" id="ica-scale" aria-label="Categorías del ICA"></ol>
     </section>
 
+    <!-- Preguntas rapidas: solo vista del nodo en vivo (ni replay ni kiosco). Textos en js/preguntas-vista.js -->
+    <section class="card card--preguntas" id="preguntas" aria-labelledby="preguntas-title" style="--i:1" hidden>
+      <header class="card__head">
+        <h2 id="preguntas-title" class="card__title">Preguntas rápidas</h2>
+        <span class="chip chip--muted" id="preguntas-chip"></span>
+      </header>
+      <div class="preguntas__fila" id="preguntas-botones" role="group" aria-labelledby="preguntas-title"></div>
+      <div class="preguntas__resp" id="preguntas-resp" aria-live="polite" hidden></div>
+    </section>
+
     <!-- Recomendacion -->
     <section class="card card--rec" aria-labelledby="rec-title" style="--i:1">
       <header class="card__head">
@@ -104,7 +114,7 @@
     </section>
 
     <!-- Metricas -->
-    <section class="card card--pm" aria-labelledby="pm25-title" style="--i:2">
+    <section class="card card--pm card--pm25" aria-labelledby="pm25-title" style="--i:2">
       <header class="card__head">
         <h2 id="pm25-title" class="card__title">PM2.5</h2>
         <span class="unit">µg/m³</span>
@@ -120,7 +130,7 @@
       </div>
     </section>
 
-    <section class="card card--pm" aria-labelledby="pm10-title" style="--i:3">
+    <section class="card card--pm card--pm10" aria-labelledby="pm10-title" style="--i:3">
       <header class="card__head">
         <h2 id="pm10-title" class="card__title">PM10</h2>
         <span class="unit">µg/m³</span>
@@ -226,8 +236,9 @@
       </div>
       <p class="replay__src ubicacion__msg" id="ubicacion-msg" role="status" aria-live="polite">Cargando…</p>
     </section>
-    <!-- Replay historico (solo datos externos del IDEAM; no usa el sensor propio) -->
-    <section class="card card--replay" aria-labelledby="replay-title" style="--i:7">
+    <!-- Replay historico (solo datos externos del IDEAM; no usa el sensor propio). Oculta salvo con
+         ?modo=replay: la vista del nodo es solo en vivo (iniciarModoReplay la muestra). -->
+    <section class="card card--replay" aria-labelledby="replay-title" style="--i:7" hidden>
       <header class="card__head">
         <h2 id="replay-title" class="card__title">Replay histórico · PM2.5</h2>
         <span class="chip chip--model">modelo, experimental</span>
