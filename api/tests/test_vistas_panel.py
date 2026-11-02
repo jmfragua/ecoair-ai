@@ -66,6 +66,21 @@ def test_c_preguntas_solo_en_la_vista_del_nodo():
     assert 'el("button", { type: "button"' in cuerpo and '"aria-pressed"' in cuerpo
 
 
+def test_zona_alertas_suscripcion_y_ubicacion():
+    # movil (una columna, orden del HTML): alertas, mapa, suscripcion
+    i = [PANEL.index(f'class="card {c}"') for c in ("card--alerts", "card--ubicacion", "card--subs")]
+    assert i == sorted(i)
+    # >= 900 px: izquierda alertas + suscripcion, derecha el mapa en las dos filas (solo vista del nodo)
+    assert "@media (min-width: 900px) and (max-width: 1199px)" in CSS
+    assert "body:not(.modo-replay) .card--ubicacion { grid-column: 2; grid-row: span 2;" in CSS
+    assert ".card--ubicacion { grid-column: 3 / 5; grid-row: 5 / 7;" in CSS
+    assert ".card--subs { grid-column: 1 / 3; grid-row: 6;" in CSS
+    # el replay conserva su reparto (alertas | suscripcion en la fila 6) y el kiosco oculta la suscripcion
+    assert "body.modo-replay .card--subs { grid-column: 3 / 5; grid-row: 6; }" in CSS
+    assert "body.modo-kiosco .grid > .card:not(.card--ica)" in CSS
+    assert CSS.count("{") == CSS.count("}")                               # sin llaves sueltas
+
+
 def test_preguntas_sin_innerhtml_y_sin_textos_de_la_norma_copiados():
     for codigo in (APP, PREG):
         assert "innerHTML" not in codigo.replace("(nunca innerHTML)", "")

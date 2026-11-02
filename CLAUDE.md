@@ -91,6 +91,10 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
   la API (efectos: Res. 2254 Tabla 5; acciones: EPA, marcadas "orientativo"). > 10 min sin datos: "Sin
   datos recientes · última lectura hace X (fecha)". "¿Cómo estuvo hoy?": mín/máx/promedio de los
   intervalos de 5 min (< 6 = "Datos insuficientes"; indicativo, no la media normativa).
+- [LOCAL] Vista del nodo >= 900 px: izquierda "Alertas recientes" (máx. 420 px con scroll) y debajo la
+  suscripción; derecha el mapa de ubicación en las dos filas, con su caja estirada (mín. 340 px; el
+  ResizeObserver de app.js ya llama a invalidateSize). Las dos columnas terminan a la misma altura (medido
+  en Chrome a 1000 y 1280 px, con 1 y con 7 alertas). Móvil: alertas, mapa, suscripción (orden del HTML).
 - /devices daba 500 si un dispositivo no tenía mediciones ni location (is_simulated NULL); corregido
   con COALESCE(..., false).
 - [LOCAL] Nodo sin enviar más de 10 min (vistaAhora.antigua, mismo umbral del aviso): PM2.5, PM10,

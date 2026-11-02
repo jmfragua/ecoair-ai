@@ -611,14 +611,33 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .chart__svg { height: 300px; }
 }
 
+/* ---------- Escritorio (>= 900 px), vista del nodo: alertas + suscripcion | ubicacion ---------- */
+/* Columna izquierda: alertas y debajo la suscripcion; derecha: el mapa ocupando las dos filas. Las dos
+   columnas terminan a la misma altura: la tarjeta del mapa se estira y su caja crece (minimo 340 px;
+   app.js ya llama a invalidateSize con un ResizeObserver) y la suscripcion absorbe lo que el mapa mida
+   de mas. En movil el orden del HTML ya es alertas, mapa, suscripcion. El modo replay (sin mapa) y el
+   kiosco (solo ICA) tienen su propio reparto. */
+@media (min-width: 900px) {
+  body:not(.modo-replay) .card--ubicacion:not([hidden]) { display: flex; flex-direction: column; }
+  body:not(.modo-replay) .mapa__caja--ubicacion { flex: 1 1 340px; height: auto; min-height: 340px; }
+}
+@media (min-width: 900px) and (max-width: 1199px) {
+  body:not(.modo-replay) .card--alerts { grid-column: 1; align-self: start; max-height: 420px; overflow: auto; }
+  body:not(.modo-replay) .card--ubicacion { grid-column: 2; grid-row: span 2; align-self: stretch; }
+  body:not(.modo-replay) .card--subs { grid-column: 1; align-self: stretch; }
+  body:not(.modo-replay) .card--subs .subs__row { grid-template-columns: 1fr; }
+}
+
 /* ---------- Pantalla grande (feria): 4 columnas ---------- */
 /* Vista del nodo (solo en vivo). Ninguna tarjeta se estira para igualar a la de al lado (align-items:
-   start). Filas 1-2: ICA | recomendacion, PM2.5 PM10 · 3: preguntas rapidas (bajo el ICA) | ambiente ·
-   4: tendencia · 5: alertas | ubicacion · 6: suscripcion. El modo replay tiene su propio reparto.
-   Las tarjetas de PM se ubican por clase (card--pm25/pm10), no por posicion. */
+   start), salvo la zona alertas/suscripcion | ubicacion. Filas 1-2: ICA | recomendacion, PM2.5 PM10 ·
+   3: preguntas rapidas (bajo el ICA) | ambiente · 4: tendencia · 5: alertas | ubicacion (filas 5-6) ·
+   6: suscripcion. La fila 6 es 1fr: absorbe lo que el mapa mida de mas, sin hueco bajo las alertas.
+   El modo replay tiene su propio reparto. Las tarjetas de PM se ubican por clase (card--pm25/pm10). */
 @media (min-width: 1200px) {
   body { font-size: 17px; }
-  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(5, auto) 1fr auto;
+    align-items: start; }
   .card--ica { grid-column: 1 / 3; grid-row: 1 / 3; }
   .card--rec { grid-column: 3 / 5; grid-row: 1; }
   .card--pm25 { grid-column: 3; grid-row: 2; }
@@ -628,14 +647,13 @@ thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--
   .card--preguntas { grid-column: 1 / 3; grid-row: 3; }
   .card--chart { grid-column: 1 / -1; grid-row: 4; }
   .card--alerts { grid-column: 1 / 3; grid-row: 5; max-height: 420px; overflow: auto; }
-  .card--ubicacion { grid-column: 3 / 5; grid-row: 5; }
-  .card--subs { grid-column: 1 / -1; grid-row: 6; }
+  .card--ubicacion { grid-column: 3 / 5; grid-row: 5 / 7; align-self: stretch; }
+  .card--subs { grid-column: 1 / 3; grid-row: 6; align-self: stretch; }
   .card--pred, .card--replay { grid-column: 1 / -1; grid-row: 7; }
   .gauge { max-width: 420px; }
   .gauge__value { font-size: 5.4rem; }
   .chart__svg { height: 360px; }
   .brand__name { font-size: 1.6rem; }
-}
 }
 
 /* ---------- Modo replay historico: la tarjeta de prediccion va junto al ICA ---------- */
