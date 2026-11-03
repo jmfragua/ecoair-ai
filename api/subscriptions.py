@@ -14,6 +14,7 @@ import base64
 import hashlib
 import hmac
 import ipaddress
+import os
 import re
 import secrets
 import time
@@ -152,14 +153,26 @@ def nuevo_conteo_confirmaciones(conteo, ultimo, ahora):
     return conteo + 1
 
 
-def decidir_registro(fila, envios, ahora):
+def reenviar_si_confirmado(env=None):
+    """SUBS_REENVIAR_SI_CONFIRMADO (false por defecto): reenviar confirmacion y bienvenida a una
+    suscripcion ya confirmada y activa cuando se vuelve a registrar el mismo correo."""
+    env = os.environ if env is None else env
+    return (env.get("SUBS_REENVIAR_SI_CONFIRMADO") or "false").strip().lower() in ("1", "true", "si", "sí", "yes")
+
+
+def decidir_registro(fila, envios, ahora, reenviar_confirmados=False):
     """Que hacer ante POST /subscriptions. La respuesta HTTP es la misma en todos los casos.
 
     fila: la suscripcion existente de (email, device_id) o None.
-    Devuelve "insertar", "reactivar" (pedir de nuevo la confirmacion) o "nada".
+    Devuelve "insertar", "reactivar" (pedir de nuevo la confirmacion), "reenviar" (ya confirmada y
+    activa, con SUBS_REENVIAR_SI_CONFIRMADO: volver a enviar confirmacion y bienvenida sin cambiar
+    su estado) o "nada".
     """
     if fila is not None and fila["confirmed_at"] and not fila["unsubscribed_at"]:
-        return "nada"  # ya esta activa: no se reenvia nada ni se cambia la preferencia
+        if not reenviar_confirmados:
+            return "nada"  # ya esta activa: no se reenvia nada ni se cambia la preferencia
+        # mismo limite que cualquier confirmacion: 3 por correo cada 24 h
+        return "reenviar" if puede_enviar_confirmacion(envios, ahora) else "nada"
     if not puede_enviar_confirmacion(envios, ahora):
         return "nada"  # limite de 3 confirmaciones por correo cada 24 h
     return "insertar" if fila is None else "reactivar"

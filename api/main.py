@@ -35,6 +35,7 @@ from subscriptions import (
     hash_token,
     ip_cliente,
     normalizar_email,
+    reenviar_si_confirmado,
     texto_consentimiento,
 )
 import replay  # noqa: E402
@@ -324,6 +325,17 @@ async def subscriptions_consent():
     return texto_consentimiento(os.getenv("CONTACT_EMAIL"))
 
 
+SQL_REENVIAR = (
+    "UPDATE subscribers SET confirm_requested_at = %s, confirm_attempts = 0, confirm_last_attempt_at = NULL, "
+    "welcome_sent_at = NULL, welcome_attempts = 0, welcome_last_attempt_at = NULL "
+    "WHERE id = %s AND confirmed_at IS NOT NULL AND unsubscribed_at IS NULL"
+)
+SQL_REENVIAR_SIN_007 = (
+    "UPDATE subscribers SET confirm_requested_at = %s, confirm_attempts = 0, confirm_last_attempt_at = NULL "
+    "WHERE id = %s AND confirmed_at IS NOT NULL AND unsubscribed_at IS NULL"
+)
+
+
 async def _registrar(email, device_id, min_severity, ahora):
     async with pool.connection() as conn:
         async with conn.transaction():
@@ -337,7 +349,8 @@ async def _registrar(email, device_id, min_severity, ahora):
                 (email, device_id),
             )).fetchone()
             accion = decidir_registro(
-                fila, [(e["confirm_sent_count"], e["last_confirm_sent_at"]) for e in envios], ahora)
+                fila, [(e["confirm_sent_count"], e["last_confirm_sent_at"]) for e in envios], ahora,
+                reenviar_si_confirmado())
             if accion == "insertar":
                 await conn.execute(
                     "INSERT INTO subscribers (email, device_id, min_severity, consent_at, "
@@ -353,6 +366,14 @@ async def _registrar(email, device_id, min_severity, ahora):
                     "confirm_attempts = 0, confirm_last_attempt_at = NULL WHERE id = %s",
                     (min_severity, ahora, CONSENT_VERSION, ahora, fila["id"]),
                 )
+            elif accion == "reenviar":
+                # Ya confirmada y activa: el notifier vuelve a enviar la confirmacion y luego la bienvenida.
+                # No cambia confirmed_at, unsubscribed_at, la preferencia ni el consentimiento; no crea filas.
+                try:
+                    async with conn.transaction():          # punto de guardado
+                        await conn.execute(SQL_REENVIAR, (ahora, fila["id"]))
+                except psycopg.errors.UndefinedColumn:      # sin la migracion 007: solo la confirmacion
+                    await conn.execute(SQL_REENVIAR_SIN_007, (ahora, fila["id"]))
     return accion
 
 
@@ -390,9 +411,13 @@ border-radius:999px;border:0;background:#f0efec;color:#0d0d0d;cursor:pointer}}</
 async def confirm_subscription(token: str = ""):
     try:
         filas = await _con_timeout(query(
-            "UPDATE subscribers SET confirmed_at = now(), confirm_token_hash = NULL, confirm_expires_at = NULL "
+            # COALESCE: un enlace reenviado a una suscripcion ya confirmada (SUBS_REENVIAR_SI_CONFIRMADO)
+            # tambien funciona y no cambia la fecha de confirmacion. Sin reenvio, una fila confirmada
+            # nunca tiene confirm_token_hash, asi que no cambia nada.
+            "UPDATE subscribers SET confirmed_at = COALESCE(confirmed_at, now()), confirm_token_hash = NULL, "
+            "confirm_expires_at = NULL "
             "WHERE confirm_token_hash = %s AND confirm_expires_at > now() "
-            "AND confirmed_at IS NULL AND unsubscribed_at IS NULL RETURNING id",
+            "AND unsubscribed_at IS NULL RETURNING id",
             (hash_token(token),),
         )) if 0 < len(token) <= 200 else []
     except psycopg.errors.UndefinedTable:

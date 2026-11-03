@@ -5,6 +5,9 @@
 - Cada INTERVALO_ALERTAS_S (30 s): encola en notifications_sent una fila por (alerta,
   suscriptor, tipo) y envia las pendientes, con reintentos y espera creciente.
   La restriccion UNIQUE de la tabla garantiza un correo por episodio.
+- Reenvio a una suscripcion ya confirmada (SUBS_REENVIAR_SI_CONFIRMADO en la api): la api vuelve a pedir la
+  confirmacion (confirm_requested_at) y pone welcome_sent_at a NULL, sin cambiar confirmed_at. Aqui se envia
+  la confirmacion y despues la bienvenida, una vez cada una; cuenta en el limite de 3 por correo en 24 h.
 - Bienvenida (migracion 007): al confirmarse una suscripcion se envia UNA vez un correo con el
   ICA actual (media de 1 h, igual que el dashboard), la recomendacion de texto fijo de la norma y
   la seccion "Prediccion experimental". welcome_sent_at se marca en la misma transaccion del
@@ -147,8 +150,11 @@ def procesar_confirmaciones(conn, mailer):
     """
     ahora = datetime.now(timezone.utc)
     filas = conn.execute(
+        # Pendientes de confirmar, y tambien suscripciones YA confirmadas cuya confirmacion se volvio a pedir
+        # (SUBS_REENVIAR_SI_CONFIRMADO en la api): en ambos casos confirm_requested_at > ultimo envio.
+        # Una fila confirmada normal nunca cumple esto (se le envio la confirmacion despues de pedirla).
         "SELECT id, confirm_attempts, confirm_last_attempt_at FROM subscribers "
-        "WHERE confirm_requested_at IS NOT NULL AND confirmed_at IS NULL AND unsubscribed_at IS NULL "
+        "WHERE confirm_requested_at IS NOT NULL AND unsubscribed_at IS NULL "
         "AND (last_confirm_sent_at IS NULL OR last_confirm_sent_at < confirm_requested_at) "
         "AND confirm_attempts < %s ORDER BY confirm_requested_at LIMIT 20",
         (config.MAX_INTENTOS,),
@@ -160,7 +166,7 @@ def procesar_confirmaciones(conn, mailer):
             with conn.transaction():
                 s = conn.execute(
                     "SELECT id, email, device_id, created_at, confirm_sent_count, last_confirm_sent_at "
-                    "FROM subscribers WHERE id = %s AND confirmed_at IS NULL FOR UPDATE SKIP LOCKED",
+                    "FROM subscribers WHERE id = %s AND unsubscribed_at IS NULL FOR UPDATE SKIP LOCKED",
                     (sid,),
                 ).fetchone()
                 if s is None:
@@ -254,7 +260,11 @@ def procesar_bienvenidas(conn, mailer):
     filas = conn.execute(
         "SELECT id, welcome_attempts, welcome_last_attempt_at FROM subscribers "
         "WHERE confirmed_at IS NOT NULL AND unsubscribed_at IS NULL AND welcome_sent_at IS NULL "
-        "AND confirmed_at > now() - make_interval(hours => %s) AND welcome_attempts < %s "
+        # ventana desde la confirmacion o desde un reenvio pedido (GREATEST ignora NULL)
+        "AND GREATEST(confirmed_at, confirm_requested_at) > now() - make_interval(hours => %s) "
+        # tras un reenvio, la bienvenida sale despues de la confirmacion reenviada
+        "AND (confirm_requested_at IS NULL OR last_confirm_sent_at >= confirm_requested_at) "
+        "AND welcome_attempts < %s "
         "ORDER BY confirmed_at LIMIT 20",
         (config.BIENVENIDA_VENTANA_H, config.MAX_INTENTOS),
     ).fetchall()

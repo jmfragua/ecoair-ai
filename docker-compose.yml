@@ -63,6 +63,8 @@ services:
       CONTACT_EMAIL: ${CONTACT_EMAIL:-}
       # true solo detras de un proxy (tunel de Cloudflare, Railway): usa CF-Connecting-IP / X-Forwarded-For
       TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      # true: registrar de nuevo un correo ya confirmado reenvia confirmacion y bienvenida (max. 3 cada 24 h)
+      SUBS_REENVIAR_SI_CONFIRMADO: ${SUBS_REENVIAR_SI_CONFIRMADO:-false}
       ALERTA_DISPOSITIVO_CAIDO_ACTIVA: ${ALERTA_DISPOSITIVO_CAIDO_ACTIVA:-true}
       # Punto APROXIMADO de la estacion EcoAir en el mapa ("lat,lon"; se redondea a ~1 km). Vacio = no se dibuja.
       ECOAIR_UBICACION_APROX: ${ECOAIR_UBICACION_APROX:-}

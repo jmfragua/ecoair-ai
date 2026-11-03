@@ -300,3 +300,28 @@ def test_correo_de_anomalias_apagado_por_defecto(monkeypatch):
     monkeypatch.delenv("ANOMALIAS_CORREO", raising=False)
     assert importlib.reload(config).ANOMALIAS_CORREO is False
     assert importlib.reload(config).ANOMALIAS_CORREO_CADA_H == 6
+
+
+def test_reenvio_a_confirmados_confirmacion_y_luego_bienvenida(cfg):
+    """SUBS_REENVIAR_SI_CONFIRMADO (api): una fila confirmada con confirm_requested_at nuevo vuelve a recibir la
+    confirmacion; una confirmada normal (envio posterior a la peticion) nunca entra."""
+    con = ConexionFalsa([{"id": 1, "confirm_attempts": 0, "confirm_last_attempt_at": None}])
+    mailer = MailerOk()
+    notifier.procesar_confirmaciones(con, mailer)
+    seleccion = next(s for s in con.confirmados if s.startswith("SELECT id, confirm_attempts"))
+    assert "confirmed_at IS NULL" not in seleccion                       # tambien las ya confirmadas...
+    assert "last_confirm_sent_at < confirm_requested_at" in seleccion     # ...solo si se pidio de nuevo
+    assert "unsubscribed_at IS NULL" in seleccion
+    bloqueo = next(s for s in con.confirmados if s.startswith("SELECT id, email"))
+    assert "AND unsubscribed_at IS NULL FOR UPDATE" in bloqueo
+    actualiza = next(s for s in con.confirmados if s.startswith("UPDATE subscribers SET confirm_token_hash"))
+    assert "confirmed_at" not in actualiza                               # no cambia el estado confirmado
+    assert len(mailer.enviados) == 1
+
+
+def test_bienvenida_tras_reenvio_va_despues_de_la_confirmacion():
+    import inspect
+    fuente = inspect.getsource(notifier.procesar_bienvenidas)
+    assert "GREATEST(confirmed_at, confirm_requested_at) > now() - make_interval(hours => %s)" in fuente
+    assert "(confirm_requested_at IS NULL OR last_confirm_sent_at >= confirm_requested_at)" in fuente
+    assert "welcome_sent_at IS NULL" in fuente                            # una sola vez por peticion

@@ -246,6 +246,12 @@ tests unitarios (pytest), sin prueba real registrada · [SIM] solo con datos sim
       Con TRUST_PROXY_HEADERS=true (solo detrás de Cloudflare/Railway) la IP sale de
       CF-Connecting-IP o X-Forwarded-For.
     - GET /subscriptions/confirm?token= (enlace válido 24 h).
+    - SUBS_REENVIAR_SI_CONFIRMADO (api, false por defecto). Sin ella, registrar un correo ya confirmado y
+      activo no escribe nada ni envía nada. Con true: la api pone confirm_requested_at = ahora y
+      welcome_sent_at = NULL en la MISMA fila (sin tocar confirmed_at, baja, preferencia ni consentimiento) y el
+      notifier envía de nuevo la confirmación y DESPUÉS la bienvenida (con ICA y recomendaciones si hay datos
+      recientes). Cuenta en el límite de 3 por correo en 24 h; el enlace reenviado funciona sin cambiar la fecha
+      de confirmación. Respuesta HTTP idéntica. [LOCAL] probado con un Postgres desechable.
     - GET /subscriptions/unsubscribe?token= solo muestra un botón; el POST da de baja (también
       sirve para la baja con un clic de List-Unsubscribe). Token de baja = HMAC con SUBSCRIPTION_SECRET.
   - Todas devuelven 404 si el dispositivo no existe.

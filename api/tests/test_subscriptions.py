@@ -108,6 +108,35 @@ def test_decidir_registro():
     assert decidir_registro(pendiente, [(3, AHORA - timedelta(hours=1))], AHORA) == "nada"
 
 
+def test_decidir_registro_con_reenvio_a_confirmados():
+    activa = {"confirmed_at": AHORA, "unsubscribed_at": None}
+    baja = {"confirmed_at": AHORA, "unsubscribed_at": AHORA}
+    pendiente = {"confirmed_at": None, "unsubscribed_at": None}
+    hace1h = AHORA - timedelta(hours=1)
+    # variable apagada: como siempre
+    assert decidir_registro(activa, [], AHORA, False) == "nada"
+    # variable activa: confirmada y activa -> reenviar, respetando el limite de 3 por correo en 24 h
+    assert decidir_registro(activa, [], AHORA, True) == "reenviar"
+    assert decidir_registro(activa, [(2, hace1h)], AHORA, True) == "reenviar"
+    assert decidir_registro(activa, [(3, hace1h)], AHORA, True) == "nada"
+    assert decidir_registro(activa, [(2, hace1h), (1, hace1h)], AHORA, True) == "nada"   # suma de dispositivos
+    assert decidir_registro(activa, [(3, AHORA - timedelta(hours=25))], AHORA, True) == "reenviar"
+    # el resto de casos no cambia con la variable
+    assert decidir_registro(None, [], AHORA, True) == "insertar"
+    assert decidir_registro(baja, [], AHORA, True) == "reactivar"
+    assert decidir_registro(pendiente, [], AHORA, True) == "reactivar"
+    assert decidir_registro(pendiente, [(3, hace1h)], AHORA, True) == "nada"
+
+
+def test_variable_reenviar_por_defecto_false():
+    from subscriptions import reenviar_si_confirmado
+    assert reenviar_si_confirmado({}) is False
+    assert reenviar_si_confirmado({"SUBS_REENVIAR_SI_CONFIRMADO": "false"}) is False
+    assert reenviar_si_confirmado({"SUBS_REENVIAR_SI_CONFIRMADO": ""}) is False
+    assert reenviar_si_confirmado({"SUBS_REENVIAR_SI_CONFIRMADO": "true"}) is True
+    assert reenviar_si_confirmado({"SUBS_REENVIAR_SI_CONFIRMADO": " TRUE "}) is True
+
+
 def test_severidad_cumple():
     assert severidad_cumple("aviso", "aviso") and severidad_cumple("aviso", "critica")
     assert not severidad_cumple("critica", "aviso") and severidad_cumple("critica", "critica")
@@ -262,3 +291,119 @@ def test_lecturas_ignoran_filas_futuras():
     import inspect
     fuente = inspect.getsource(main.latest_measurement) + inspect.getsource(main.list_measurements) + main.SQL_DEVICES
     assert fuente.count("received_at <= now()") == 3
+
+
+# ---------- _registrar real con una conexion falsa (SUBS_REENVIAR_SI_CONFIRMADO) ----------
+
+class _ResAsync:
+    def __init__(self, filas):
+        self.filas = filas
+
+    async def fetchall(self):
+        return self.filas
+
+    async def fetchone(self):
+        return self.filas[0] if self.filas else None
+
+
+class _TxAsync:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *a):
+        return False
+
+
+class ConexionSubsFalsa:
+    """Una fila (email, device_id) en memoria; registra el SQL que escribe."""
+
+    def __init__(self, fila, envios):
+        self.fila, self.envios, self.escrito = fila, envios, []
+
+    def transaction(self):
+        return _TxAsync()
+
+    async def execute(self, sql, params=()):
+        if sql.startswith("SELECT confirm_sent_count"):
+            return _ResAsync([{"confirm_sent_count": c, "last_confirm_sent_at": u} for c, u in self.envios])
+        if sql.startswith("SELECT id, confirmed_at"):
+            return _ResAsync([self.fila] if self.fila else [])
+        self.escrito.append((sql, params))
+        return _ResAsync([])
+
+
+class PoolFalso:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def connection(self):
+        conn = self.conn
+
+        class Cm:
+            async def __aenter__(s):
+                return conn
+
+            async def __aexit__(s, *a):
+                return False
+        return Cm()
+
+
+CONFIRMADA = {"id": 7, "confirmed_at": AHORA - timedelta(days=3), "unsubscribed_at": None}
+
+
+def _post_real(monkeypatch, fila, envios, activa):
+    main.limitador_ip.reiniciar()
+    conn = ConexionSubsFalsa(fila, envios)
+    monkeypatch.setattr(main, "pool", PoolFalso(conn))
+
+    async def device_ok(device_id):
+        return None
+    monkeypatch.setattr(main, "require_device", device_ok)
+    if activa is None:
+        monkeypatch.delenv("SUBS_REENVIAR_SI_CONFIRMADO", raising=False)
+    else:
+        monkeypatch.setenv("SUBS_REENVIAR_SI_CONFIRMADO", activa)
+    r = TestClient(main.app).post("/subscriptions", json={"email": "Ana@Gmail.com", "device_id": "ecoair-node-01",
+                                                          "accepted_terms": True})
+    return r, conn.escrito
+
+
+def test_reenvio_apagado_no_escribe_nada(monkeypatch):
+    for activa in (None, "false"):
+        r, escrito = _post_real(monkeypatch, CONFIRMADA, [], activa)
+        assert r.status_code == 202 and escrito == []           # comportamiento actual: nada
+
+
+def test_reenvio_activo_solo_actualiza_la_fila_existente(monkeypatch):
+    r, escrito = _post_real(monkeypatch, CONFIRMADA, [(1, AHORA)], "true")
+    assert r.status_code == 202 and len(escrito) == 1
+    sql, params = escrito[0]
+    assert sql is main.SQL_REENVIAR and params[1] == 7               # la misma fila: sin INSERT ni duplicados
+    assert sql.startswith("UPDATE subscribers SET confirm_requested_at = %s")
+    assert "welcome_sent_at = NULL" in sql                           # vuelve a programar la bienvenida
+    for intocable in ("confirmed_at =", "unsubscribed_at =", "min_severity", "consent_", "INSERT"):
+        assert intocable not in sql.split("WHERE")[0], intocable     # no cambia el estado confirmado
+    assert "confirmed_at IS NOT NULL AND unsubscribed_at IS NULL" in sql
+
+
+def test_reenvio_activo_respeta_el_limite_de_3(monkeypatch):
+    from datetime import datetime, timezone
+    reciente = datetime.now(timezone.utc) - timedelta(hours=1)
+    r, escrito = _post_real(monkeypatch, CONFIRMADA, [(3, reciente)], "true")
+    assert r.status_code == 202 and escrito == []
+
+
+def test_respuesta_identica_con_la_variable_activa_o_no(monkeypatch):
+    respuestas = []
+    for activa in (None, "false", "true"):
+        for fila, envios in ((CONFIRMADA, []), (CONFIRMADA, [(3, AHORA)]), (None, []),
+                             ({"id": 8, "confirmed_at": None, "unsubscribed_at": None}, [])):
+            r, _ = _post_real(monkeypatch, fila, envios, activa)
+            respuestas.append((r.status_code, r.json(), r.headers.get("content-type")))
+    assert len(set(map(str, respuestas))) == 1 and respuestas[0][:2] == (202, {"mensaje": MENSAJE_GENERICO})
+
+
+def test_confirmar_enlace_reenviado_no_cambia_la_fecha():
+    import inspect
+    fuente = inspect.getsource(main.confirm_subscription)
+    assert "confirmed_at = COALESCE(confirmed_at, now())" in fuente and "AND unsubscribed_at IS NULL" in fuente
