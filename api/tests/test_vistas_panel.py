@@ -166,3 +166,11 @@ def test_prediccion_simulada_dentro_de_la_tarjeta_de_pm25():
 def test_selector_usa_el_nombre_del_lugar_de_la_api():
     cuerpo = _funcion("loadDevices")
     assert "const nombre = textoOpcionEstacion(d);" in cuerpo and "innerHTML" not in cuerpo
+
+
+def test_preguntas_sin_etiqueta_en_el_encabezado():
+    sec = PANEL[PANEL.index('class="card card--preguntas"'):PANEL.index('id="preguntas-botones"')]
+    assert 'id="preguntas-title"' in sec and "chip" not in sec               # solo el titulo
+    assert "preguntas-chip" not in APP and "datos del panel, sin IA" not in PREG
+    rec = PANEL[PANEL.index('class="card card--rec"'):]
+    assert "texto fijo, no IA" in rec[:rec.index("</header>")]               # la de recomendacion se queda

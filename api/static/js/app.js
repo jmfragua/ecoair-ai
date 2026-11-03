@@ -1086,7 +1086,6 @@ function actualizarPregunta() {
 function iniciarPreguntas() {
   const card = $("preguntas");
   $("preguntas-title").textContent = PREGUNTAS.titulo;
-  $("preguntas-chip").textContent = PREGUNTAS.chip;
   const fila = $("preguntas-botones");
   fila.replaceChildren(...PREGUNTAS.preguntas.map((p) => {
     const b = el("button", { type: "button", class: "pregunta", "aria-pressed": "false",

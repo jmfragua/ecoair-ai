@@ -8,7 +8,6 @@ import { haceCuanto, numero, vistaAhora } from "./ahora-vista.js";
 
 export const TEXTOS = {
   titulo: "Preguntas rápidas",
-  chip: "datos del panel, sin IA",
   preguntas: [
     { id: "ahora", etiqueta: "¿Cómo está el aire ahora?" },
     { id: "color", etiqueta: "¿Qué significa este color?" },
